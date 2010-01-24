@@ -1,0 +1,8 @@
+/**
+ *
+ *  fastfixmath.c
+ *
+ *  Petr Sladek
+ *
+*/ 
+      
