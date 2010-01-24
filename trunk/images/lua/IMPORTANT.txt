@@ -1,0 +1,14 @@
+1. opatchovat FreeRTOS
+configUSE_NEWLIB_REENTRANT
+
+2. FreeRTOS neni vanilla, je patchnuty makingthings.com (viz freertos/task.c)
+
+3. Task_create - pozor na stack size!!! (Lua)
+
+4. crt0.s -  bl syscallsInit
+
+5. !!! USB CDC only => zakomentovat CDCDSerialDriver_Initialize() v usbserial.c
+
+6. lua speedup - alikovat LNUM patch (double + int32)
+7. lua speedup - pridat do OPTIMIZATION -ffast-math
+

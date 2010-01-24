@@ -1,0 +1,10 @@
+- bootloader: sd FAT32 => nenajde main.bin 
+- bootloader: text image.bin => main.bin
+- USB Composite (CDC/MSD)
+- YABCSP
+- lwBT
+- startup/extras.c - fd remap neni reentratni!!!
+- vypinani fat pri aktivnim msd a vice versa
+- monitor
+- fgets - nerozpoznava \n (viz my_gets)
+- USB massstorage/MSDDStateMachine.c - udelat multithreaded. ted polluje a zere cpu
