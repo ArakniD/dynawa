@@ -4,7 +4,12 @@
 - YABCSP
 - lwBT
 - startup/extras.c - fd remap neni reentratni!!!
+- startup/extras.c - prechod na _func_r(ptr, ...) {ptr->_errno} nebo na _func(...) viz. newlib/libc/reent/*r.c
 - vypinani fat pri aktivnim msd a vice versa
 - monitor
 - fgets - nerozpoznava \n (viz my_gets)
 - USB massstorage/MSDDStateMachine.c - udelat multithreaded. ted polluje a zere cpu
+- entropy harvester
+- reset controller memory access
+- vibra
+- beeper

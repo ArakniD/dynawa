@@ -190,10 +190,6 @@ THUMB_SRC= \
   $(USB)/common/core/USBEndpointDescriptor.c \
   $(USB)/common/core/USBConfigurationDescriptor.c \
   $(USB)/common/core/USBInterfaceRequest.c \
-  $(PERIPHERALS)/serial.c \
-  $(PERIPHERALS)/oled/oled.c \
-  $(PERIPHERALS)/spi.c \
-  $(PERIPHERALS)/pmc/pmc.c \
   $(UTILS)/rprintf.c \
   $(UTILS)/time.c \
   $(UTILS)/delay.c \
@@ -259,9 +255,19 @@ THUMB_SRC= \
   $(DYNAWA)/bcsp/abcsp_support_functions.c \
   $(DYNAWA)/bcsp/uSched.c \
   $(DYNAWA)/bcsp/SerialCom.c \
+  $(PERIPHERALS)/serial.c \
+  $(PERIPHERALS)/oled/oled.c \
+  $(PERIPHERALS)/spi.c \
+  $(PERIPHERALS)/pmc/pmc.c \
   $(PERIPHERALS)/usart/usart.c \
   $(PERIPHERALS)/aic/aic.c \
   $(PERIPHERALS)/pio/pio.c \
+  $(PERIPHERALS)/rtc.c \
+  $(PERIPHERALS)/i2c.c \
+  $(PERIPHERALS)/accel.c \
+  $(PERIPHERALS)/gasgauge.c \
+  $(PERIPHERALS)/amblightsensor.c \
+  $(PERIPHERALS)/ledrgb.c \
   $(LUA)/lnum.c \
   $(LWBT_SRC) \
   $(ZLIB)/adler32.c \

@@ -11,7 +11,7 @@ static int l_start (lua_State *L) {
     uint32_t when = luaL_checkint(L, 1);
 
     bool repeat;
-    if (lua_isnone(L, 2)) {
+    if (lua_isnoneornil(L, 2)) {
         repeat = false;
     } else {
         luaL_checktype(L, 2, LUA_TBOOLEAN);

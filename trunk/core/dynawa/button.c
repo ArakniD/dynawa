@@ -34,11 +34,10 @@ void button_isr(void* context) {
             Timer_stop(&button[button_id].timer);
         }
         ev.type = EVENT_BUTTON_UP;
-
-        button[button_id].held = false;
     }
     ev.data.button.id = button_id;
     event_post_isr(&ev);
+    button[button_id].held = false;
 }
 
 void button_timer_handler(void* context) {

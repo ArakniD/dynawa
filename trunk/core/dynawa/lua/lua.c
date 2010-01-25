@@ -52,7 +52,7 @@ int lua_event_loop (void) {
 
     unsigned long ticks = xTaskGetTickCount();
 
-    if (luaL_loadfile(L, "main.lua") || lua_pcall(L, 0, 0, 0)) {
+    if (luaL_loadfile(L, "_sys/boot.lua") || lua_pcall(L, 0, 0, 0)) {
         TRACE_ERROR("lua: %s\r\n", lua_tostring(L, -1));
         lua_pop(L, 1);
         lua_close(L);
@@ -74,17 +74,39 @@ int lua_event_loop (void) {
         }
 */
 
-        lua_getglobal(L, "event_loop");
+        lua_getglobal(L, "handle_event");
 
         switch(ev.type) {
         case EVENT_BUTTON_DOWN:
-        case EVENT_BUTTON_HOLD:
-        case EVENT_BUTTON_UP:
-            TRACE_INFO("button %d ev %d\r\n", ev.data.button.id, ev.type);
+            TRACE_INFO("button %d down\r\n", ev.data.button.id);
             lua_newtable(L);
 
             lua_pushstring(L, "type");
-            lua_pushnumber(L, ev.type);
+            lua_pushstring(L, "button_down");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "button");
+            lua_pushnumber(L, ev.data.button.id);
+            lua_settable(L, -3);
+            break;
+        case EVENT_BUTTON_HOLD:
+            TRACE_INFO("button %d hold\r\n", ev.data.button.id);
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "button_hold");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "button");
+            lua_pushnumber(L, ev.data.button.id);
+            lua_settable(L, -3);
+            break;
+        case EVENT_BUTTON_UP:
+            TRACE_INFO("button %d up\r\n", ev.data.button.id);
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "button_up");
             lua_settable(L, -3);
 
             lua_pushstring(L, "button");
@@ -96,7 +118,7 @@ int lua_event_loop (void) {
             lua_newtable(L);
 
             lua_pushstring(L, "type");
-            lua_pushnumber(L, ev.type);
+            lua_pushstring(L, "timer_fired");
             lua_settable(L, -3);
 
             lua_pushstring(L, "handle");

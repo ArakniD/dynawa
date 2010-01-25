@@ -63,6 +63,8 @@ void spi_init(void)
     // with FDIV=0, spi clock = MCK / value in SCBR
     pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
 
+    //MV channel 1: accelerometer at -cs0, 16bits/transfer
+    pSPI->SPI_CSR[0] = AT91C_SPI_CPOL  | AT91C_SPI_BITS_16  | (32<<8) | (4<<16) | (1<<24);
     // channel 2 is PA31, SD-Card
     pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
 

@@ -13,11 +13,11 @@ static int l_new (lua_State *L) {
 
     uint8_t red = 0, green = 0, blue = 0, alpha = 0xff;
 
-    if (!lua_isnone(L, 3)) {
+    if (!lua_isnoneornil(L, 3)) {
         red = luaL_checkint(L, 3);
         green = luaL_checkint(L, 4);
         blue = luaL_checkint(L, 5);
-        if (!lua_isnone(L, 6)) {
+        if (!lua_isnoneornil(L, 6)) {
             alpha = luaL_checkint(L, 6);
         }
     }
@@ -141,7 +141,7 @@ static int l_combine (lua_State *L) {
     int y = luaL_checkint(L, 4);
 
     bool new_bitmap;
-    if (lua_isnone(L, 5)) {
+    if (lua_isnoneornil(L, 5)) {
         new_bitmap = false;
     } else {
         luaL_checktype(L, 5, LUA_TBOOLEAN);
@@ -192,7 +192,7 @@ static int l_show (lua_State *L) {
     bitmap *bmp = lua_touserdata(L, 1);
 
     bool rotate;
-    if (lua_isnone(L, 2)) {
+    if (lua_isnoneornil(L, 2)) {
         rotate = false;
     } else {
         luaL_checktype(L, 2, LUA_TBOOLEAN);
