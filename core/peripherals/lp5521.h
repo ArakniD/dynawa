@@ -1,12 +1,5 @@
-/* ========================================================================== */
-/*                                                                            */
-/*   Filename.c                                                               */
-/*   (c) 2001 Author                                                          */
-/*                                                                            */
-/*   Description                                                              */
-/*                                                                            */
-/* ========================================================================== */
-
+#ifndef LP5521_H_
+#define LP5521_H_
 
 #define LEDRGB_PHY_ADDR 0x64
 
@@ -43,3 +36,5 @@
 #define LEDRGB_R_TO_BATT (0x1<<2)
 #define LEDRGB_CLK_DET_EN (0x1<<1) 
 #define LEDRGB_INT_CLK_EN (0x1<<0)
+
+#endif // LP5521_H_

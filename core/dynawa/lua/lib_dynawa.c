@@ -8,7 +8,7 @@ static int l_peek (lua_State *L) {
     uint32_t addr = (uint32_t)luaL_checkint(L, 1);
 
     uint8_t *memory = (uint8_t *)0;
-    if (!lua_isnone(L, 2)) {
+    if (!lua_isnoneornil(L, 2)) {
         luaL_checktype(L, 2, LUA_TUSERDATA);
         memory = (uint8_t *)lua_touserdata(L, 1);
     }
@@ -16,8 +16,16 @@ static int l_peek (lua_State *L) {
     return 1;
 }
 
+static int l_ticks (lua_State *L) {
+    TRACE_INFO("l_ticks\r\n");
+
+    lua_pushnumber(L, xTaskGetTickCount());
+    return 1;
+}
+
 static const struct luaL_reg dynawa [] = {
     {"peek", l_peek},
+    {"ticks", l_ticks},
     {NULL, NULL}  /* sentinel */
 };
 

@@ -7,6 +7,8 @@
 #include "projdefs.h"
 #include "portable.h"
 #include "trace.h"
+#include "sys/time.h"
+#include "sys/times.h"
 #include "ff.h"
 
 /************************** _sbrk_r *************************************
@@ -130,6 +132,7 @@ int _kill_r(struct _reent* r, int pid, int sig)
   return -1;
 }
 
+/*
 //MV
 
 _CLOCK_T_ _times_r(struct _reent *r, struct tms *buf)
@@ -142,6 +145,7 @@ int _gettimeofday_r(struct _reent *r, struct timeval *tp, void *tzp)
 {
   return -1;
 }
+*/
 
 int _link_r(struct _reent *r, const char *a, const char *b)
 {
@@ -645,10 +649,10 @@ _ssize_t _write_r (struct _reent *r, int fd, const void *ptr, size_t len)
 
         bytesUnWritten = len - i;
 */
-/*  MV
+#if 1
         int bytesWritten = UsbSerial_write(ptr, len);
         bytesUnWritten = len - bytesWritten;
-*/
+#else
         int i;
         char *p = (char*)ptr;
         for(i = 0; i < len; i++) {
@@ -658,6 +662,7 @@ _ssize_t _write_r (struct _reent *r, int fd, const void *ptr, size_t len)
             dbg_usart_putchar(*p++);
         } 
         bytesUnWritten = 0;
+#endif
       }
       break;
 
@@ -1012,7 +1017,6 @@ void _raise (void)
   return;
 }
 
-/*
 int _gettimeofday (struct timeval *tp, struct timezone *tzp)
 {
   if (tp)
@@ -1057,7 +1061,6 @@ clock_t _times (struct tms *tp)
 
   return timeval;
 };
-*/
 
 //int isatty (int fd)
 int _isatty (int fd)

@@ -136,3 +136,9 @@ uint8_t i2cMultipleReadByteEnd(void)
   while (!((pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER));
   return rec;
 }
+
+// MV
+void i2cMasterWrite(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t data) {
+    i2cMasterConf(i2c_addr, intaddr_size, int_addr, I2CMASTER_WRITE);
+    i2cWriteByte(data);
+}

@@ -51,8 +51,12 @@ void Run( ) // this task gets called as soon as we boot up.
   //System* sys = System::get();
   //int free_mem = sys->freeMemory();
 
+  UsbSerial_init();
+  while( !UsbSerial_isActive() )
+    Task_sleep(10);
+
   //Task_create( blinkLoop, "Blink", 400, 1, NULL );
-  Task_create( console, "console", 400, 1, NULL );
+  //Task_create( console, "console", 400, 1, NULL );
   //Task_create( bc, "BlueCore", 400, 1, NULL );
 #if defined(USB_COMPOSITE)
   //Task_create( usb, "USB", 1024, 1, NULL );
@@ -94,7 +98,7 @@ void Run( ) // this task gets called as soon as we boot up.
 
   // Starts the network up.  Will not return until a network is found...
   // Network_SetActive( true );
-    vTaskSuspend( NULL );
+    Task_delete( NULL );
 }
 
 // A very simple task...a good starting point for programming experiments.
