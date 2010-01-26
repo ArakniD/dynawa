@@ -144,7 +144,7 @@ void console( void* p )
     //LED_TOGGLE;
     Led_stateToggle(&led);
     if (n)
-      UsbSerial_write(b, n);
+      UsbSerial_write(b, n, -1);
   }
 }
 
