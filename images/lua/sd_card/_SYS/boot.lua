@@ -42,7 +42,7 @@ end
 function _G.private_main_handler(event)
 	--dynawa.debug.send_raw("PRIVATE_MAIN_HANDLER")
 	if event.button==3 and event.type=="button_hold" then
-		prdel.mrdel=666 --GENERATE CRASH
+		prdel.crash=666 --GENERATE CRASH
 	end
 	return nil --#todo
 end
