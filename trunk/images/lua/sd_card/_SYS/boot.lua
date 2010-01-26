@@ -3,12 +3,28 @@
 --Use "override.lua" to tune-up the boot process.
 
 print("START0")
+assert(dynawa, "Dynawa library not detected")
 
---assert(dynawa, "Dynawa library not detected")
-_G.dynawa={} --#todo
+--[[local bmp = {
+	[0] = dynawa.bitmap.new(160, 128, 0, 0, 255),
+	dynawa.bitmap.new(160, 128, 0, 255, 0),
+	dynawa.bitmap.new(160, 128, 255, 255, 0, 0),
+	dynawa.bitmap.new(160, 128, 0, 255, 255)
+}
+for i=1,25 do
+	dynawa.bitmap.show(bmp[i%4])
+end
+local i=0
+while true do
+	dynawa.bitmap.show(bmp[i%4])
+	local str=tostring(io.read(1))
+	io.write("GOT CHAR "..string.byte(str).."\n")
+	io.output():flush()
+	i=i+1
+end--]]
 
 --Note the following function can be called more than once because of "soft reboot".
---The flag "dynawa.already_booted" can be used to determine this.
+--The flag "dynawa.already_booted" can be used to determine if this is the case.
 function _G.boot_init()
 	dynawa.debug = nil
 	dynawa.dir = {root="/"}

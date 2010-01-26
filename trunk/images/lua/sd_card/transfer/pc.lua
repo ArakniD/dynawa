@@ -190,6 +190,7 @@ local function main_loop(fd_from)
 		else
 			print (id.." <"..line..">")
 		end
+
 	end
 end
 
@@ -199,7 +200,7 @@ print("Connecting to "..from_watch)
 while(true) do
 	local fd_from = io.open(from_watch)
 	if fd_from then
-		fd_to = assert(io.open(from_watch,"w"))
+		fd_to = assert(io.open(to_watch,"w"))
 		print("Connected")
 		main_loop(fd_from)
 	end
