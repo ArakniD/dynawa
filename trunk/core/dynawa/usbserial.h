@@ -63,7 +63,9 @@
 
 typedef struct {
   Semaphore readSemaphore;
+  Semaphore writeSemaphore;
   int justGot, rxBufCount;
+  int justWrote;
   char rxBuf[USB_SER_RX_BUF_LEN];
   char slipOutBuf[MAX_OUTGOING_SLIP_PACKET];
   char slipInBuf[MAX_INCOMING_SLIP_PACKET];
@@ -73,11 +75,9 @@ void UsbSerial_init( void );
 bool UsbSerial_isActive( void );
 //int UsbSerial_read( char *buffer, int length, int timeout = -1);
 int UsbSerial_read( char *buffer, int length, int timeout );
-int UsbSerial_write( const char *buffer, int length );
+int UsbSerial_write( const char *buffer, int length, int timeout );
 int UsbSerial_readSlip( char *buffer, int length );
 int UsbSerial_writeSlip( const char *buffer, int length );
-
-void onUsbData( void *pArg, unsigned char status, unsigned int transferred, unsigned int remaining);
 
 #endif // MAKE_CTRL_USB
 
