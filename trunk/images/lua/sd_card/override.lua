@@ -141,13 +141,17 @@ function dynawa.debug.main_handler(event)
 		if not dynawa.version then
 			dofile(dynawa.dir.sys.."wristos.lua")
 		end
-		dynawa.debug.send{event_received=event}
-		return private_main_handler(event)
+		--dynawa.debug.send{event_received=event}
+		return _G.private_main_handler(event)
 	end
 
 	local status,result=xpcall(protected,errfunc,event)
 	if not status then --runtime error caught
 		dynawa.debug.send{runtime_error=result}
 	end
+end
+
+_G.log = function(stuff)
+	dynawa.debug.send_raw("LOG: "..tostring(stuff))
 end
 
