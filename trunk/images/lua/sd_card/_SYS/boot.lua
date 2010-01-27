@@ -53,7 +53,7 @@ function _G.boot_init()
 		setmetatable(_G,mt)
 	end
 	mt.__newindex=function(table,key,value)
-		error("Attempt to create global variable '"..key.."' (forgot to use 'local'?)")
+		error("Attempt to create global value '"..key.."' (forgot to use 'local'?)",2)
 	end
 
 	if dynawa.debug.main_handler then		--We are in debug mode, use the main loop wrapper
