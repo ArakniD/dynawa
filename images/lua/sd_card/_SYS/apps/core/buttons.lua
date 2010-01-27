@@ -9,7 +9,7 @@ local function receive(event)
 		if switch then
 			dynawa.event.stop_receiving{event="button_down"}
 		else
-			dynawa.event.start_receiving{event="button_up", callback=receive}
+			dynawa.event.receive{event="button_down", callback=receive}
 		end
 	end
 end
