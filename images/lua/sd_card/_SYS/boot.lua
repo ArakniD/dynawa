@@ -28,6 +28,8 @@ end--]]
 function _G.boot_init()
 	dynawa.debug = nil
 	dynawa.dir = {root="/"}
+	dynawa.dir.sys=dynawa.dir.root .. "_SYS/"
+	_G.log = function() end
 	
 	--Try loading the (potential) boot override script stored in the default path
 	local override,err = loadfile("override.lua")
@@ -36,31 +38,39 @@ function _G.boot_init()
 		--Override script exists but cannot be loaded
 		error(err)
 	end
-
+	
 	if override then
 		--Execute the override script and clear its chunk to save memory
 		override()
 		override = nil
 	end
 
-	dynawa.dir.sys=dynawa.dir.root .. "_SYS/"
+	_G.handle_event = false
+	--Disallow unintended creating of global variables
+	local mt=getmetatable(_G)
+	if not mt then
+		mt={}
+		setmetatable(_G,mt)
+	end
+	mt.__newindex=function(table,key,value)
+		error("Attempt to create global variable '"..key.."' (forgot to use 'local'?)")
+	end
 
-	if dynawa.debug.main_handler then
+	if dynawa.debug.main_handler then		--We are in debug mode, use the main loop wrapper
 		_G.handle_event = dynawa.debug.main_handler
-	else
-		_G.handle_event = _G.private_main_handler		
+		dynawa.version=nil 					--Forces the WristOS to be reloaded later in main_handler (by xpcall)
+	else									--Not in debug mode
+		dofile(dynawa.dir.sys.."wristos.lua") 
+		_G.handle_event = _G.private_main_handler
 	end
 	
 	dynawa.already_booted = true
-	dynawa.version=nil --Forces the WristOS to be reloaded in main_handler
 end
 
+--The following dummy definition should be overridden by either override.lua or wristos.lua, if all compiles well
 function _G.private_main_handler(event)
-	--dynawa.debug.send_raw("PRIVATE_MAIN_HANDLER")
-	if event.button==3 and event.type=="button_hold" then
-		prdel.crash=666 --GENERATE CRASH
-	end
-	return nil --#todo
+	print("DUMMY_PRIVATE_MAIN_HANDLER")
+	return nil
 end
 
 --Here we go...

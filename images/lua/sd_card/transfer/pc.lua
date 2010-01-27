@@ -161,13 +161,14 @@ local function main_loop(fd_from)
 					table.insert(chunks,str)
 				end
 			until not chunk
-			local data = decode(table.concat(chunks))
-			print("Got data: "..data)
-			data = loadstring(data)()
+			local data0 = decode(table.concat(chunks))
+			local data = loadstring(data0)()
 			assert(type(data)=="table")
 			if data.runtime_error then
 				print("*** RUNTIME ERROR ***")
 				print (data.runtime_error)
+			else
+				print("*** Unknown data: "..data0)
 			end
 		elseif line=="WHATS_NEW?" then
 			local to_send={}
