@@ -22,19 +22,42 @@ local buttons_flip = {
 function dynawa.button_event(event)
 	local button=buttons_flip[dynawa.display.flipped][assert(event.button)]
 	assert(button)
-	log(event.type.." "..button)
+	dynawa.event.send {type=event.type,button=button}
 end
 
 dofile(dynawa.dir.sys.."scheduler.lua")
+
+local function dispatch_queue()
+	local queue = assert(dynawa.event.queue)
+	local listeners = assert(dynawa.event.listeners)
+	local sanity = 999
+	while #queue > 0 do
+		sanity = sanity - 1
+		assert(sanity>0,"Unable to uprge event queue, probably infinite loop")
+		local event=table.remove(queue,1)
+		--log("QUEUE: Dispatching event "..event.type)
+		local typ=assert(event.type)
+		if listeners[typ] then
+			for task, params in pairs(listeners[typ]) do
+				rawset(_G,"my",task)
+				params.callback(event)
+				rawset(_G,"my",nil)
+			end
+		end
+	end
+end
 
 --This is the "real" main handler for incoming hardware events
 _G.private_main_handler = function(event)
 	local typ = assert(event.type, "Event has no type")
 	local vector = assert(dynawa.event_vectors[typ])
 	if vector then
-		local result = vector(event)
-		return result
+		local result = vector(event) --handle the conversion of incoming raw event to Lua event
+	else
+		log("Unknown event type: "..typ)
 	end
-	log("Unknown event type: "..typ)
+	dispatch_queue()
 end
+
+dynawa.app.start("/_sys/apps/core/")
 
