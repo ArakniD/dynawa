@@ -44,144 +44,26 @@ extern int errno;
 extern char end[];
 extern char __heap_end__[];
 static char *heap_ptr; // Points to current end of the heap
+
 void* _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
+//void* _sbrk(ptrdiff_t nbytes)
 {
-    (void)r;
+    //(void)r;
     char *base;         //  errno should be set to  ENOMEM on error
 
-    TRACE_INFO("_sbrk_r %x %d\r\n", r, nbytes);
+    TRACE_INFO("_sbrk %d\r\n", nbytes);
     if (!heap_ptr)      //  Initialize if first time through.
         heap_ptr = end;
 
     if (heap_ptr + nbytes > __heap_end__) {
-        errno = ENOMEM;
+        //errno = ENOMEM;
+        r->_errno = ENOMEM;
         return -1;
     }
     base = heap_ptr;    //  Point to end of heap.
     heap_ptr += nbytes; //  Increase heap.
     return base;        //  Return pointer to start of new heap area.
 }
-
-/*
-   int _open_r (struct _reent *r, const char *buf, int flags, int mode)
-   {
-   (void) r;
-   (void) buf;
-   (void) flags;
-   (void) mode;
-   TRACE_INFO("_open_r %x %s %x %x\r\n", r, buf, flags, mode);
-   return -1;
-   }
-   */
-/*
-   int _isatty( int fd )
-   { 
-   return -1;
-   }
-   */
-_off_t _lseek_r ( struct _reent *ptr, int fd, _off_t offset, int whence )
-{
-    (void) ptr;
-    (void) fd;
-    (void) offset;
-    (void) whence;
-    return -1;
-}
-
-/*
-   _ssize_t _write_r (struct _reent *r, int fd, const void *buf, size_t nbytes)
-   {
-   TRACE_INFO("_write_r %x %x %x %d\r\n", r, fd, buf, nbytes);
-   return UsbSerial_write(buf, nbytes, xBlockTime);
-//return nbytes;
-}
-*/
-/*
-   int _close_r (struct _reent *r, int fd)
-   {
-   (void) r;
-   (void) fd;
-   return -1;
-   }
-   */
-/*
-   _ssize_t _read_r (struct _reent *r, int fd, void *buf, size_t nbytes)
-   {
-   TRACE_INFO("_read_r %x %x %x %d\r\n", r, fd, buf, nbytes);
-//TRACE_INFO("_read_r\r\n");
-return UsbSerial_read(buf, nbytes, xBlockTime);
-//strcpy(buf, "xrint()\n");
-//return 8;
-//for(;;);
-//  return -1;
-}
-*/
-int _fstat_r (struct _reent *r, int fd, struct stat *buf)
-{
-    (void) r;
-    (void) fd;
-    (void) buf;
-    return -1;
-}
-
-int _kill_r(struct _reent* r, int pid, int sig)
-{
-    (void) r;
-    (void) pid;
-    (void) sig;
-    return -1;
-}
-
-/*
-//MV
-
-_CLOCK_T_ _times_r(struct _reent *r, struct tms *buf)
-{
-return -1;
-}
-
-//int _gettimeofday_r(struct _reent *r, struct timeval *tp, struct timezone *tzp)
-int _gettimeofday_r(struct _reent *r, struct timeval *tp, void *tzp)
-{
-return -1;
-}
-*/
-
-int _link_r(struct _reent *r, const char *a, const char *b)
-{
-    //errno = EMLINK;
-    return -1; 
-}
-
-int _unlink_r(struct _reent *r, const char *file)
-{
-    //errno = ENOENT;
-    return -1; 
-}
-
-int _getpid_r(struct _reent *r)
-{
-    return 1;
-}
-/*
-   int _exit()
-   {
-   }
-   */
-
-
-/*
-   void* malloc( size_t size )
-   {
-   return pvPortMalloc( size );
-   }
-
-   void free( void* memory )
-   {
-   vPortFree( memory );
-   }
-   */
-
 
 //
 //  $Id: syscalls.c 351 2009-01-12 03:05:14Z jcw $
@@ -459,7 +341,8 @@ int _chmod (const char *path, mode_t mode)
 #endif
 }
 
-_ssize_t _read_r (struct _reent *r, int fd, void *ptr, size_t len)
+//_ssize_t _read_r (struct _reent *r, int fd, void *ptr, size_t len)
+_ssize_t _read (int fd, void *ptr, size_t len)
 {
     int i;
     int fh;
@@ -467,7 +350,7 @@ _ssize_t _read_r (struct _reent *r, int fd, void *ptr, size_t len)
     portTickType xBlockTime;
     int bytesUnRead = -1;
 
-    TRACE_INFO("_read_r %x %x %x %d\r\n", r, fd, ptr, len);
+    TRACE_INFO("_read %x %x %d\r\n", fd, ptr, len);
     if ((slot = findslot (fh = remap_handle (fd))) == MAX_OPEN_FILES)
         return set_errno (EBADF);
 
@@ -596,7 +479,8 @@ int _lseek (int fd, int ptr, int dir)
 #endif
 }
 
-_ssize_t _write_r (struct _reent *r, int fd, const void *ptr, size_t len)
+//_ssize_t _write_r (struct _reent *r, int fd, const void *ptr, size_t len)
+_ssize_t _write (int fd, const void *ptr, size_t len)
 {
     int i;
     int fh;
@@ -604,7 +488,7 @@ _ssize_t _write_r (struct _reent *r, int fd, const void *ptr, size_t len)
     portTickType xBlockTime;
     int bytesUnWritten = -1;
 
-    TRACE_INFO("_write_r %x %x %x %d\r\n", r, fd, ptr, len);
+    TRACE_INFO("_write %x %x %d\r\n", fd, ptr, len);
     if ((slot = findslot (fh = remap_handle (fd))) == MAX_OPEN_FILES) {
         TRACE_ERROR("MAX_OPEN_FILES\r\n");
         return set_errno (EBADF);
@@ -775,11 +659,14 @@ bytesUnWritten = len - i;
 }
 
 //int _open_r (struct _reent *r, const char *path, int flags, ...)
-int _open_r (struct _reent *r, const char *path, int flags, int mode)
+//int _open_r (struct _reent *r, const char *path, int flags, int mode)
+int _open (const char *path, int flags, int mode)
 {
     int fh = 0;
     int slot;
 
+    TRACE_INFO("_open %s %x %x\r\n", path, flags, mode);
+    
     if ((slot = findslot (-1)) == MAX_OPEN_FILES)
         return set_errno (ENFILE);
 
@@ -865,9 +752,12 @@ int _open_r (struct _reent *r, const char *path, int flags, int mode)
     return fh >= 0 ? (fh + FILE_HANDLE_OFFSET) : -1;
 }
 
-int _close_r (struct _reent *r, int fd)
+//int _close_r (struct _reent *r, int fd)
+int _close (int fd)
 {
     int slot;
+
+    TRACE_INFO("_close %x\r\n", fd);
 
     if ((slot = findslot (remap_handle (fd))) == MAX_OPEN_FILES)
         return set_errno (EBADF);

@@ -69,7 +69,9 @@ static int l_from_png_file (lua_State *L) {
     alloc_context.bmp = NULL;
 
     // TODO error handling
-    read_png(filename, alloc_png_rowbytes, &alloc_context, NULL, NULL);
+    if(read_png(filename, alloc_png_rowbytes, &alloc_context, NULL, NULL)) {
+    // error
+    }
 
     return 1;
 }
@@ -104,7 +106,9 @@ static int l_from_png (lua_State *L) {
     read_io_context.offset = 0;
 
     // TODO error handling
-    read_png(NULL, alloc_png_rowbytes, &alloc_context, png_read_data_fn, &read_io_context);
+    if(read_png(NULL, alloc_png_rowbytes, &alloc_context, png_read_data_fn, &read_io_context)) {
+    // error
+    }
 
     return 1;
 }
