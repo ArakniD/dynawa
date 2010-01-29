@@ -3,8 +3,9 @@
 
 MEMORY 
 {
-	xdatasram (W!RX) : ORIGIN = 0x10080000, LENGTH = 0x400000
-    	xcodesram (RX) : ORIGIN = 0x10000000, LENGTH = 0x70000
+    /* MV 64Mb = 8MB = 0x800000 */
+	xdatasram (W!RX) : ORIGIN = 0x10080000, LENGTH = 0x780000
+    xcodesram (RX) : ORIGIN = 0x10000000, LENGTH = 0x80000
 	sram (W!RX) : ORIGIN = 0x0, LENGTH = 0x8000
 	/* ram	: ORIGIN = 0x00200000, LENGTH = 64K */
 }

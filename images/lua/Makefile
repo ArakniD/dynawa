@@ -7,6 +7,7 @@ IMAGE_NAME = lua
 # set DEBUG to -g to include debug info, otherwise leave blank
 DEBUG_OPTS = 
 # available optimization levels: -O0, -O1, -O2, -O3, -Os
+#OPTIMIZATION = -Os -ffast-math
 OPTIMIZATION = -Os -ffast-math
 
 CONFIG_OPTS = \
@@ -193,7 +194,6 @@ THUMB_SRC= \
   $(UTILS)/rprintf.c \
   $(UTILS)/time.c \
   $(UTILS)/delay.c \
-  $(SCREEN)/screen.c \
   $(SCREEN)/font.c \
   $(LUA)/lapi.c \
   $(LUA)/lauxlib.c \
@@ -225,6 +225,7 @@ THUMB_SRC= \
   $(LUA)/lvm.c \
   $(LUA)/lzio.c \
   $(LUA)/print.c \
+  $(SCREEN)/screen.c \
   $(DYNAWA)/rtos.c \
   $(DYNAWA)/usbserial.c \
   $(DYNAWA)/serial.c \
