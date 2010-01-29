@@ -12,6 +12,7 @@
 //#include <inttypes.h>
 #include <hardware_conf.h>
 #include <firmware_conf.h>
+#include <peripherals/pmc/pmc.h>
 #include <debug/trace.h>
 #include "i2c.h"
 
@@ -138,7 +139,26 @@ uint8_t i2cMultipleReadByteEnd(void)
 }
 
 // MV
+
+// TODO: add mutex
+static unsigned int i2c_open_count = 0;
+
+int i2c_open() {
+    if(!i2c_open_count++)
+        pPMC->PMC_PCER = ( (uint32_t) 1 << AT91C_ID_TWI );
+}
+
+int i2c_close() {
+    if(i2c_open_count && --i2c_open_count == 0)
+        pPMC->PMC_PCDR = ( (uint32_t) 1 << AT91C_ID_TWI );
+}
+
 void i2cMasterWrite(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t data) {
     i2cMasterConf(i2c_addr, intaddr_size, int_addr, I2CMASTER_WRITE);
     i2cWriteByte(data);
+}
+
+uint8_t i2cMasterRead(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr) {
+    i2cMasterConf(i2c_addr, intaddr_size, int_addr, I2CMASTER_READ);
+    return i2cReadByte();
 }

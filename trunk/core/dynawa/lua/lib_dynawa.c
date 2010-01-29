@@ -10,7 +10,7 @@ static int l_peek (lua_State *L) {
     uint8_t *memory = (uint8_t *)0;
     if (!lua_isnoneornil(L, 2)) {
         luaL_checktype(L, 2, LUA_TUSERDATA);
-        memory = (uint8_t *)lua_touserdata(L, 1);
+        memory = (uint8_t *)lua_touserdata(L, 2);
     }
     lua_pushnumber(L, memory[addr]);
     return 1;

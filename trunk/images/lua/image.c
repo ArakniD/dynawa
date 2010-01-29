@@ -1,10 +1,10 @@
 /*
-	make.c
-	
-	make.c is the main project file.  The Run( ) task gets called on bootup, so stick any initialization stuff in there.
-	In Heavy, by default we set the USB, OSC, and Network systems active, but you don't need to if you aren't using them.
-	Furthermore, only register the OSC subsystems you need - by default, we register all of them.
-*/
+   make.c
+
+   make.c is the main project file.  The Run( ) task gets called on bootup, so stick any initialization stuff in there.
+   In Heavy, by default we set the USB, OSC, and Network systems active, but you don't need to if you aren't using them.
+   Furthermore, only register the OSC subsystems you need - by default, we register all of them.
+   */
 
 #include "core.h"
 #include "led.h"
@@ -45,59 +45,87 @@ void panic(void) {
     while(1);
 }
 
+void test() {
+    unsigned long ticks = xTaskGetTickCount();
+    int i;
+    for(i = 0; i < 100; i++) {
+        scrWriteBitmapRGBA(0, 0, 159, 127, (uint8_t*)0);
+    }
+    ticks = xTaskGetTickCount() - ticks;
+
+    TRACE_INFO("test1 %d\r\n", ticks);
+
+    ticks = xTaskGetTickCount();
+    for(i = 0; i < 100; i++) {
+        scrWriteBitmapRGBA(0, 0, 159, 127, (uint8_t*)0x10080000);
+    }
+    ticks = xTaskGetTickCount() - ticks;
+
+    TRACE_INFO("test2 %d\r\n", ticks);
+}
+
 void Run( ) // this task gets called as soon as we boot up.
 {
-  //TRACE_INFO("Run\n\r");
-  //System* sys = System::get();
-  //int free_mem = sys->freeMemory();
+    //TRACE_INFO("Run\n\r");
+    //System* sys = System::get();
+    //int free_mem = sys->freeMemory();
 
-  UsbSerial_init();
-  while( !UsbSerial_isActive() )
-    Task_sleep(10);
 
-  //Task_create( blinkLoop, "Blink", 400, 1, NULL );
-  //Task_create( console, "console", 400, 1, NULL );
-  //Task_create( bc, "BlueCore", 400, 1, NULL );
+    //test();
+
+    rtc_open();
+    //rtc_write();
+    //rtc_read();
+    TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
+    rtc_close();
+
+    UsbSerial_init();
+    while( !UsbSerial_isActive() )
+        Task_sleep(10);
+
+    //Task_create( blinkLoop, "Blink", 400, 1, NULL );
+    //Task_create( console, "console", 400, 1, NULL );
+    //Task_create( bc, "BlueCore", 400, 1, NULL );
 #if defined(USB_COMPOSITE)
-  //Task_create( usb, "USB", 1024, 1, NULL );
+    //Task_create( usb, "USB", 1024, 1, NULL );
 #else
-  //Task_create( lua, "LUA", 8192, 1, NULL );
+    //Task_create( lua, "LUA", 8192, 1, NULL );
 #endif
-  Task_create( lua_event_loop, "LUA_Event_loop", 8192, 1, NULL );
-  //monitorTaskStart();
+    Task_create( lua_event_loop, "LUA_Event_loop", 8192, 1, NULL );
+    //monitorTaskStart();
 
-  // MV bcsp task requires higher pri??? why?
-  Task_create( bcsp, "BCSP", 16000, 2, NULL );
+    // MV bcsp task requires higher pri??? why?
+    //Task_create( bcsp, "BCSP", 16000, 2, NULL );
 
-  //Serial usart(0);
+    //Serial usart(0);
 
-  //UsbSerial* usb = UsbSerial::get();
-  //MV Network* net = Network::get();
-  
-  // Fire up the OSC system and register the subsystems you want to use
-//  Osc_SetActive( true, true, true, true );
-//  // make sure OSC_SUBSYSTEM_COUNT (osc.h) is large enough to accomodate them all
-//  //Osc_RegisterSubsystem( AppLedOsc_GetName(), AppLedOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( DipSwitchOsc_GetName(), DipSwitchOsc_ReceiveMessage, DipSwitchOsc_Async );
-//  Osc_RegisterSubsystem( ServoOsc_GetName(), ServoOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( AnalogInOsc_GetName(), AnalogInOsc_ReceiveMessage, AnalogInOsc_Async );
-//  Osc_RegisterSubsystem( DigitalOutOsc_GetName(), DigitalOutOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( DigitalInOsc_GetName(), DigitalInOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( MotorOsc_GetName(), MotorOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( PwmOutOsc_GetName(), PwmOutOsc_ReceiveMessage, NULL );
-//  //Osc_RegisterSubsystem( LedOsc_GetName(), LedOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( DebugOsc_GetName(), DebugOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( SystemOsc_GetName(), SystemOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( NetworkOsc_GetName(), NetworkOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( SerialOsc_GetName(), SerialOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( IoOsc_GetName(), IoOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( StepperOsc_GetName(), StepperOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( XBeeOsc_GetName(), XBeeOsc_ReceiveMessage, XBeeOsc_Async );
-//  Osc_RegisterSubsystem( XBeeConfigOsc_GetName(), XBeeConfigOsc_ReceiveMessage, NULL );
-//  Osc_RegisterSubsystem( WebServerOsc_GetName(), WebServerOsc_ReceiveMessage, NULL );
+    //UsbSerial* usb = UsbSerial::get();
+    //MV Network* net = Network::get();
 
-  // Starts the network up.  Will not return until a network is found...
-  // Network_SetActive( true );
+    // Fire up the OSC system and register the subsystems you want to use
+    //  Osc_SetActive( true, true, true, true );
+    //  // make sure OSC_SUBSYSTEM_COUNT (osc.h) is large enough to accomodate them all
+    //  //Osc_RegisterSubsystem( AppLedOsc_GetName(), AppLedOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( DipSwitchOsc_GetName(), DipSwitchOsc_ReceiveMessage, DipSwitchOsc_Async );
+    //  Osc_RegisterSubsystem( ServoOsc_GetName(), ServoOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( AnalogInOsc_GetName(), AnalogInOsc_ReceiveMessage, AnalogInOsc_Async );
+    //  Osc_RegisterSubsystem( DigitalOutOsc_GetName(), DigitalOutOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( DigitalInOsc_GetName(), DigitalInOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( MotorOsc_GetName(), MotorOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( PwmOutOsc_GetName(), PwmOutOsc_ReceiveMessage, NULL );
+    //  //Osc_RegisterSubsystem( LedOsc_GetName(), LedOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( DebugOsc_GetName(), DebugOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( SystemOsc_GetName(), SystemOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( NetworkOsc_GetName(), NetworkOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( SerialOsc_GetName(), SerialOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( IoOsc_GetName(), IoOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( StepperOsc_GetName(), StepperOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( XBeeOsc_GetName(), XBeeOsc_ReceiveMessage, XBeeOsc_Async );
+    //  Osc_RegisterSubsystem( XBeeConfigOsc_GetName(), XBeeConfigOsc_ReceiveMessage, NULL );
+    //  Osc_RegisterSubsystem( WebServerOsc_GetName(), WebServerOsc_ReceiveMessage, NULL );
+
+    // Starts the network up.  Will not return until a network is found...
+    // Network_SetActive( true );
     Task_delete( NULL );
 }
 
@@ -107,84 +135,84 @@ void Run( ) // this task gets called as soon as we boot up.
 
 void led_loop ()
 {
-  Io led;
-  Led_init(&led);
+    Io led;
+    Led_init(&led);
 
-  while ( true )
-  {
-    Led_stateToggle(&led);
-    Task_sleep( 1000 ); 
-  }
+    while ( true )
+    {
+        Led_stateToggle(&led);
+        Task_sleep( 1000 ); 
+    }
 }
 
 void blinkLoop( void* p )
 {
-  (void)p;
-  led_loop();
+    (void)p;
+    led_loop();
 }
 
 
 void console( void* p )
 {
-  (void)p;
-  //Led led;
-  Io led;
-  Led_init(&led);
-  //led.setState( 0 );
+    (void)p;
+    //Led led;
+    Io led;
+    Led_init(&led);
+    //led.setState( 0 );
 
-  UsbSerial_init();
-  while( !UsbSerial_isActive() ) // while usb is not active
-    Task_sleep(10);        // wait around for a little bit
+    UsbSerial_init();
+    while( !UsbSerial_isActive() ) // while usb is not active
+        Task_sleep(10);        // wait around for a little bit
 
-  char b[10];
-  int n;
-  while(1) {
-    n = UsbSerial_read(b, 10, -1);
-    //led.stateToggle();
-    //LED_TOGGLE;
-    Led_stateToggle(&led);
-    if (n)
-      UsbSerial_write(b, n, -1);
-  }
+    char b[10];
+    int n;
+    while(1) {
+        n = UsbSerial_read(b, 10, -1);
+        //led.stateToggle();
+        //LED_TOGGLE;
+        Led_stateToggle(&led);
+        if (n)
+            UsbSerial_write(b, n, -1);
+    }
 }
 
 void bc( void* p )
 {
-  (void)p;
-  //Led led;
-  Io led;
-  Led_init(&led);
-  //led.setState( 0 );
+    (void)p;
+    //Led led;
+    Io led;
+    Led_init(&led);
+    //led.setState( 0 );
 
-  TRACE_INFO("bc1\r\n");
-  Serial_init(0, 100);
-  TRACE_INFO("bc2\r\n");
+    TRACE_INFO("bc1\r\n");
+    Serial_init(0, 100);
+    TRACE_INFO("bc2\r\n");
 
-  char b[10];
-  int n;
-  //while(n = Serial_read(0, b, 10, -1)) {
-  while(1) {
-    n = Serial_read(0, b, 10, 1000);
-    //led.stateToggle();
-    //LED_TOGGLE;
-    Led_stateToggle(&led);
-    if (n) 
-      Serial_write(0, b, n, -1);
-  }
+    char b[10];
+    int n;
+    //while(n = Serial_read(0, b, 10, -1)) {
+    while(1) {
+        n = Serial_read(0, b, 10, 1000);
+        //led.stateToggle();
+        //LED_TOGGLE;
+        Led_stateToggle(&led);
+        if (n) 
+            Serial_write(0, b, n, -1);
+    }
 }
 
 void lua( void* p )
 {
-  (void)p;
+    (void)p;
 
-  TRACE_INFO("lua\r\n");
-  UsbSerial_init();
-  while( !UsbSerial_isActive() ) // while usb is not active
-    Task_sleep(10);        // wait around for a little bit
+    TRACE_INFO("lua\r\n");
+    UsbSerial_init();
+    while( !UsbSerial_isActive() ) // while usb is not active
+        Task_sleep(10);        // wait around for a little bit
 
-  lua_main();
+    lua_main();
 
-  led_loop();
+    led_loop();
 }
 
 #if defined(USB_COMPOSITE)
@@ -253,11 +281,11 @@ void MSDDInitialize()
 {
     // Memory initialization
     TRACE_INFO("LUN SD\n\r");
- 
+
     uint32_t sd_size = sd_info();
     SD_Initialize(&(medias[numMedias]), sd_size);
     LUN_Init(&(luns[numMedias]), &(medias[numMedias]),
-    msdBuffer, 0, sd_size, BLOCK_SIZE);
+            msdBuffer, 0, sd_size, BLOCK_SIZE);
     numMedias++;
 
     //ASSERT(numMedias > 0, "Error: No media defined.\n\r");
@@ -267,87 +295,87 @@ void MSDDInitialize()
     MSDDFunctionDriver_Initialize(luns, numMedias);
     //MSDDriver_Initialize(luns, numMedias);
 }
-    
+
 void usb( void* p )
 {
-  (void)p;
+    (void)p;
 
-  TRACE_INFO("usb\r\n");
+    TRACE_INFO("usb\r\n");
 
-/*
-  spi_init();
-  Task_sleep(200);
-  if ( sd_init() != SD_OK ) {
-    TRACE_ERROR("SD card init failed!\r\n");
-  }
-*/
-  UsbSerial_init();
-  MSDDInitialize();
-  COMPOSITEDDriver_Initialize();
+    /*
+       spi_init();
+       Task_sleep(200);
+       if ( sd_init() != SD_OK ) {
+       TRACE_ERROR("SD card init failed!\r\n");
+       }
+       */
+    UsbSerial_init();
+    MSDDInitialize();
+    COMPOSITEDDriver_Initialize();
 
-  unsigned int count = 0;
-  bool childrenStarted = false;
-  while(1) {
-    if ( USBD_GetState() < USBD_STATE_CONFIGURED ) {
-      TRACE_INFO("path 1\r\n");
-      USBD_Connect();
+    unsigned int count = 0;
+    bool childrenStarted = false;
+    while(1) {
+        if ( USBD_GetState() < USBD_STATE_CONFIGURED ) {
+            TRACE_INFO("path 1\r\n");
+            USBD_Connect();
 
-      while( USBD_GetState() < USBD_STATE_CONFIGURED ) { // while usb is not active
-        Task_sleep(10);        // wait around for a little bit
-      }
-      TRACE_INFO("connected\r\n");
-      if (! childrenStarted) {
-        childrenStarted = true;
-        //Task_create( usb_msd, "USB_MSD", 1024, 1, NULL );
-        monitorTaskStart();
-      }
-      /*
-      while(1) {
-        Task_sleep(10000);
-      }
-      */
-    } else {
-      //TRACE_INFO("path 2\r\n");
-      MSDDriver_StateMachine();
+            while( USBD_GetState() < USBD_STATE_CONFIGURED ) { // while usb is not active
+                Task_sleep(10);        // wait around for a little bit
+            }
+            TRACE_INFO("connected\r\n");
+            if (! childrenStarted) {
+                childrenStarted = true;
+                //Task_create( usb_msd, "USB_MSD", 1024, 1, NULL );
+                monitorTaskStart();
+            }
+            /*
+               while(1) {
+               Task_sleep(10000);
+               }
+               */
+        } else {
+            //TRACE_INFO("path 2\r\n");
+            MSDDriver_StateMachine();
+        }
+        if( USBState == STATE_SUSPEND ) {
+            TRACE_INFO("suspend  !\n\r");
+            //LowPowerMode();
+            USBState = STATE_IDLE;
+        }
+        if( USBState == STATE_RESUME ) {
+            // Return in normal MODE
+            TRACE_INFO("resume !\n\r");
+            //NormalPowerMode();
+            USBState = STATE_IDLE;
+        }
+        //TRACE_INFO("loop %d\r\n", count);
+        count++;
     }
-    if( USBState == STATE_SUSPEND ) {
-      TRACE_INFO("suspend  !\n\r");
-      //LowPowerMode();
-      USBState = STATE_IDLE;
-    }
-    if( USBState == STATE_RESUME ) {
-      // Return in normal MODE
-      TRACE_INFO("resume !\n\r");
-      //NormalPowerMode();
-      USBState = STATE_IDLE;
-    }
-    //TRACE_INFO("loop %d\r\n", count);
-    count++;
-  }
 
-  led_loop();
+    led_loop();
 }
 
 void usb_msd( void* p )
 {
-  (void)p;
+    (void)p;
 
-  TRACE_INFO("usb_msd\r\n");
+    TRACE_INFO("usb_msd\r\n");
 
-  while(1) {
-      MSDDriver_StateMachine();
-  }
+    while(1) {
+        MSDDriver_StateMachine();
+    }
 }
 #endif
 
 
 void bcsp( void* p )
 {
-  (void)p;
+    (void)p;
 
-  TRACE_INFO("bcsp\r\n");
+    TRACE_INFO("bcsp\r\n");
 
-  bcsp_main();
+    bcsp_main();
 }
 
 
