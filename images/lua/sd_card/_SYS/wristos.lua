@@ -1,5 +1,9 @@
 dynawa.version = {wristOS="0.1"}
 package.loaded.dynawa = dynawa
+
+--Start boot animation
+dofile(dynawa.dir.sys.."boot_anim/boot_anim.lua")	
+
 --create the table for handling the lowest level incoming hardware events
 local tbl={}
 dynawa.event_vectors = tbl
@@ -9,8 +13,11 @@ end
 tbl.button_up = tbl.button_down
 tbl.button_hold = tbl.button_down
 
---DISPLAY init
-dynawa.display={flipped=false}
+--DISPLAY + BITMAP init
+dofile(dynawa.dir.sys.."bitmap.lua")
+
+--SCHEDULER (apps + tasks + events) init
+dofile(dynawa.dir.sys.."scheduler.lua")
 
 --This table maps the 5 buttons from integers to strings, according to watch rotation
 local buttons_flip = {
@@ -24,8 +31,6 @@ function dynawa.button_event(event)
 	assert(button)
 	dynawa.event.send {type=event.type,button=button}
 end
-
-dofile(dynawa.dir.sys.."scheduler.lua")
 
 local function dispatch_queue()
 	local queue = assert(dynawa.event.queue)
@@ -60,4 +65,8 @@ _G.private_main_handler = function(event)
 end
 
 dynawa.app.start("/_sys/apps/core/")
+
+--Discard boot animation script
+_G.boot_anim = nil
+	
 
