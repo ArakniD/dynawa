@@ -26,7 +26,10 @@ dynawa.bitmap.pixel = function(bmap, x, y)
 end
 
 dynawa.bitmap.parse_font = function (bmap)
+	local white = dynawa.bitmap.new(20,20,255,255,255)
+	local mask = assert(dynawa.bitmap.mask)
 	local chars={}
+	local widths={}
 	local char=32
 	local x=0
 	local lastx=-1
@@ -40,10 +43,14 @@ dynawa.bitmap.parse_font = function (bmap)
 			local width = x-lastx-1
 			assert(width >= 1)
 			--log("Char dimensions: "..width.."x"..height)
-			chars[char] = dynawa.bitmap.copy(bmap,lastx,0,width,height)
+			local char_str = string.char(char)
+			local char_bmp = dynawa.bitmap.copy(bmap,lastx+1,0,width,height)
+			char_bmp = mask(char_bmp,white,0,0)
+			chars[char_str] = char_bmp
+			widths[char_str] = width
 			lastx = x
 			char = char + 1
-			if char % 5 == 0 then
+			if char % 8 == 0 then
 				boot_anim()
 			end
 			if char > 128 or x > 500 then error("FUCK") end
@@ -54,17 +61,68 @@ dynawa.bitmap.parse_font = function (bmap)
 		end
 	until done
 	assert (char==128)
-	return chars
+	return {chars=chars,widths=widths,height=height}
 end
 
-local bm=dynawa.bitmap.from_png_file("/_sys/fonts/default.png")
---[[for i=0,10 do
-	log("peek "..i..": "..dynawa.peek(i,bm))
-end]]
-dynawa.bitmap.parse_font(bm)
---[[for x=0,20 do
-	local r,g,b,a = dynawa.bitmap.pixel(bm,x,0)
-	log("Pixel at x="..x..": b="..b..", a="..a..", sum="..r+g+b+a)
-end]]
-log("font parsed")
+--Load and parse font
+dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default.png"))
+
+-- Transparent bitmap for printing
+local transparent_background = dynawa.bitmap.new(160,128,0,0,0,0)
+
+-- Printing characters
+dynawa.bitmap.text_lines = function(lines,font)
+	assert(type(lines)=="string","First parameter is not string")
+	font = font or assert(dynawa.bitmap.default_font)
+	local x,y=0,0
+	local combine = dynawa.bitmap.combine
+	local result
+	local start = true
+	local max_x = 0
+	(lines.."\n"):gsub("(.-)\n",function(line)
+		--log("line="..line)
+		for i=1, #line do
+			local chr = line:sub(i,i)
+			if start then
+				start = false
+				result = combine(transparent_background,font.chars[chr],0,0,true)
+			else
+				combine(result,font.chars[chr],x,y)
+			end
+			x = x + font.widths[chr] + 1
+		end
+		y = y + font.height
+		--log("x is "..x)
+		if x > max_x then
+			max_x = x
+		end
+		x = 0
+	end)
+	log ("Dimensions: "..(max_x-1).."x"..y)
+	return dynawa.bitmap.copy(result,0,0,max_x-1,y)
+end
+
+local screen = dynawa.bitmap.new(160,128,0,0,0)
+local text = [[
+TCH1 from Dynawa is the
+first completely customizable
+wrist computer system with
+full hardware documentation
+and open source code.
+This micro-computer is
+equipped with RISC processor,
+expandable storage, full-color 
+display, Bluetooth radio,
+accelerometer, micro-USB
+connector and sound output.
+TCH1 is primarily intended to be
+used as a smart watch / terminal
+communicating with your mobile
+phone via Bluetooth but if you 
+intend, you can use it for
+wildly different things.
+]]
+dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines(text),0,0)
+dynawa.bitmap.show(screen)
+
 
