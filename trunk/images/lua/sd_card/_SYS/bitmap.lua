@@ -1,6 +1,7 @@
 --BITMAP system init (also printing)
 
 dynawa.display={flipped=false}
+dynawa.display.size={width=160,height=128}
 
 dynawa.bitmap.info = function(bmap)
 	assert(type(bmap)=="userdata")
@@ -64,6 +65,7 @@ dynawa.bitmap.parse_font = function (bmap)
 	return {chars=chars,widths=widths,height=height}
 end
 
+--[[
 --Load and parse font
 dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default10.png"))
 
@@ -98,12 +100,12 @@ dynawa.bitmap.text_lines = function(lines,font)
 		end
 		x = 0
 	end)
-	log ("Dimensions: "..(max_x-1).."x"..y)
+	--log ("Dimensions: "..(max_x-1).."x"..y)
 	return dynawa.bitmap.copy(result,0,0,max_x-1,y)
 end
 
 local screen = dynawa.bitmap.new(160,128,0,0,0)
-local text = [[
+local text = [=[
 TCH1 from Dynawa is the
 first completely customizable
 wrist computer system with
@@ -119,8 +121,8 @@ TCH1 is primarily intended to
 be used as a smart watch /
 terminal communicating with
 your mobile phone via Bluetooth.
-]]
+]=]
 dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines(text),0,0)
 dynawa.bitmap.show(screen)
-
+]]
 
