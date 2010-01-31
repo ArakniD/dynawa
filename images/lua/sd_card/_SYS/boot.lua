@@ -2,7 +2,6 @@
 --DO NOT MODIFY THIS FILE.
 --Use "override.lua" to tune-up the boot process.
 
-print("START0")
 assert(dynawa, "Dynawa library not detected")
 
 --[[local bmp = {

@@ -3,6 +3,7 @@ dynawa.app={}
 dynawa.apps={}
 dynawa.task={}
 dynawa.tasks={}
+dynawa.hardware_vectors={}
 dynawa.event={queue = {},listeners = {}}
 
 dynawa.task.start = function(args) --expects id,app
@@ -78,8 +79,24 @@ dynawa.event.stop_receiving = function(args) --expects event OR events, callback
 	end
 end
 
-dynawa.event.send = function(event) --expects type
-	local typ=assert(event.type,"Event has no type")
+dynawa.event.send = function(event)
+	--local typ=assert(event.type,"Event has no type")
 	table.insert(dynawa.event.queue,event)
+end
+
+dynawa.delayed_callback = function(args) --expects time, callback, [autorepeat:bool]
+	if not args.task then
+		args.task = assert(_G.my,"Task of target callback not specified.")
+	end
+	assert(args.time,"No time specified")
+	assert(type(args.time)=="number","Time is not a number but "..type(args.time))
+	if args.time < 0 then
+		args.time = 0
+	end
+	assert(args.callback,"No callback function specified")
+	assert(type(args.callback)=="function","Callback is not a function but "..type(args.callback))
+	local timer_id = assert(dynawa.timer.start(args.time,args.autorepeat))
+	timer_id = assert(tonumber(tostring(timer_id):match("0x........")))
+	dynawa.hardware_vectors[timer_id] = args
 end
 
