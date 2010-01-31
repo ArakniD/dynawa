@@ -33,7 +33,7 @@ dynawa.bitmap.parse_font = function (bmap)
 	local char=32
 	local x=0
 	local lastx=-1
-	local _w,height = dynawa.bitmap.info(bmap)
+	local total_width,height = dynawa.bitmap.info(bmap)
 	local done = false
 	repeat
 		x=x+1
@@ -53,7 +53,7 @@ dynawa.bitmap.parse_font = function (bmap)
 			if char % 8 == 0 then
 				boot_anim()
 			end
-			if char > 128 or x > 500 then error("FUCK") end
+			if char > 128 or x > total_width then error("FUCK") end
 			r,g,b,a = dynawa.bitmap.pixel(bmap,x,1)
 			if r+g+b+a == 1020 then
 				done = true
@@ -65,7 +65,7 @@ dynawa.bitmap.parse_font = function (bmap)
 end
 
 --Load and parse font
-dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default.png"))
+dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default10.png"))
 
 -- Transparent bitmap for printing
 local transparent_background = dynawa.bitmap.new(160,128,0,0,0,0)
@@ -111,16 +111,14 @@ full hardware documentation
 and open source code.
 This micro-computer is
 equipped with RISC processor,
-expandable storage, full-color 
-display, Bluetooth radio,
+expandable storage, full-
+color display, Bluetooth radio,
 accelerometer, micro-USB
 connector and sound output.
-TCH1 is primarily intended to be
-used as a smart watch / terminal
-communicating with your mobile
-phone via Bluetooth but if you 
-intend, you can use it for
-wildly different things.
+TCH1 is primarily intended to
+be used as a smart watch /
+terminal communicating with
+your mobile phone via Bluetooth.
 ]]
 dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines(text),0,0)
 dynawa.bitmap.show(screen)
