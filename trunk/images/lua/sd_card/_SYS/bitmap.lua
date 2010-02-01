@@ -65,7 +65,6 @@ dynawa.bitmap.parse_font = function (bmap)
 	return {chars=chars,widths=widths,height=height}
 end
 
---[[
 --Load and parse font
 dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default10.png"))
 
@@ -104,25 +103,29 @@ dynawa.bitmap.text_lines = function(lines,font)
 	return dynawa.bitmap.copy(result,0,0,max_x-1,y)
 end
 
+dynawa.bitmap.text_line = function(line,font)
+	assert(type(line)=="string","First parameter is not string")
+	font = font or assert(dynawa.bitmap.default_font)
+	local x = 0
+	local bmaps = {}
+	local xs = {}
+	for i=1, #line do
+		local chr = line:sub(i,i)
+		table.insert(bmaps,font.chars[chr])
+		table.insert(xs,x)
+		x = x + font.widths[chr] + 1
+	end
+	local width = x - 1
+	local height = assert(font.height)
+	local result = dynawa.bitmap.new(width,height,255,255,0,0)
+	local combine = dynawa.bitmap.combine
+	for i = 1, #line do
+		combine(result, bmaps[i], xs [i], 0)
+	end
+	return result, width, height
+end
+
 local screen = dynawa.bitmap.new(160,128,0,0,0)
-local text = [=[
-TCH1 from Dynawa is the
-first completely customizable
-wrist computer system with
-full hardware documentation
-and open source code.
-This micro-computer is
-equipped with RISC processor,
-expandable storage, full-
-color display, Bluetooth radio,
-accelerometer, micro-USB
-connector and sound output.
-TCH1 is primarily intended to
-be used as a smart watch /
-terminal communicating with
-your mobile phone via Bluetooth.
-]=]
-dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines(text),0,0)
+dynawa.bitmap.combine(screen,dynawa.bitmap.text_line("TEXT1 text2"),0,120)
 dynawa.bitmap.show(screen)
-]]
 

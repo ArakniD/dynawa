@@ -63,7 +63,7 @@ end
 dynawa.event.stop_receiving = function(args) --expects event OR events, callback
 	local task = assert(_G.my, "Must be called from running task")
 	if args.event then
-		assert(not args.events, "You cannot register both 'event' and 'events' at the same time")
+		assert(not args.events, "You cannot deregister both 'event' and 'events' at the same time")
 		args.events={args.event}
 		args.event=nil
 	end
