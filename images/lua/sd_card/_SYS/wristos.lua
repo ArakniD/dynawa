@@ -19,10 +19,10 @@ tbl.timer_fired = function (event)
 	local event = dynawa.hardware_vectors[handle]
 	if not event then
 		log("Timer "..handle.." should fire but its vector is unknown")
-		log("known vectors:")
+		--[[log("known vectors:")
 		for k,v in pairs(dynawa.hardware_vectors) do
 			log("id:"..tostring(k))
-		end
+		end]]
 	else
 		if not event.autorepeat then
 			dynawa.hardware_vectors[handle] = nil
@@ -61,7 +61,7 @@ local function dispatch_queue()
 	local sanity = 999
 	while #queue > 0 do
 		sanity = sanity - 1
-		assert(sanity>0,"Unable to purge event queue, probably infinite loop")
+		assert(sanity>0,"Unable to purge event queue - probably infinite loop")
 		local event=table.remove(queue,1)
 		--log("QUEUE: Dispatching event of type "..tostring(event.type))
 		local typ=event.type
@@ -96,7 +96,6 @@ end
 dynawa.app.start("/_sys/apps/core/")
 
 --Discard boot animation script and bitmaps
-boot_anim()
 _G.boot_anim = nil
 	
 

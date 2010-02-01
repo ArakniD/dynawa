@@ -5,22 +5,24 @@ local serfunc = {
 	number = function (x) return tostring(x) end,
 	string = function(str) return string.format("%q",str) end,
 	userdata = function(str) return ("<!"..tostring(x)..">") end,
+	["function"] = function (x) return tostring(x) end,
 }
 
 local function serialize(neco)
 	if type(neco)=="table" then
 		local result = {}
 		for k,v in pairs(neco) do
-			local serk=nil
-			serk="["..serialize(k).."]"
+			local serk="["..serialize(k).."]"
 			table.insert(result, serk.."="..serialize(v))
 		end
 		table.sort(result)
 		return "{"..table.concat(result,",").."}"
 	else
 		local fun = serfunc[type(neco)]
-		assert(fun, "Unable to serialize ".. tostring(neco) ..".")
-		return fun(neco)
+		if fun then
+			return fun(neco)
+		end
+		return "?!?"..tostring(neco).."?!?"
 	end
 end
 

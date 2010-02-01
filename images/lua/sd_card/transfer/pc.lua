@@ -162,6 +162,12 @@ local function main_loop(fd_from)
 				end
 			until not chunk
 			local data0 = decode(table.concat(chunks))
+			local load = loadstring(data0)
+			if not load then
+				print("*** DATA TRANSFER ERROR ***")
+				print("Received and decoded: "..data0)
+				error()
+			end
 			local data = loadstring(data0)()
 			assert(type(data)=="table")
 			if data.runtime_error then
