@@ -16,33 +16,33 @@ void bitmap_set_header(bitmap *bmp, bitmap_type type, unsigned int width, unsign
 
 bool bitmap_check_bounds(bitmap *bmp, int *x, int *y, int *width, int *height) {
     if (*x + *width < 0 || *y + *width < 0 || *x >= bmp->header.width || *y >= bmp->header.height) {
-        TRACE_INFO("out of bounds\r\n");
+        TRACE_BMP("out of bounds\r\n");
         return false;
     }
     if (*x < 0) {
         *width += *x;
         *x = 0;
-        TRACE_INFO("width reduced %d\r\n", *width);
+        TRACE_BMP("width reduced %d\r\n", *width);
     }
     if (*y < 0) {
         *height += *y;
         *y = 0;
-        TRACE_INFO("height reduced %d\r\n", *height);
+        TRACE_BMP("height reduced %d\r\n", *height);
     }
     if (*x + *width > bmp->header.width) {
         *width = bmp->header.width - *x;
-        TRACE_INFO("width reduced %d\r\n", *width);
+        TRACE_BMP("width reduced %d\r\n", *width);
     }
     if (*y + *height > bmp->header.height) {
         *height = bmp->header.height - *y;
-        TRACE_INFO("height reduced %d\r\n", *height);
+        TRACE_BMP("height reduced %d\r\n", *height);
     }
     return true;
 }
 
 void bitmap_set_pixels(bitmap *bmp, int x, int y, int width, int height, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
 
-    TRACE_INFO("bitmap_set_pixels %x %d %d %d %d rgba %x %x %x %x\r\n", bmp, x, y, width, height, red, green, blue, alpha);
+    TRACE_BMP("bitmap_set_pixels %x %d %d %d %d rgba %x %x %x %x\r\n", bmp, x, y, width, height, red, green, blue, alpha);
 
     if(!bitmap_check_bounds(bmp, &x, &y, &width, &height))
         return;
@@ -67,7 +67,7 @@ void bitmap_set_pixels(bitmap *bmp, int x, int y, int width, int height, uint8_t
 }
 
 void bitmap_copy2(bitmap *dst_bmp, int dst_x, int dst_y, bitmap *src_bmp, int src_x, int src_y, unsigned int width, unsigned int height) {
-    TRACE_INFO("bitmap_copy2 dst %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
+    TRACE_BMP("bitmap_copy2 dst %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
 
     if(!bitmap_check_bounds(src_bmp, &src_x, &src_y, &width, &height))
         return;
@@ -96,10 +96,10 @@ void bitmap_copy2(bitmap *dst_bmp, int dst_x, int dst_y, bitmap *src_bmp, int sr
 }
 
 void bitmap_op_combine(bitmap *dst_bmp, bitmap *src1_bmp, int dst_x, int dst_y, bitmap *src_bmp, int src_x, int src_y, unsigned int width, unsigned int height) {
-    TRACE_INFO("bitmap_op_combine dst %x %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, src1_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
+    TRACE_BMP("bitmap_op_combine dst %x %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, src1_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
 
     if (dst_bmp->header.width != src1_bmp->header.width || dst_bmp->header.height != src1_bmp->header.height) {
-        TRACE_INFO("bitmap diff size\r\n");
+        TRACE_BMP("bitmap diff size\r\n");
         return;
     }
 
@@ -137,10 +137,10 @@ void bitmap_op_combine(bitmap *dst_bmp, bitmap *src1_bmp, int dst_x, int dst_y, 
 }
 
 void bitmap_op_mask(bitmap *dst_bmp, bitmap *src1_bmp, int dst_x, int dst_y, bitmap *src_bmp, int src_x, int src_y, unsigned int width, unsigned int height) {
-    TRACE_INFO("bitmap_op_mask dst %x %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, src1_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
+    TRACE_BMP("bitmap_op_mask dst %x %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, src1_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
 
     if (dst_bmp->header.width != src1_bmp->header.width || dst_bmp->header.height != src1_bmp->header.height) {
-        TRACE_INFO("bitmap diff size\r\n");
+        TRACE_BMP("bitmap diff size\r\n");
         return;
     }
 
@@ -177,7 +177,7 @@ void bitmap_op_mask(bitmap *dst_bmp, bitmap *src1_bmp, int dst_x, int dst_y, bit
 
 void bitmap_copy(bitmap *dst_bmp, bitmap *src_bmp, int src_x, int src_y, unsigned int dst_width, unsigned int dst_height) {
 
-    TRACE_INFO("bitmap_copy dst %x src %x [%d %d] %d %d\r\n", dst_bmp, src_bmp, src_x, src_y, dst_width, dst_height);
+    TRACE_BMP("bitmap_copy dst %x src %x [%d %d] %d %d\r\n", dst_bmp, src_bmp, src_x, src_y, dst_width, dst_height);
     int d_x1 = 0;
     int d_y1 = 0;
     int d_x2 = d_x1 + dst_width - 1;
@@ -188,12 +188,12 @@ void bitmap_copy(bitmap *dst_bmp, bitmap *src_bmp, int src_x, int src_y, unsigne
     int s_x2 = s_x1 + src_bmp->header.width - 1;
     int s_y2 = s_y1 + src_bmp->header.height - 1;
 
-    TRACE_INFO("src [%d %d] [%d %d]\r\n", s_x1, s_y1, s_x2, s_y2);
-    TRACE_INFO("dst [%d %d] [%d %d]\r\n", d_x1, d_y1, d_x2, d_y2);
+    TRACE_BMP("src [%d %d] [%d %d]\r\n", s_x1, s_y1, s_x2, s_y2);
+    TRACE_BMP("dst [%d %d] [%d %d]\r\n", d_x1, d_y1, d_x2, d_y2);
     //if (s_y1 > 0) {
     if (d_y1 < s_y1) {
         int y2 = s_y1 < d_y2 ? s_y1 - 1 : d_y2;
-        TRACE_INFO("clear(T) 0 0 %d %d\r\n", d_x2, y2); 
+        TRACE_BMP("clear(T) 0 0 %d %d\r\n", d_x2, y2); 
         int w = d_x2 + 1;
         int h = y2 + 1;
         bitmap_set_pixels(dst_bmp, 0, 0, w, h, 0, 0, 0, 0);
@@ -206,7 +206,7 @@ void bitmap_copy(bitmap *dst_bmp, bitmap *src_bmp, int src_x, int src_y, unsigne
         //if (s_x1 > 0) {
         if (d_x1 < s_x1) {
             int x2 = s_x1 < d_x2 ? s_x1 - 1 : d_x2;
-            TRACE_INFO("clear(L) 0 %d %d %d\r\n", y1, x2, y2); 
+            TRACE_BMP("clear(L) 0 %d %d %d\r\n", y1, x2, y2); 
             int w = x2 + 1;
             int h = y2 - y1 + 1;
             bitmap_set_pixels(dst_bmp, 0, y1, w, h, 0, 0, 0, 0);
@@ -215,16 +215,16 @@ void bitmap_copy(bitmap *dst_bmp, bitmap *src_bmp, int src_x, int src_y, unsigne
         if (d_x1 <= s_x2 && d_x2 >= s_x1) {
             int x1 = s_x1 < 0 ? 0 : s_x1;
             int x2 = s_x2 < d_x2 ? s_x2 : d_x2;
-            //TRACE_INFO("copy %d %d %d %d\r\n", x1, y1, x2, y2); 
+            //TRACE_BMP("copy %d %d %d %d\r\n", x1, y1, x2, y2); 
             int w = x2 - x1 + 1;
             int h = y2 - y1 + 1;
-            TRACE_INFO("copy dst [%d %d] src [%d %d] %d %d\r\n", x1, y1, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
+            TRACE_BMP("copy dst [%d %d] src [%d %d] %d %d\r\n", x1, y1, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
             bitmap_copy2(dst_bmp, x1, y1, src_bmp, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
         }
 
         if (d_x2 > s_x2) {
             int x1 = s_x2 < 0 ? 0 : s_x2 + 1;
-            TRACE_INFO("clear(R) %d %d %d %d\r\n", x1, y1, d_x2, y2); 
+            TRACE_BMP("clear(R) %d %d %d %d\r\n", x1, y1, d_x2, y2); 
             int w = d_x2 - x1 + 1;
             int h = y2 - y1 + 1;
             bitmap_set_pixels(dst_bmp, x1, y1, w, h, 0, 0, 0, 0);
@@ -232,7 +232,7 @@ void bitmap_copy(bitmap *dst_bmp, bitmap *src_bmp, int src_x, int src_y, unsigne
     }
     if (d_y2 > s_y2) {
         int y1 = s_y2 < 0 ? 0 : s_y2 + 1;
-        TRACE_INFO("clear(B) 0 %d %d %d\r\n", y1, d_x2, d_y2); 
+        TRACE_BMP("clear(B) 0 %d %d %d\r\n", y1, d_x2, d_y2); 
         int w = d_x2 + 1;
         int h = d_y2 - y1 + 1;
         bitmap_set_pixels(dst_bmp, 0, y1, w, h, 0, 0, 0, 0);
@@ -240,7 +240,7 @@ void bitmap_copy(bitmap *dst_bmp, bitmap *src_bmp, int src_x, int src_y, unsigne
 }
 
 void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x, int src_y) {
-    TRACE_INFO("bitmap_combine dst %x bg %x ovl %x [%d %d]\r\n", dst_bmp, bg_bmp, ovl_bmp, src_x, src_y);
+    TRACE_BMP("bitmap_combine dst %x bg %x ovl %x [%d %d]\r\n", dst_bmp, bg_bmp, ovl_bmp, src_x, src_y);
     bool dst_ne_bg = dst_bmp != bg_bmp;
 
     int s_x1 = src_x;
@@ -253,12 +253,12 @@ void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x,
     int d_x2 = d_x1 + dst_bmp->header.width - 1;
     int d_y2 = d_y1 + dst_bmp->header.height - 1;
 
-    TRACE_INFO("src [%d %d] [%d %d]\r\n", s_x1, s_y1, s_x2, s_y2);
-    TRACE_INFO("dst [%d %d] [%d %d]\r\n", d_x1, d_y1, d_x2, d_y2);
+    TRACE_BMP("src [%d %d] [%d %d]\r\n", s_x1, s_y1, s_x2, s_y2);
+    TRACE_BMP("dst [%d %d] [%d %d]\r\n", d_x1, d_y1, d_x2, d_y2);
     //if (s_y1 > 0) {
     if (dst_ne_bg && d_y1 < s_y1) {
         int y2 = s_y1 < d_y2 ? s_y1 - 1 : d_y2;
-        TRACE_INFO("clear(T) 0 0 %d %d\r\n", d_x2, y2); 
+        TRACE_BMP("clear(T) 0 0 %d %d\r\n", d_x2, y2); 
         int w = d_x2 + 1;
         int h = y2 + 1;
         //bitmap_set_pixels(dst_bmp, 0, 0, w, h, 0, 0, 0, 0);
@@ -272,7 +272,7 @@ void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x,
         //if (s_x1 > 0) {
         if (dst_ne_bg && d_x1 < s_x1) {
             int x2 = s_x1 < d_x2 ? s_x1 - 1 : d_x2;
-            TRACE_INFO("clear(L) 0 %d %d %d\r\n", y1, x2, y2); 
+            TRACE_BMP("clear(L) 0 %d %d %d\r\n", y1, x2, y2); 
             int w = x2 + 1;
             int h = y2 - y1 + 1;
             //bitmap_set_pixels(dst_bmp, 0, y1, w, h, 0, 0, 0, 0);
@@ -282,10 +282,10 @@ void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x,
         if (d_x1 <= s_x2 && d_x2 >= s_x1) {
             int x1 = s_x1 < 0 ? 0 : s_x1;
             int x2 = s_x2 < d_x2 ? s_x2 : d_x2;
-            //TRACE_INFO("copy %d %d %d %d\r\n", x1, y1, x2, y2); 
+            //TRACE_BMP("copy %d %d %d %d\r\n", x1, y1, x2, y2); 
             int w = x2 - x1 + 1;
             int h = y2 - y1 + 1;
-            TRACE_INFO("copy dst [%d %d] src [%d %d] %d %d\r\n", x1, y1, (src_x < 0 ? -src_x : 0), (src_y < 0 ? -src_y : 0), w, h); 
+            TRACE_BMP("copy dst [%d %d] src [%d %d] %d %d\r\n", x1, y1, (src_x < 0 ? -src_x : 0), (src_y < 0 ? -src_y : 0), w, h); 
 
 // MV src_x/y handled differently than in copy()
             //bitmap_copy2(dst_bmp, x1, y1, src_bmp, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
@@ -296,7 +296,7 @@ void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x,
 
         if (dst_ne_bg && d_x2 > s_x2) {
             int x1 = s_x2 < 0 ? 0 : s_x2 + 1;
-            TRACE_INFO("clear(R) %d %d %d %d\r\n", x1, y1, d_x2, y2); 
+            TRACE_BMP("clear(R) %d %d %d %d\r\n", x1, y1, d_x2, y2); 
             int w = d_x2 - x1 + 1;
             int h = y2 - y1 + 1;
             //bitmap_set_pixels(dst_bmp, x1, y1, w, h, 0, 0, 0, 0);
@@ -305,7 +305,7 @@ void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x,
     }
     if (dst_ne_bg && d_y2 > s_y2) {
         int y1 = s_y2 < 0 ? 0 : s_y2 + 1;
-        TRACE_INFO("clear(B) 0 %d %d %d\r\n", y1, d_x2, d_y2); 
+        TRACE_BMP("clear(B) 0 %d %d %d\r\n", y1, d_x2, d_y2); 
         int w = d_x2 + 1;
         int h = d_y2 - y1 + 1;
         //bitmap_set_pixels(dst_bmp, 0, y1, w, h, 0, 0, 0, 0);
@@ -314,7 +314,7 @@ void bitmap_combine(bitmap *dst_bmp, bitmap *bg_bmp, bitmap *ovl_bmp, int src_x,
 }
 
 void bitmap_mask(bitmap *dst_bmp, bitmap *src_bmp, bitmap *msk_bmp, int src_x, int src_y) {
-    TRACE_INFO("bitmap_mask dst %x src %x msk %x [%d %d]\r\n", dst_bmp, src_bmp, msk_bmp, src_x, src_y);
+    TRACE_BMP("bitmap_mask dst %x src %x msk %x [%d %d]\r\n", dst_bmp, src_bmp, msk_bmp, src_x, src_y);
 
     int d_x1 = 0;
     int d_y1 = 0;
@@ -326,12 +326,12 @@ void bitmap_mask(bitmap *dst_bmp, bitmap *src_bmp, bitmap *msk_bmp, int src_x, i
     int s_x2 = s_x1 + src_bmp->header.width - 1;
     int s_y2 = s_y1 + src_bmp->header.height - 1;
 
-    TRACE_INFO("src [%d %d] [%d %d]\r\n", s_x1, s_y1, s_x2, s_y2);
-    TRACE_INFO("dst [%d %d] [%d %d]\r\n", d_x1, d_y1, d_x2, d_y2);
+    TRACE_BMP("src [%d %d] [%d %d]\r\n", s_x1, s_y1, s_x2, s_y2);
+    TRACE_BMP("dst [%d %d] [%d %d]\r\n", d_x1, d_y1, d_x2, d_y2);
     //if (s_y1 > 0) {
     if (d_y1 < s_y1) {
         int y2 = s_y1 < d_y2 ? s_y1 - 1 : d_y2;
-        TRACE_INFO("clear(T) 0 0 %d %d\r\n", d_x2, y2); 
+        TRACE_BMP("clear(T) 0 0 %d %d\r\n", d_x2, y2); 
         int w = d_x2 + 1;
         int h = y2 + 1;
         bitmap_set_pixels(dst_bmp, 0, 0, w, h, 0, 0, 0, 0);
@@ -344,7 +344,7 @@ void bitmap_mask(bitmap *dst_bmp, bitmap *src_bmp, bitmap *msk_bmp, int src_x, i
         //if (s_x1 > 0) {
         if (d_x1 < s_x1) {
             int x2 = s_x1 < d_x2 ? s_x1 - 1 : d_x2;
-            TRACE_INFO("clear(L) 0 %d %d %d\r\n", y1, x2, y2); 
+            TRACE_BMP("clear(L) 0 %d %d %d\r\n", y1, x2, y2); 
             int w = x2 + 1;
             int h = y2 - y1 + 1;
             bitmap_set_pixels(dst_bmp, 0, y1, w, h, 0, 0, 0, 0);
@@ -353,10 +353,10 @@ void bitmap_mask(bitmap *dst_bmp, bitmap *src_bmp, bitmap *msk_bmp, int src_x, i
         if (d_x1 <= s_x2 && d_x2 >= s_x1) {
             int x1 = s_x1 < 0 ? 0 : s_x1;
             int x2 = s_x2 < d_x2 ? s_x2 : d_x2;
-            //TRACE_INFO("copy %d %d %d %d\r\n", x1, y1, x2, y2); 
+            //TRACE_BMP("copy %d %d %d %d\r\n", x1, y1, x2, y2); 
             int w = x2 - x1 + 1;
             int h = y2 - y1 + 1;
-            TRACE_INFO("copy dst [%d %d] src [%d %d] %d %d\r\n", x1, y1, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
+            TRACE_BMP("copy dst [%d %d] src [%d %d] %d %d\r\n", x1, y1, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
             // TODO mask src using msk 
             //bitmap_copy2(dst_bmp, x1, y1, src_bmp, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
             bitmap_op_mask(dst_bmp, msk_bmp, x1, y1, src_bmp, (src_x < 0 ? 0 : src_x), (src_y < 0 ? 0 : src_y), w, h); 
@@ -364,7 +364,7 @@ void bitmap_mask(bitmap *dst_bmp, bitmap *src_bmp, bitmap *msk_bmp, int src_x, i
 
         if (d_x2 > s_x2) {
             int x1 = s_x2 < 0 ? 0 : s_x2 + 1;
-            TRACE_INFO("clear(R) %d %d %d %d\r\n", x1, y1, d_x2, y2); 
+            TRACE_BMP("clear(R) %d %d %d %d\r\n", x1, y1, d_x2, y2); 
             int w = d_x2 - x1 + 1;
             int h = y2 - y1 + 1;
             bitmap_set_pixels(dst_bmp, x1, y1, w, h, 0, 0, 0, 0);
@@ -372,7 +372,7 @@ void bitmap_mask(bitmap *dst_bmp, bitmap *src_bmp, bitmap *msk_bmp, int src_x, i
     }
     if (d_y2 > s_y2) {
         int y1 = s_y2 < 0 ? 0 : s_y2 + 1;
-        TRACE_INFO("clear(B) 0 %d %d %d\r\n", y1, d_x2, d_y2); 
+        TRACE_BMP("clear(B) 0 %d %d %d\r\n", y1, d_x2, d_y2); 
         int w = d_x2 + 1;
         int h = d_y2 - y1 + 1;
         bitmap_set_pixels(dst_bmp, 0, y1, w, h, 0, 0, 0, 0);

@@ -127,7 +127,6 @@ DRESULT disk_read (
 	}
 	return RES_PARERR;
 */
-    TRACE_INFO("disk_read %d %x %d %d\r\n", drv, buff, sector, count);
     int i;
     uint32_t res;
     for(i = 0; i < count; i++) {

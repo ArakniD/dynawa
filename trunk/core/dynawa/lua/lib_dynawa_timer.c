@@ -6,7 +6,7 @@
 void lua_timer_handler(void *context);
 
 static int l_start (lua_State *L) {
-    TRACE_INFO("dynawa.timer.start\r\n");
+    TRACE_LUA("dynawa.timer.start\r\n");
 
     uint32_t when = luaL_checkint(L, 1);
 
@@ -33,7 +33,7 @@ static int l_start (lua_State *L) {
 }
 
 static int l_cancel (lua_State *L) {
-    TRACE_INFO("dynawa.timer.cancel\r\n");
+    TRACE_LUA("dynawa.timer.cancel\r\n");
 
     luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
 

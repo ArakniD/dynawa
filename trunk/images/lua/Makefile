@@ -9,6 +9,7 @@ DEBUG_OPTS =
 # available optimization levels: -O0, -O1, -O2, -O3, -Os
 #OPTIMIZATION = -Os -ffast-math
 OPTIMIZATION = -Os -ffast-math
+# -S (asm listing)
 
 CONFIG_OPTS = \
 	-Dusb_CDCMSD \
@@ -225,7 +226,6 @@ THUMB_SRC= \
   $(LUA)/lvm.c \
   $(LUA)/lzio.c \
   $(LUA)/print.c \
-  $(SCREEN)/screen.c \
   $(DYNAWA)/rtos.c \
   $(DYNAWA)/usbserial.c \
   $(DYNAWA)/serial.c \
@@ -239,7 +239,6 @@ THUMB_SRC= \
   $(DYNAWA)/lua/lib_dynawa_bitmap.c \
   $(DYNAWA)/event.c \
   $(DYNAWA)/timer.c \
-  $(DYNAWA)/bitmap.c \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
   $(FAT_SRC) \
@@ -257,7 +256,6 @@ THUMB_SRC= \
   $(DYNAWA)/bcsp/uSched.c \
   $(DYNAWA)/bcsp/SerialCom.c \
   $(PERIPHERALS)/serial.c \
-  $(PERIPHERALS)/oled/oled.c \
   $(PERIPHERALS)/spi.c \
   $(PERIPHERALS)/pmc/pmc.c \
   $(PERIPHERALS)/usart/usart.c \
@@ -317,6 +315,9 @@ ARM_SRC= \
   $(DYNAWA)/serial_isr.c \
   $(DYNAWA)/button.c \
   $(DYNAWA)/timer_isr.c \
+  $(PERIPHERALS)/oled/oled.c \
+  $(DYNAWA)/bitmap.c \
+  $(SCREEN)/screen.c \
   $(DYNAWA)/io_isr.c
   
 CPP_ARM_SRC =
@@ -363,24 +364,28 @@ INCLUDEDIRS = \
 CC=arm-elf-gcc
 CPP=arm-elf-g++
 OBJCOPY=arm-elf-objcopy
+OBJDUMP=arm-elf-objdump
 ARCH=arm-elf-ar
 CRT0=$(STARTUP)/AT91SAM7_Startup.s $(STARTUP)/crt0.s
 LDSCRIPT=$(STARTUP)/dynawa.ld
 
 # flags common to both c and c++
 # ARM THUMB code options
+
+#-march=armv4t
+
 C_AND_CPP_FLAGS = \
 $(INCLUDEDIRS) \
 -Wall  \
 -Wextra  \
 -Wno-strict-aliasing  \
 -fno-builtin-printf \
+-mcpu=arm7tdmi \
+-mthumb-interwork \
 -D SAM7_GCC  \
 -D THUMB_INTERWORK \
 -D__FLASH_BUILD \
 -DSUPERVISOR_START \
--mthumb-interwork \
--mcpu=arm7tdmi  \
 -T$(LDSCRIPT) \
 $(DEBUG_OPTS)  \
 $(CONFIG_OPTS) \
@@ -446,4 +451,7 @@ clean :
 	rm -f output/$(IMAGE_NAME).bin
 	rm -f output/$(IMAGE_NAME)_o.map
 
+dump :
+	$(OBJDUMP) -S output/$(IMAGE_NAME).elf > output/$(IMAGE_NAME).lst
+	$(OBJDUMP) --all output/$(IMAGE_NAME).elf > output/$(IMAGE_NAME).sym
 

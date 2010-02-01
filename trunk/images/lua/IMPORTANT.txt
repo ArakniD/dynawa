@@ -12,3 +12,13 @@ configUSE_NEWLIB_REENTRANT
 6. lua speedup - alikovat LNUM patch (double + int32)
 7. lua speedup - pridat do OPTIMIZATION -ffast-math
 
+8. opatchovat FreeRTOS (gcc 4.4.3)
+portISR.c:
+void vPortYieldProcessor( void ) __attribute__((interrupt("SWI"), naked));
+=>
+void vPortYieldProcessor( void ) __attribute__((interrupt("SWI 0"), naked));
+
+portmacro.h:
+#define portYIELD()                 asm volatile ( "SWI" )
+=>
+#define portYIELD()                 asm volatile ( "SWI 0" )

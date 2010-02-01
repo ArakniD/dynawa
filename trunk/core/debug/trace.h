@@ -31,22 +31,24 @@
 #include <utils/rprintf.h> 
 
 /* Enable/Disable tracer levels here */
-//#define TR_SD        //!< Enable trace output for temporary debugging
+//#define TR_SD        
 
-#define TR_INFO         //!< Enable trace output for informations
-#define TR_WARNING      //!< Enable trace output for warnings
-#define TR_ERROR        //!< Enable trace output for errors
+#define TR_INFO         
+#define TR_WARNING      
+#define TR_ERROR        
 #define TR_SCR  //screen
-#define TR_FAT          //!< Enable trace output for FAT code
-#define TR_BT          //!< Enable trace output for BT code
-#define TR_LUA          //!< Enable trace output for Lua code
-//#define TR_TMR          //!< Enable trace output for timer code
-//#define TR_SER          //!< Enable trace output for serial (UART) code
-//#define TR_SD           //!< Enable trace output for SD code
-//#define TR_USB          //!< Enable trace output for USB driver code
-//#define TR_BOT          //!< Enable trace output for Bulk only transfer code
-//#define TR_SBC          //!< Enable trace output for SCSI block command code
-//#define TR_LUN          //!< Enable trace output for LUN code
+//#define TR_FAT          
+#define TR_BT          
+//#define TR_LUA          
+//#define TR_BMP          
+//#define TR_SYS          
+//#define TR_TMR          
+//#define TR_SER          
+//#define TR_SD           
+//#define TR_USB          
+//#define TR_BOT          
+//#define TR_SBC          
+//#define TR_LUN          
 
 #endif // !defined(NOTRACES)
 
@@ -55,108 +57,120 @@
 //------------------------------------------------------------------------------
 
 #if !defined(NOTRACES)
-    #define TRACE_INIT()    void dbg_usart_init(void)         //!< Init debug unit, DBG USART
+    #define TRACE_INIT()    void dbg_usart_init(void)         
 #else
-    #define TRACE_INIT(...) //!< trace dummy
+    #define TRACE_INIT(...) 
 #endif // !defined(NOTRACES)
 
 #if !defined(NOTRACES)
-    #define TRACE_ALL(...)   rprintf(DBG,__VA_ARGS__)       //!< 
+    #define TRACE_ALL(...)   rprintf(DBG,__VA_ARGS__)
 #else
-    #define TRACE_ALL(...) //!< trace dummy
+    #define TRACE_ALL(...)
 #endif // !defined(NOTRACES)
 
 
 #if defined(TR_DEBUG)
-    #define TRACE(...)      rprintf(DBG,__VA_ARGS__)        //!< Reroute macro to rprintf
+    #define TRACE(...)      rprintf(DBG,__VA_ARGS__)
 #else
-    #define TRACE(...)      //!< trace dummy
+    #define TRACE(...)      
 #endif // TR_DEBUG
 
 #if defined(TR_SCR)
-    #define TRACE_SCR(...)      rprintf(SCR,__VA_ARGS__)        //!< Reroute macro to rprintf
+    #define TRACE_SCR(...)      rprintf(SCR,__VA_ARGS__)        
 #else
-    #define TRACE_SCR(...)      //!< trace dummy
+    #define TRACE_SCR(...)      
 #endif // TR_DEBUG
 
 #if defined(TR_FAT)
-    #define TRACE_FAT(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_FAT(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_FAT(...)      //!< trace dummy
+    #define TRACE_FAT(...)      
 #endif // TR_FAT
 
 #if defined(TR_BT)
-    //#define TRACE_BT(...)      rprintf(DBG, __VA_ARGS__)    //!< Reroute macro to rprintf
-    #define TRACE_BT(...)      usart_rprintf(__VA_ARGS__)    //!< Reroute macro to rprintf
+    //#define TRACE_BT(...)      rprintf(DBG, __VA_ARGS__)    
+    #define TRACE_BT(...)      usart_rprintf(__VA_ARGS__)    
 #else
-    #define TRACE_BT(...)      //!< trace dummy
+    #define TRACE_BT(...)      
 #endif // TR_BT
 
 #if defined(TR_LUA)
-    #define TRACE_LUA(...)      rprintf(DBG, __VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_LUA(...)      rprintf(DBG, __VA_ARGS__)    
 #else
-    #define TRACE_LUA(...)      //!< trace dummy
+    #define TRACE_LUA(...)      
 #endif // TR_LUA
 
-#if defined(TR_TMR)
-    #define TRACE_TMR(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+#if defined(TR_BMP)
+    #define TRACE_BMP(...)      rprintf(DBG, __VA_ARGS__)    
 #else
-    #define TRACE_TMR(...)      //!< trace dummy
+    #define TRACE_BMP(...)      
+#endif // TR_BMP
+
+#if defined(TR_SYS)
+    #define TRACE_SYS(...)      rprintf(DBG, __VA_ARGS__)    
+#else
+    #define TRACE_SYS(...)      
+#endif // TR_SYS
+
+#if defined(TR_TMR)
+    #define TRACE_TMR(...)      rprintf(DBG,__VA_ARGS__)    
+#else
+    #define TRACE_TMR(...)      
 #endif // TR_TMR
 
 #if defined(TR_SER)
-    #define TRACE_SER(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_SER(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_SER(...)      //!< trace dummy
+    #define TRACE_SER(...)      
 #endif // TR_SER
 
 #if defined(TR_SD)
-    #define TRACE_SD(...)       rprintf(DBG,__VA_ARGS__)     //!< Reroute macro to rprintf
+    #define TRACE_SD(...)       rprintf(DBG,__VA_ARGS__)     
 #else
-    #define TRACE_SD(...)       //!< trace dummy
+    #define TRACE_SD(...)       
 #endif // TR_SD
 
 #if defined(TR_USB)
-    #define TRACE_USB(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_USB(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_USB(...)      //!< trace dummy
+    #define TRACE_USB(...)      
 #endif // TR_USB
 
 #if defined(TR_BOT)
-    #define TRACE_BOT(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_BOT(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_BOT(...)      //!< trace dummy
+    #define TRACE_BOT(...)      
 #endif // TR_BOT
 
 #if defined(TR_SBC)
-    #define TRACE_SBC(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_SBC(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_SBC(...)      //!< trace dummy
+    #define TRACE_SBC(...)      
 #endif // TR_SBC
 
 #if defined(TR_LUN)
-    #define TRACE_LUN(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_LUN(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_LUN(...)      //!< trace dummy
+    #define TRACE_LUN(...)      
 #endif // TR_LUN
 
 #ifdef TR_INFO
-    #define TRACE_INFO(...)         rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
-    #define TRACE_X(...)         rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_INFO(...)         rprintf(DBG,__VA_ARGS__)    
+    #define TRACE_X(...)         rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_INFO(...)         //!< trace dummy
+    #define TRACE_INFO(...)         
 #endif // TR_INFO
 
 #ifdef TR_WARNING
-    #define TRACE_WARNING(...)      rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_WARNING(...)      rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_WARNING(...)      //!< trace dummy
+    #define TRACE_WARNING(...)      
 #endif // TR_WARNING
 
 #ifdef TR_ERROR
-    #define TRACE_ERROR(...)        rprintf(DBG,__VA_ARGS__)    //!< Reroute macro to rprintf
+    #define TRACE_ERROR(...)        rprintf(DBG,__VA_ARGS__)    
 #else
-    #define TRACE_ERROR(...)        //!< trace dummy
+    #define TRACE_ERROR(...)        
 #endif // TR_ERROR
 
 #endif // _TRACE_H

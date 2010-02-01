@@ -35,6 +35,17 @@ SECTIONS
 		__imageboot_end__ = .;
 	} >xcodesram
 
+	.vectors : {
+		__vectors_ram_start__ = .;
+		__vectors_load_start__ = . + (LOADADDR(.vectors) - ADDR(.vectors));
+		*(.vectors .vectors.*)
+        */screen.o(.text)
+        */oled.o(.text)
+        */bitmap.o(.text)
+		. = ALIGN(4);
+		__vectors_ram_end__ = .;
+	} >sram AT>xcodesram
+
 	.text : {
 		__text_start__ = .;
 		__text_load_start__ = .;
@@ -43,13 +54,6 @@ SECTIONS
 		__text_end__ = .;
 	} >xcodesram
 
-	.vectors : {
-		__vectors_ram_start__ = .;
-		__vectors_load_start__ = . + (LOADADDR(.vectors) - ADDR(.vectors));
-		*(.vectors .vectors.*)
-		. = ALIGN(4);
-		__vectors_ram_end__ = .;
-	} >sram AT>xcodesram
 
 
 	.dtors : {

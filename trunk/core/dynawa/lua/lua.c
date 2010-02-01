@@ -37,18 +37,18 @@ int lua_event_loop (void) {
         return 1;
     }
 
-    TRACE_INFO("luaL_newstate\r\n");
+    TRACE_LUA("luaL_newstate\r\n");
     lua_State *L = luaL_newstate();
-    TRACE_INFO("done\r\n");
+    TRACE_LUA("done\r\n");
     if (L == NULL) {
         TRACE_ERROR("Err: luaL_newstate()\r\n");
         return 1;
     }
-    TRACE_INFO("luaL_openlibs\r\n");
+    TRACE_LUA("luaL_openlibs\r\n");
     luaL_openlibs(L);
     luaopen_dynawa(L);
 
-    TRACE_INFO("done\r\n");
+    TRACE_LUA("done\r\n");
 
     unsigned long ticks = xTaskGetTickCount();
 
@@ -60,7 +60,7 @@ int lua_event_loop (void) {
     }
 
     ticks = xTaskGetTickCount() - ticks;
-    TRACE_INFO("initialized %d\r\n", ticks);
+    TRACE_LUA("initialized %d\r\n", ticks);
 
     //fflush(stdout);
     while(1) {
@@ -70,7 +70,7 @@ int lua_event_loop (void) {
 /*
         int i;
         for(i = 0; i < sizeof(event); i++) {
-            TRACE_INFO("ev[%d]=%d\r\n", i, *(((uint8_t*)&ev) + i));
+            TRACE_LUA("ev[%d]=%d\r\n", i, *(((uint8_t*)&ev) + i));
         }
 */
 
@@ -78,7 +78,7 @@ int lua_event_loop (void) {
 
         switch(ev.type) {
         case EVENT_BUTTON_DOWN:
-            TRACE_INFO("button %d down\r\n", ev.data.button.id);
+            TRACE_LUA("button %d down\r\n", ev.data.button.id);
             lua_newtable(L);
 
             lua_pushstring(L, "type");
@@ -90,7 +90,7 @@ int lua_event_loop (void) {
             lua_settable(L, -3);
             break;
         case EVENT_BUTTON_HOLD:
-            TRACE_INFO("button %d hold\r\n", ev.data.button.id);
+            TRACE_LUA("button %d hold\r\n", ev.data.button.id);
             lua_newtable(L);
 
             lua_pushstring(L, "type");
@@ -102,7 +102,7 @@ int lua_event_loop (void) {
             lua_settable(L, -3);
             break;
         case EVENT_BUTTON_UP:
-            TRACE_INFO("button %d up\r\n", ev.data.button.id);
+            TRACE_LUA("button %d up\r\n", ev.data.button.id);
             lua_newtable(L);
 
             lua_pushstring(L, "type");
@@ -114,7 +114,7 @@ int lua_event_loop (void) {
             lua_settable(L, -3);
             break;
         case EVENT_TIMER:
-            TRACE_INFO("timer %x expired\r\n", ev.data.timer.handle);
+            TRACE_LUA("timer %x expired\r\n", ev.data.timer.handle);
             lua_newtable(L);
 
             lua_pushstring(L, "type");
@@ -122,7 +122,7 @@ int lua_event_loop (void) {
             lua_settable(L, -3);
 
             lua_pushstring(L, "handle");
-            lua_pushnumber(L, (uint32_t)ev.data.timer.handle);
+            lua_pushlightuserdata(L, (void*)ev.data.timer.handle);
             lua_settable(L, -3);
             break;
         default:
@@ -137,7 +137,7 @@ int lua_event_loop (void) {
 
         Led_setState(&led, 0);
         ticks = xTaskGetTickCount() - ticks;
-        TRACE_INFO("error %d %d\r\n", error, ticks);
+        TRACE_LUA("error %d %d\r\n", error, ticks);
 
         if (error) {
             TRACE_ERROR("lua: %s", lua_tostring(L, -1));
@@ -162,7 +162,7 @@ char *my_gets (char *buff, int len) {
       int i;
       for(i = 0; i < n; i++) {
         char c = b[i];
-        TRACE_INFO("chr %d\r\n", c);
+        TRACE_LUA("chr %d\r\n", c);
         buff[p++] = c; 
         if (c == '\r') {
           buff[p] = 0;
@@ -185,7 +185,7 @@ int lua_main (void) {
 
 /*
   void *x = malloc(10000000);
-  TRACE_INFO("malloc %x\r\n", x);
+  TRACE_LUA("malloc %x\r\n", x);
   if (x) free(x);
 
   fprintf(stdout, "test %d\r\n", 1);
@@ -209,7 +209,7 @@ int lua_main (void) {
   if (fimage!=-1)
   {
     image_size = fat_size(fimage);
-    TRACE_INFO("main.bin:%dkB\n\r",image_size/1024);
+    TRACE_LUA("main.bin:%dkB\n\r",image_size/1024);
   }
 */
 
@@ -231,7 +231,7 @@ int lua_main (void) {
       TRACE_ERROR("f_getfree %d %s\r\n", res, f_ferrorlookup (res));
       f_printerror (res);
     } else {
-      TRACE_INFO ("FAT type = %u\nBytes/Cluster = %u\nNumber of FATs = %u\n"
+      TRACE_LUA ("FAT type = %u\nBytes/Cluster = %u\nNumber of FATs = %u\n"
       "Root DIR entries = %u\nSectors/FAT = %u\nNumber of clusters = %u\n"
       "FAT start (lba) = %u\nDIR start (lba,clustor) = %u\nData start (lba) = %u\n",
       fs->fs_type, fs->sects_clust * 512, fs->n_fats,
@@ -270,21 +270,21 @@ int lua_main (void) {
         fileInfo.fsize, &(fileInfo.fname [0]));
   }
 
-  TRACE_INFO ("\n%4u File(s),%10u bytes\n%4u Dir(s)", files, size, dirs);
+  TRACE_LUA ("\n%4u File(s),%10u bytes\n%4u Dir(s)", files, size, dirs);
     }
   }
   }
-  TRACE_INFO("luaL_newstate\r\n");
+  TRACE_LUA("luaL_newstate\r\n");
   lua_State *L = luaL_newstate();
-  TRACE_INFO("done\r\n");
+  TRACE_LUA("done\r\n");
   if (L == NULL) {
     TRACE_ERROR("Err: luaL_newstate()\r\n");
     return 1;
   }
-  TRACE_INFO("luaL_openlibs\r\n");
+  TRACE_LUA("luaL_openlibs\r\n");
   luaL_openlibs(L);
 
-  TRACE_INFO("done\r\n");
+  TRACE_LUA("done\r\n");
 
   fflush(stdout);
   //while(read(0, buff, 10)) {
@@ -292,21 +292,21 @@ int lua_main (void) {
   //while(fgets(buff, sizeof(buff), stdin) != NULL) {
   while(my_gets(buff, sizeof(buff)) != NULL) {
     unsigned int ticks;
-    TRACE_INFO("line <%s>\r\n", buff);
+    TRACE_LUA("line <%s>\r\n", buff);
 
     Led_setState(&led, 1);
     ticks = xTaskGetTickCount();
     error = luaL_loadbuffer(L, buff, strlen(buff), "line") || lua_pcall(L, 0, 0, 0);
     ticks = xTaskGetTickCount() - ticks;
     Led_setState(&led, 0);
-    TRACE_INFO("error %d %d\r\n", error, ticks);
+    TRACE_LUA("error %d %d\r\n", error, ticks);
     if (error) {
       fprintf(stderr, "%s", lua_tostring(L, -1));
       lua_pop(L, 1);
     }
     fflush(stdout);
 
-    TRACE_INFO("fgets %s\r\n", buff);
+    TRACE_LUA("fgets %s\r\n", buff);
   }
   lua_close(L);
   return 0;  
