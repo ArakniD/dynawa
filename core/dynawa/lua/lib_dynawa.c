@@ -3,7 +3,7 @@
 #include "debug/trace.h"
 
 static int l_peek (lua_State *L) {
-    TRACE_INFO("l_peek\r\n");
+    TRACE_LUA("l_peek\r\n");
 
     uint32_t addr = (uint32_t)luaL_checkint(L, 1);
 
@@ -17,7 +17,7 @@ static int l_peek (lua_State *L) {
 }
 
 static int l_ticks (lua_State *L) {
-    TRACE_INFO("l_ticks\r\n");
+    TRACE_LUA("l_ticks\r\n");
 
     lua_pushnumber(L, xTaskGetTickCount());
     return 1;

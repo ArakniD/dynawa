@@ -203,7 +203,9 @@ static int l_show (lua_State *L) {
         rotate = lua_toboolean(L, 2);
     }
 // TODO rotate flag
-    scrWriteBitmapRGBA(0, 0, 159, 127, (uint8_t*)bmp + sizeof(bitmap_header));
+    //TRACE_LUA("bmp %x\r\n", (uint8_t*)bmp + sizeof(bitmap_header));
+    scrWriteBitmapRGBA(0, 0, 159, 127, ((uint8_t*)bmp + sizeof(bitmap_header)));
+    //scrWriteBitmapRGBA(0, 0, 159, 127, (uint8_t*)0x10080000);
     return 0;
 }
 

@@ -51,7 +51,7 @@ void* _sbrk_r(struct _reent *r, ptrdiff_t nbytes)
     //(void)r;
     char *base;         //  errno should be set to  ENOMEM on error
 
-    TRACE_INFO("_sbrk %d\r\n", nbytes);
+    TRACE_SYS("_sbrk %d\r\n", nbytes);
     if (!heap_ptr)      //  Initialize if first time through.
         heap_ptr = end;
 
@@ -220,7 +220,7 @@ static int remap_handle (int fh)
     if (fh == STDERR_FILENO)
         return MONITOR_STDERR;
 
-    TRACE_INFO("remap_handle %d\r\n", fh);
+    TRACE_SYS("remap_handle %d\r\n", fh);
     return fh - FILE_HANDLE_OFFSET;
 }
 
@@ -350,7 +350,7 @@ _ssize_t _read (int fd, void *ptr, size_t len)
     portTickType xBlockTime;
     int bytesUnRead = -1;
 
-    TRACE_INFO("_read %x %x %d\r\n", fd, ptr, len);
+    TRACE_SYS("_read %x %x %d\r\n", fd, ptr, len);
     if ((slot = findslot (fh = remap_handle (fd))) == MAX_OPEN_FILES)
         return set_errno (EBADF);
 
@@ -359,7 +359,7 @@ _ssize_t _read (int fd, void *ptr, size_t len)
 
     xBlockTime = (openfiles [slot].flags & O_NONBLOCK) ? 0 : portMAX_DELAY;
 
-    TRACE_INFO("fh %d\r\n", fh);
+    TRACE_SYS("fh %d\r\n", fh);
     switch (fh)
     {
         case MONITOR_STDIN :
@@ -488,7 +488,7 @@ _ssize_t _write (int fd, const void *ptr, size_t len)
     portTickType xBlockTime;
     int bytesUnWritten = -1;
 
-    TRACE_INFO("_write %x %x %d\r\n", fd, ptr, len);
+    TRACE_SYS("_write %x %x %d\r\n", fd, ptr, len);
     if ((slot = findslot (fh = remap_handle (fd))) == MAX_OPEN_FILES) {
         TRACE_ERROR("MAX_OPEN_FILES\r\n");
         return set_errno (EBADF);
@@ -501,7 +501,7 @@ _ssize_t _write (int fd, const void *ptr, size_t len)
 
     xBlockTime = (openfiles [slot].flags & O_NONBLOCK) ? 0 : portMAX_DELAY;
 
-    TRACE_INFO("fh %d\r\n", fh);
+    TRACE_SYS("fh %d\r\n", fh);
     switch (fh)
     {
         case MONITOR_STDIN :
@@ -648,7 +648,7 @@ bytesUnWritten = len - i;
     break;
     }
 
-    TRACE_INFO("bytesUnWritten %d\r\n", bytesUnWritten);
+    TRACE_SYS("bytesUnWritten %d\r\n", bytesUnWritten);
 
     if (bytesUnWritten == -1 || bytesUnWritten == len)
         return -1;
@@ -665,7 +665,7 @@ int _open (const char *path, int flags, int mode)
     int fh = 0;
     int slot;
 
-    TRACE_INFO("_open %s %x %x\r\n", path, flags, mode);
+    TRACE_SYS("_open %s %x %x\r\n", path, flags, mode);
     
     if ((slot = findslot (-1)) == MAX_OPEN_FILES)
         return set_errno (ENFILE);
@@ -757,7 +757,7 @@ int _close (int fd)
 {
     int slot;
 
-    TRACE_INFO("_close %x\r\n", fd);
+    TRACE_SYS("_close %x\r\n", fd);
 
     if ((slot = findslot (remap_handle (fd))) == MAX_OPEN_FILES)
         return set_errno (EBADF);

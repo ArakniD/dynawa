@@ -137,6 +137,10 @@ void scrWriteBitmap(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right_x, 
     }
 }
 
+void (*_rprintf)() = rprintf;
+#define _TRACE_INFO(...)         (*_rprintf)(DBG,__VA_ARGS__)
+
+
 void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right_x, scr_coord_t bot_y, scr_bitmapbuf_t *buf)
 {
     scr_coord_t x1,x2,y1,y2;
@@ -144,6 +148,8 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
     volatile oled_access_cmd *pCMDOLED;
     volatile oled_access *pOLED;
     uint32_t writes,i;
+
+    //_TRACE_INFO("scrWriteBitmapRGBA %d %d %d %d %x\r\n", left_x, top_y, right_x, bot_y, buf);
 
     if (scrbuf==NULL)
     {
@@ -183,9 +189,9 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
 #define rgba2w(rgba)    ((((rgba) & 0xfc) << 1) | (((rgba) & 0xfc0000) >> 2) | (((rgba) & 0x1c00) << 12) | (((rgba) & 0xe000) >> 13))
 
 /*
-        TRACE_INFO("%x\r\n", rgb2w(0xfc>>2, 0xfc>>2, 0xfc>>2));
-        TRACE_INFO("%x\r\n", rgb62w(0xfc, 0xfc, 0xfc));
-        TRACE_INFO("%x\r\n", rgba2w(0xfcfcfc));
+        _TRACE_INFO("%x\r\n", rgb2w(0xfc>>2, 0xfc>>2, 0xfc>>2));
+        _TRACE_INFO("%x\r\n", rgb62w(0xfc, 0xfc, 0xfc));
+        _TRACE_INFO("%x\r\n", rgba2w(0xfcfcfc));
 */
         for (i=0;i<(writes);(i++))
         {          
@@ -199,6 +205,7 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
             //*pOLED = rgb2w((buf[i]&0xff)>>2,((buf[i]>>8)&0xff)>>2,((buf[i]>>16)&0xff)>>2);                  
             //*pOLED = buf[i];
             *pOLED = rgba2w(buf[i]);
+            //*pOLED = 0x11223344;
         }
 
     } else {
