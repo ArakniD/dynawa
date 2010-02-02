@@ -8,7 +8,7 @@ local local_dir = "../"
 if arg[1] then
 	from_watch=tostring(arg[1])
 end
-local file_types = {".+%.lua$",".+%.pnng$"}
+local file_types = {".+%.lua$",".+%.png$"}
 to_watch=from_watch
 
 local fd=io.open(local_dir.."_SYS")
@@ -46,7 +46,7 @@ end
 local function split_string(str)
 	assert(type(str)=="string" and #str > 0)
 	local chunks={}
-	local chunksize=100
+	local chunksize=200
 	for pointer = 1, #str, chunksize do
 		local to = pointer + chunksize - 1
 		if to > #str then
