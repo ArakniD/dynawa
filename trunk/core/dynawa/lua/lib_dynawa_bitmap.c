@@ -68,9 +68,11 @@ static int l_from_png_file (lua_State *L) {
     alloc_context.L = L;
     alloc_context.bmp = NULL;
 
-    // TODO error handling
     if(read_png(filename, alloc_png_rowbytes, &alloc_context, NULL, NULL)) {
-    // error
+        if(alloc_context.bmp) {
+            lua_pop(L, 1);
+        }
+        lua_pushnil(L);
     }
 
     return 1;
@@ -105,9 +107,11 @@ static int l_from_png (lua_State *L) {
     read_io_context.length = lua_strlen(L, 1);
     read_io_context.offset = 0;
 
-    // TODO error handling
     if(read_png(NULL, alloc_png_rowbytes, &alloc_context, png_read_data_fn, &read_io_context)) {
-    // error
+        if(alloc_context.bmp) {
+            lua_pop(L, 1);
+        }
+        lua_pushnil(L);
     }
 
     return 1;
@@ -185,6 +189,7 @@ static int l_mask (lua_State *L) {
     bitmap *dst_bmp = (bitmap*)lua_newuserdata(L, bmp_size);
     bitmap_set_header(dst_bmp, BMP_8RGBA, width, height);
 
+// TODO check bitmap_mask()
     bitmap_mask(dst_bmp, src_bmp, msk_bmp, x, y);
     return 1;
 }

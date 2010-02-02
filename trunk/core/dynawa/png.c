@@ -277,7 +277,7 @@ void read_png(FILE *fp, unsigned int sig_read)  /* File is already open */
     //png_set_swap(png_ptr);
 
     /* Add filler (or alpha) byte (before/after each RGB triplet) */
-    //png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
+    png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
 
     /* Turn on interlace handling.  REQUIRED if you are not using
      * png_read_image().  To see how to handle interlacing passes,

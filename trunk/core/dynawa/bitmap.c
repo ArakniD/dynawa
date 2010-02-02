@@ -166,7 +166,7 @@ void bitmap_op_mask(bitmap *dst_bmp, bitmap *src1_bmp, int dst_x, int dst_y, bit
         for (j = 0; j < width; j++) {
             // dst_pixels[dst_index] = src_pixels[src_index];
             // dst_pixels[dst_index] = src1_pixels[dst_index];
-            dst_pixels[dst_index] = (src1_pixels[dst_index] & 0xffffff) | (src_pixels[src_index] & 0xff000000);
+            dst_pixels[dst_index] = (src1_pixels[dst_index] & 0xff000000) | (src_pixels[src_index] & 0x00ffffff);
             src_index++;
             dst_index++;
         }

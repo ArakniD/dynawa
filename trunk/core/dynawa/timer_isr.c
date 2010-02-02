@@ -87,15 +87,19 @@ void Timer_Isr( void )
                         Timer_closeStopped(timer);
                         free(timer);
 
-                        timer = NULL;
+                        //timer = NULL;
                     }
+                    timer = NULL;
                 }
             } 
+/*
             else
             {
                 manager->previous = timer;
             }
+*/
             if (timer) {
+                manager->previous = timer;
                 if ( manager->nextTime == -1 || timer->timeCurrent < manager->nextTime )
                     manager->nextTime = timer->timeCurrent;
             }
