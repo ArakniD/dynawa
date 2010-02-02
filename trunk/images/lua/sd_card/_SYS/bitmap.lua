@@ -81,7 +81,7 @@ dynawa.display.app_screen = function(bitmap)
 	local app = task.app
 	app.display = bitmap
 	if bitmap then
-		log("App "..app.id.." wants to display something")
+		--log("App "..app.id.." wants to display something")
 		assert(type(bitmap)=="userdata","This is not bitmap but "..tostring(bitmap))
 		app.screen = bitmap
 		if not dynawa.app.in_front then

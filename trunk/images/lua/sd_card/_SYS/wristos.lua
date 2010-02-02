@@ -56,11 +56,11 @@ end
 
 -- Handle all events in queue, including those new events that are generated during the handling of the original events!
 local function dispatch_queue()
-	if _G.my then
+	--[[if _G.my then
 		log("_G.my is ".._G.my.id)
 	else
 		log("_G.my is nil")
-	end
+	end]]
 
 	local queue = assert(dynawa.event.queue)
 	local sanity = 999
