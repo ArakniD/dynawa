@@ -18,26 +18,38 @@ void button_isr(void* context) {
 
     uint8_t button_id = (uint8_t)context;
 
-    button[button_id].down = !Io_value(&button[button_id].io); 
-    TRACE_INFO("butt %d %d\r\n", button_id, button[button_id].down);
+    bool button_down = !Io_value(&button[button_id].io); 
+    TRACE_INFO("butt %d %d (%d)\r\n", button_id, button_down, button[button_id].down);
 
-    if (button[button_id].down) {
-        ev.type = EVENT_BUTTON_DOWN;
-        //Timer_stop(&button[button_id].timer);
-        Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);
-        button[button_id].timer_started = true;
-    } else {
-        if (!button[button_id].held) {
-// MV TODO: !!! nested interrupts !!! is it ok???
-            button[button_id].timer_started = false;
+    if (button_down) {
+        if (!button[button_id].down) {
+            button[button_id].down = true;
+            button[button_id].held = false;
 
-            Timer_stop(&button[button_id].timer);
+            //Timer_stop(&button[button_id].timer);
+            Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);
+            button[button_id].timer_started = true;
+
+            ev.type = EVENT_BUTTON_DOWN;
+            ev.data.button.id = button_id;
+            event_post_isr(&ev);
         }
-        ev.type = EVENT_BUTTON_UP;
+    } else {
+        if(button[button_id].down) {
+            button[button_id].down = false;
+            button[button_id].held = false;
+
+            if (!button[button_id].held) {
+// MV TODO: !!! nested interrupts !!! is it ok???
+                button[button_id].timer_started = false;
+
+                Timer_stop(&button[button_id].timer);
+            }
+            ev.type = EVENT_BUTTON_UP;
+            ev.data.button.id = button_id;
+            event_post_isr(&ev);
+        }
     }
-    ev.data.button.id = button_id;
-    event_post_isr(&ev);
-    button[button_id].held = false;
 }
 
 void button_timer_handler(void* context) {
