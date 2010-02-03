@@ -1,4 +1,4 @@
-port = "/dev/ttyUSB0"
+port = "/dev/ttyUSB2"
 fd = assert(io.open(port))
 local i=0
 while(1) do

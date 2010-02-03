@@ -46,7 +46,7 @@ dynawa.bitmap.parse_font = function (bmap)
 			--log("Char dimensions: "..width.."x"..height)
 			local char_str = string.char(char)
 			local char_bmp = dynawa.bitmap.copy(bmap,lastx+1,0,width,height)
-			char_bmp = mask(char_bmp,white,0,0)
+			char_bmp = mask(white,char_bmp,0,0)
 			chars[char_str] = char_bmp
 			widths[char_str] = width
 			lastx = x
@@ -98,7 +98,7 @@ end
 --Load and parse font
 dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default10.png"))
 
-dynawa.bitmap.text_line = function(line,font)
+dynawa.bitmap.text_line = function(line,font,color)
 	assert(type(line)=="string","First parameter is not string")
 	font = font or assert(dynawa.bitmap.default_font)
 	local x = 0
@@ -116,6 +116,10 @@ dynawa.bitmap.text_line = function(line,font)
 	local combine = dynawa.bitmap.combine
 	for i = 1, #line do
 		combine(result, bmaps[i], xs [i], 0)
+	end
+	if color then
+		assert(#color == 3,"Color should have 3 numeric elements (r,g,b)")
+		result = dynawa.bitmap.mask(dynawa.bitmap.new(width,height,color[1],color[2],color[3]),result,0,0)
 	end
 	return result, width, height
 end

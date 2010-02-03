@@ -118,6 +118,8 @@ end
 
 dynawa.event.send = function(event)
 	--local typ=assert(event.type,"Event has no type")
+	assert(not event.sender,"You must not specify event sender manually")
+	event.sender = _G.my		--This MAY BE NIL (event is sent from outside of any task)!
 	table.insert(dynawa.event.queue,event)
 end
 
