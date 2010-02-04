@@ -121,7 +121,7 @@ function dynawa.debug.update_files() --Asks for updated files and installs them 
 	dynawa.debug.send_raw("UPDATING_FILES")
 	local files=data.files_to_update
 	assert(files,"'files_to_update' not present in received data")
-	for fname,file in pairs(files) do
+	for fname,file in pairs(files) do --#todo create nonexistent directories
 		local fd = assert(io.open(fname,"w"),"Cannot open file "..fname.." for writing")
 		fd:write(file)
 		fd:close()

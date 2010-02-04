@@ -8,7 +8,7 @@ local local_dir = "../"
 if arg[1] then
 	from_watch=tostring(arg[1])
 end
-local file_types = {".+%.lua$",".+%.png$"}
+local file_types = {".+%.lua$",".+%.pnnng$"}
 to_watch=from_watch
 
 local fd=io.open(local_dir.."_SYS")
