@@ -1,8 +1,8 @@
 #ifndef BUTTONS_H
 #define BUTTONS_H
 
-#include "io.h";
-#include "timer.h";
+#include "io.h"
+#include "timer.h"
 
 #define NUM_BUTTONS     5
 

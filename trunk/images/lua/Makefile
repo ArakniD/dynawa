@@ -17,6 +17,7 @@ CONFIG_OPTS = \
 	-DCFG_FATFS \
 	-DCFG_USB \
 	-DCFG_USB_SER \
+	-DBUTTON_TASK \
 	-DCFG_CONSOLE_USB
 
 ROOT = ../..
@@ -237,8 +238,11 @@ THUMB_SRC= \
   $(DYNAWA)/lua/lib_dynawa.c \
   $(DYNAWA)/lua/lib_dynawa_timer.c \
   $(DYNAWA)/lua/lib_dynawa_bitmap.c \
+  $(DYNAWA)/lua/lib_dynawa_file.c \
+  $(DYNAWA)/lua/lib_dynawa_time.c \
   $(DYNAWA)/event.c \
   $(DYNAWA)/timer.c \
+  $(DYNAWA)/button.c \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
   $(FAT_SRC) \
@@ -313,7 +317,7 @@ ARM_SRC= \
   $(USB)/device/core/USBD_OTGHS.c \
   $(USB)/device/core/USBD_UDPHS.c \
   $(DYNAWA)/serial_isr.c \
-  $(DYNAWA)/button.c \
+  $(DYNAWA)/button_isr.c \
   $(DYNAWA)/timer_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \

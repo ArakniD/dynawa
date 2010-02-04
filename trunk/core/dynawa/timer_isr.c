@@ -20,18 +20,24 @@ the specific language governing permissions and limitations under the License.
 #include "timer.h"
 #include "debug/trace.h"
 
-extern Timer_Manager timer_manager;
+extern volatile portTickType xTickCount;
+
+//extern Timer_Manager timer_manager;
+Timer_Manager *p_timer_manager;
 
 void TimerIsr_Wrapper( void ) __attribute__ ((naked));
 void Timer_Isr( );
 
 void Timer_Isr( void )
 {
-    Timer_Manager* manager = &timer_manager;
+    //Timer_Manager* manager = &timer_manager;
+    Timer_Manager* manager = p_timer_manager;
     int status = manager->tc->TC_SR;
     if ( status & AT91C_TC_CPCS )
     {
-        TRACE_TMR(">>>Timer_Isr\r\n");
+        TRACE_TMR(">>>Timer_Isr %d\r\n", xTickCount);
+        int rc =  manager->tc->TC_RC;
+        manager->tc->TC_RC = 0xffff;
         manager->servicing = true;
         TIMER_DBG_PROCESSING(true);
 
@@ -53,8 +59,10 @@ void Timer_Isr( void )
         while ( timer != NULL )
         {
             manager->next = timer->next;
-            timer->timeCurrent -= (manager->tc->TC_RC + manager->tc->TC_CV);
-            TRACE_TMR("timer %x %d (%d %d)\r\n", timer, timer->timeCurrent, manager->tc->TC_RC, manager->tc->TC_CV);
+            //timer->timeCurrent -= (manager->tc->TC_RC + manager->tc->TC_CV);
+            //TRACE_TMR("timer %x %d (%d %d)\r\n", timer, timer->timeCurrent, manager->tc->TC_RC, manager->tc->TC_CV);
+            timer->timeCurrent -= (rc + manager->tc->TC_CV);
+            TRACE_TMR("timer %x %d (%d %d)\r\n", timer, timer->timeCurrent, rc, manager->tc->TC_CV);
             if ( timer->timeCurrent <= 0 )
             {
                 if ( timer->repeat )
@@ -101,6 +109,7 @@ void Timer_Isr( void )
             if (timer) {
                 manager->previous = timer;
                 if ( manager->nextTime == -1 || timer->timeCurrent < manager->nextTime )
+                    TRACE_TMR("nt %d\r\n", timer->timeCurrent);
                     manager->nextTime = timer->timeCurrent;
             }
 
@@ -114,7 +123,11 @@ void Timer_Isr( void )
             // Make sure it's not too big
             if ( manager->nextTime > 0xFFFF )
                 manager->nextTime = 0xFFFF;
+            TRACE_TMR("tc_rc %d %d\r\n", manager->nextTime, manager->tc->TC_CV);
+
+            //manager->tc->TC_CCR = AT91C_TC_CLKDIS;
             manager->tc->TC_RC = manager->nextTime;
+            //Timer_enable();
         }
         else
         {
@@ -125,8 +138,10 @@ void Timer_Isr( void )
         jitter = manager->tc->TC_CV;
         manager->servicing = false;
         TIMER_DBG_PROCESSING(false);
-        TRACE_TMR("<<<Timer_Isr\r\n");
+        TRACE_TMR("<<<Timer_Isr %d\r\n", xTickCount);
     }
+    //unsigned int mask = 0x1 << manager->channel_id;
+    //AT91C_BASE_AIC->AIC_ICCR = mask;
 
     AT91C_BASE_AIC->AIC_EOICR = 0; // Clear AIC to complete ISR processing
 }
