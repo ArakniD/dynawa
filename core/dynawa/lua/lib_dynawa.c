@@ -32,6 +32,8 @@ static const struct luaL_reg dynawa [] = {
 
 int dynawa_timer_register(lua_State *L);
 int dynawa_bitmap_register(lua_State *L);
+int dynawa_file_register(lua_State *L);
+int dynawa_time_register(lua_State *L);
 
 struct {
     char *module;
@@ -40,6 +42,8 @@ struct {
 {
     {"bitmap", dynawa_bitmap_register},
     {"timer", dynawa_timer_register},
+    {"file", dynawa_file_register},
+    {"time", dynawa_time_register},
     {NULL, NULL}  /* sentinel */
 };
 

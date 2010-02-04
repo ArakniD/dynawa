@@ -2,55 +2,27 @@
 #include "io.h"
 #include "debug/trace.h"
 #include "event.h"
+#include "task.h"
+#include "queue.h"
 
 
 #define BUTTON_TIMER_HW_INDEX   0
 #define BUTTON_HOLD_TIMEOUT     1000
 
+void button_isr(void* context);
+
+#if defined(BUTTON_TASK)
+xQueueHandle button_queue;
+static xTaskHandle button_task_handle;
+#endif
+
+extern volatile portTickType xTickCount;
+
 int button_pio[NUM_BUTTONS] = {
     32 + 18, 32 + 31, 32 + 21, 32 + 24, 32 + 27
 };
 
-static Button button[NUM_BUTTONS];
-
-void button_isr(void* context) {
-    event ev;
-
-    uint8_t button_id = (uint8_t)context;
-
-    bool button_down = !Io_value(&button[button_id].io); 
-    TRACE_INFO("butt %d %d (%d)\r\n", button_id, button_down, button[button_id].down);
-
-    if (button_down) {
-        if (!button[button_id].down) {
-            button[button_id].down = true;
-            button[button_id].held = false;
-
-            //Timer_stop(&button[button_id].timer);
-            Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);
-            button[button_id].timer_started = true;
-
-            ev.type = EVENT_BUTTON_DOWN;
-            ev.data.button.id = button_id;
-            event_post_isr(&ev);
-        }
-    } else {
-        if(button[button_id].down) {
-            button[button_id].down = false;
-            button[button_id].held = false;
-
-            if (!button[button_id].held) {
-// MV TODO: !!! nested interrupts !!! is it ok???
-                button[button_id].timer_started = false;
-
-                Timer_stop(&button[button_id].timer);
-            }
-            ev.type = EVENT_BUTTON_UP;
-            ev.data.button.id = button_id;
-            event_post_isr(&ev);
-        }
-    }
-}
+Button button[NUM_BUTTONS];
 
 void button_timer_handler(void* context) {
     uint8_t button_id = (uint8_t)context;
@@ -63,15 +35,60 @@ void button_timer_handler(void* context) {
         button[button_id].timer_started = false;
 
         TRACE_INFO("butt held %d\r\n", button_id);
+        TRACE_INFO("ticks %d\r\n", xTickCount);
 
         ev.type = EVENT_BUTTON_HOLD;
         ev.data.button.id = button_id;
+#if defined(BUTTON_TASK)
+        portBASE_TYPE xHigherPriorityTaskWoken;
+        xQueueSendFromISR(button_queue, &ev, &xHigherPriorityTaskWoken);
+
+        if(xHigherPriorityTaskWoken) {
+            portYIELD_FROM_ISR();
+        }
+#else
         event_post_isr(&ev);
+#endif
     }
 }
 
+#if defined(BUTTON_TASK)
+static void button_task( void* p ) {
+    TRACE_INFO("button task\r\n");
+    while (true) {
+        int button_id;
+        event ev;
+        xQueueReceive(button_queue, &ev, -1);
+
+        switch(ev.type) {
+        case EVENT_BUTTON_DOWN:
+            button_id = ev.data.button.id;
+            Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);
+            button[button_id].timer_started = true;
+            button[button_id].held = false;
+
+            break;
+        case EVENT_BUTTON_UP:
+            button_id = ev.data.button.id;
+            if (!button[button_id].held) {
+                button[button_id].timer_started = false;
+
+                Timer_stop(&button[button_id].timer);
+            }
+            button[button_id].held = false;
+            break;
+        }
+        event_post(&ev);
+    }
+}
+#endif
+
 int button_init () {
     int i;
+
+#if defined(BUTTON_TASK)
+    button_queue = xQueueCreate(10, sizeof(event));
+#endif
 
     for(i = 0; i < NUM_BUTTONS; i++) {
         button[i].down = false;
@@ -85,4 +102,13 @@ int button_init () {
 
         Io_addInterruptHandler(&button[i].io, button_isr, i);
     }
+
+#if defined(BUTTON_TASK)
+    if (xTaskCreate( button_task, "button_task", 800, NULL, 3, &button_task_handle ) != 1 ) {
+        return -1;
+    }
+#endif
+
+    return 0;
 }
+

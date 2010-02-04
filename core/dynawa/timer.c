@@ -24,11 +24,12 @@ the specific language governing permissions and limitations under the License.
 #define TIMER_CYCLES_PER_MS 48
 
 
-static bool sync = false;
+static bool sync = true;
 static bool timer_processing = false;
 
 // statics
 Timer_Manager timer_manager;
+extern Timer_Manager *p_timer_manager;
 // extern
 void TimerIsr_Wrapper( );
 
@@ -110,7 +111,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     int timeCurrent = Timer_getTime();
     int remaining = target - timeCurrent;
 
-    TRACE_TMR("remaining %d\r\n", remaining);
+    TRACE_TMR("t %d tc %d r %d\r\n", target, timeCurrent, remaining);
     // Get the entry ready to roll
     timer->timeCurrent = timer->timeInitial;
 
@@ -124,7 +125,8 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     // Are we actually servicing an interupt right now?
     if ( !timer_manager.servicing )
     {
-        // unlink 
+        // No - so does the time requested by this new timer make the time need to come earlier?
+        // first, unlink the timer 
         Timer *te = timer;
         while (te) {
             if (te->next && te->next == timer) {
@@ -135,7 +137,6 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
             te = te->next;
         }
 
-        // No - so does the time requested by this new timer make the time need to come earlier?
         if ( timer->timeCurrent < ( remaining - TIMER_MARGIN ) )
         {
             // Damn it!  Reschedule the next callback
@@ -146,6 +147,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
             // pretend that the existing time has been with us for the whole slice so that when the 
             // IRQ happens it credits the correct (reduced) time.
             timer->timeCurrent += timeCurrent;
+            TRACE_TMR("sch %d\r\n", timer->timeCurrent);
         }
     }
     else
@@ -245,7 +247,7 @@ int Timer_stop( Timer *timer )
 }
 
 // Enable the timer.  Disable is performed by the ISR when timer is at an end
-void Timer_enable( Timer *timer )
+void Timer_enable( )
 {
     // Enable the device
     // AT91C_BASE_TC0->TC_CCR = AT91C_TC_SWTRG;
@@ -271,6 +273,7 @@ void Timer_setTimeTarget( int target )
 
 int Timer_managerInit(int timerindex)
 {
+p_timer_manager = &timer_manager;
     switch(timerindex)
     {
         case 1:

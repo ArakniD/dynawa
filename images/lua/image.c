@@ -73,6 +73,7 @@ void Run( ) // this task gets called as soon as we boot up.
 
     //test();
 
+    button_init();
     rtc_open();
     //rtc_write();
     //rtc_read();
