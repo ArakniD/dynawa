@@ -97,7 +97,7 @@ int read_png(char *file_name, png_bytep (*alloc_rowbytes_callback)(png_infop, in
     int bit_depth, color_type, interlace_type;
     FILE *fp = NULL;
 
-    //TRACE_INFO("read_png(%s)\r\n", file_name ? file_name : "<read_data_fn>");
+    TRACE_BMP("read_png(%s)\r\n", file_name ? file_name : "<read_data_fn>");
 
     if (!read_data_fn) {
         if ((fp = fopen(file_name, "r")) == NULL)
@@ -186,7 +186,7 @@ void read_png(FILE *fp, unsigned int sig_read)  /* File is already open */
         png_get_IHDR(png_ptr, info_ptr, &width, &height,
                 &bit_depth, &color_type, &interlace_type,
                 &compression_method, &filter_method);
-        //TRACE_INFO("png info w%d h%d d%d c%d i%d x%d f%x\r\n", width, height, bit_depth, color_type, interlace_method, compression_method, filter_method);
+        TRACE_BMP("png info w%d h%d d%d c%d i%d x%d f%x\r\n", width, height, bit_depth, color_type, interlace_method, compression_method, filter_method);
     }
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
             &interlace_type, NULL, NULL);
@@ -296,7 +296,7 @@ void read_png(FILE *fp, unsigned int sig_read)  /* File is already open */
 
     int rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
-    //TRACE_INFO("rowbytes %d\r\n", rowbytes);
+    TRACE_BMP("rowbytes %d\r\n", rowbytes);
     png_bytep row_pointer = (*alloc_rowbytes_callback)(info_ptr, rowbytes * height, alloc_rowbytes_callback_context);
 
     int y;

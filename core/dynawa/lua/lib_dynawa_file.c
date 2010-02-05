@@ -13,13 +13,19 @@ static int l_mkdir (lua_State *L) {
         //if (errno == EEXIST)
         lua_pushboolean(L, false);
         /* else
-           lua_error("mkdir");
+           lua_pushstring(L, "mkdir");
+           lua_error(L);
            */
     } else {
         lua_pushboolean(L, true);
     }
     return 1;
 }
+
+static WCHAR lfn_buff[_MAX_LFN + 1];
+static FILINFO file_info = {
+    0, 0, 0, 0, "", lfn_buff, _MAX_LFN + 1    
+};
 
 static int l_dir_stat (lua_State *L) {
 
@@ -29,19 +35,26 @@ static int l_dir_stat (lua_State *L) {
 
     int res;
     DIR dir;
-    if ((res = f_opendir (&dir, ""))) {
+    if ((res = f_opendir (&dir, path))) {
         TRACE_ERROR("f_opendir %d %s\r\n", res, f_ferrorlookup (res));
-        lua_error("f_opendir");
+        lua_pushfstring(L, "f_opendir %d %s\r\n", res, f_ferrorlookup (res));
+        lua_error(L);
         lua_pushnil(L); 
     } else {
+        /* MV
+        file_info.lfname = lfn_buff;
+        file_info.lfsize = _MAX_LFN + 1;
+        */
+
         lua_newtable(L);
         while(true) {
-            FILINFO file_info;
+            //FILINFO file_info;
             if (((res = f_readdir (&dir, &file_info)) != FR_OK) || !file_info.fname [0])
                 break;
 
 //MV TODO: unicode support (16b)
             char *fname = (file_info.lfname && file_info.lfname [0]) ? file_info.lfname : file_info.fname;
+
             TRACE_LUA("dir entry %s\r\n", fname);
             lua_pushstring(L, fname);
             if (file_info.fattrib & AM_DIR) {

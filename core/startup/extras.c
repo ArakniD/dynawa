@@ -856,10 +856,14 @@ int _fstat (int fd __attribute__ ((unused)), struct stat *st __attribute__ ((unu
 
 int _stat (const char *fname, struct stat *st)
 {
+    TRACE_SYS("_stat %s\r\n", fname);
 #ifdef CFG_FATFS
     FRESULT f;
     FILINFO fi;
 
+    // MV
+    fi.lfname = NULL;
+    
     if ((f = f_stat (fname, &fi)) != FR_OK)
         return remap_fatfs_errors (f);
 
