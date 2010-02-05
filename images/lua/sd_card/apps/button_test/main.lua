@@ -10,10 +10,13 @@ local function scroll_line(text)
 	screen = dynawa.bitmap.copy(screen,0,height,160,128)
 	local line2 = dynawa.bitmap.combine(dynawa.bitmap.new(160,height,math.random(200),math.random(200),math.random(200)),line,0,0)
 	dynawa.bitmap.combine(screen,line2,0,128-height)
-	dynawa.display.app_screen(screen)
+	dynawa.event.send{type="display_bitmap",bitmap=screen}
 end
 
 local function receive(event)
+	if not my.app.in_front then
+		return
+	end
 	count = count + 1
 	scroll_line(count..": "..event.button.." "..event.type)
 	if event.button=="CONFIRM" and event.type=="button_hold" then

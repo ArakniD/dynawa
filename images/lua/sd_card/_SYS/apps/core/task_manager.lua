@@ -7,14 +7,34 @@ local apps = {
 
 local app_index = 1
 
-local function receive(event)
+local function _app_to_front(new_app)
+	local previous_app = dynawa.app.in_front --Can be nil immediately after boot!
+	dynawa.app.in_front = new_app
+	new_app.in_front = true
+	if previous_app then
+		previous_app.in_front = nil
+		dynawa.event.send{type="you_are_now_in_back",receiver=previous_app}
+	end
+	dynawa.event.send{type="you_are_now_in_front",receiver=new_app}
+end
+
+local function switch_app(event)
 	if event.button == "SWITCH" then
 		app_index = app_index + 1
 		if app_index > #apps then
 			app_index = 1
 		end
-		dynawa.app.to_front(apps[app_index])
+		local new_app = assert(apps[app_index])
+		_app_to_front(new_app)
 	end
 end
 
-dynawa.event.receive{event="button_down", callback=receive}
+local function sender_to_front(event)
+	local task = assert(event.sender,"No sender found in app_to_front event")
+	local app = assert(task.app)
+	_app_to_front(app)
+end
+
+dynawa.event.receive{event="button_down", callback=switch_app}
+dynawa.event.receive{event="me_to_front", callback=sender_to_front}
+

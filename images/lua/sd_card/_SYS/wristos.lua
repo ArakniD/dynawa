@@ -75,8 +75,8 @@ end
 
 --This is the "real" main handler for incoming hardware events
 _G.private_main_handler = function(event)
-	--rawset(_G,"my",nil)
-	dynawa._display_updated = nil
+	--rawset(_G,"my",nil) --At this time it already should be nil in ANY non-error status
+	local previous_display = (dynawa.app.in_front or {}).screen
 	dynawa._app_switched = nil
 	local typ = assert(event.type, "Event has no type")
 	local vector = assert(dynawa.event_vectors[typ],"Unknown hardware event type: "..tostring(typ))
@@ -86,10 +86,10 @@ _G.private_main_handler = function(event)
 		log("Unknown event type: "..typ)
 	end
 	dispatch_queue()
-	if dynawa._app_switched and (not dynawa._display_updated) then
-		--log("...Should update physical display")
-		local app = assert(dynawa.app.in_front,"App was switched but there is no 'in front' app")
-		dynawa.display.update_screen()
+	local new_display = (dynawa.app.in_front or {}).screen
+	--log("new_d="..tostring(new_display).." prev="..tostring(previous_display))
+	if new_display ~= previous_display then
+		dynawa.bitmap.show(new_display,dynawa.display.flipped)
 	end
 end
 
