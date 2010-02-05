@@ -33,18 +33,25 @@ function _G.boot_init()
 	
 	_G.log = function() end
 	
-	--Try loading the (potential) boot override script stored in the default path
-	local override,err = loadfile("override.lua")
+	local fd = io.open("no_override.lua")
 	
-	if (not override) and (not (err or ""):match("No such file or directory")) then
-		--Override script exists but cannot be loaded
-		error(err)
-	end
+	if fd then
+		fd:close()
+		os.remove("no_override.lua")
+	else
+		--Try loading the (potential) boot override script stored in the default path
+		local override,err = loadfile("override.lua")
 	
-	if override then
-		--Execute the override script and clear its chunk to save memory
-		override()
-		override = nil
+		if (not override) and (not (err or ""):match("No such file or directory")) then
+			--Override script exists but cannot be loaded
+			error(err)
+		end
+	
+		if override then
+			--Execute the override script and clear its chunk to save memory
+			override()
+			override = nil
+		end
 	end
 
 	_G.handle_event = false
@@ -58,7 +65,7 @@ function _G.boot_init()
 		error("Attempt to create global value '"..key.."' (forgot to use 'local'?)",2)
 	end
 
-	if dynawa.debug.main_handler then		--We are in debug mode, use the main loop wrapper
+	if dynawa.debug then		--We are in debug mode, use the main loop wrapper
 		_G.handle_event = dynawa.debug.main_handler
 		dynawa.version=nil 					--Forces the WristOS to be reloaded later in main_handler (by xpcall)
 	else									--Not in debug mode
