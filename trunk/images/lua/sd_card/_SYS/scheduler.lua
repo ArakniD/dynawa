@@ -67,14 +67,6 @@ dynawa.app.start = function(args)
 	return app
 end
 
-dynawa.app.to_front = function (app)
-	local app = get_app(app)
-	log("App "..app.id.." to front")
-	dynawa.app.in_front = app
-	dynawa._display_updated = nil
-	dynawa._app_switched = true
-end
-
 dynawa.event.receive = function(args) --expects event OR events, callback
 	local task = assert(_G.my, "Must be called from running task")
 	if args.event then
@@ -119,6 +111,10 @@ end
 dynawa.event.send = function(event)
 	--local typ=assert(event.type,"Event has no type")
 	assert(not event.sender,"You must not specify event sender manually")
+	if type(event) == "string" then
+		event = {type=event}
+	end
+	assert(type(event)=="table", "Event is not a table nor a string")
 	event.sender = _G.my		--This MAY BE NIL (event is sent from outside of any task)!
 	table.insert(dynawa.event.queue,event)
 end
@@ -139,7 +135,7 @@ dynawa.delayed_callback = function(args) --expects time, callback, [autorepeat:b
 	dynawa.hardware_vectors[timer_id] = args
 end
 
---Dispatches single event IMMEDIATELY
+--Dispatches single event IMMEDIATELY (bypasses event queue)
 --This should never be called directly from apps!
 dynawa.event.dispatch = function (event)
 	--log("QUEUE: Dispatching event of type "..tostring(event.type))
@@ -147,8 +143,17 @@ dynawa.event.dispatch = function (event)
 	local typ=event.type
 	if typ then
 		if listeners[typ] then
-			for task, params in pairs(listeners[typ]) do
-				call_task_function(task,params.callback,event)
+			if event.receiver then --Send it only to tasks belonging to this app
+				local receiver = event.receiver
+				for task, params in pairs(listeners[typ]) do
+					if task.app == receiver then
+						call_task_function(task,params.callback,event)
+					end
+				end
+			else
+				for task, params in pairs(listeners[typ]) do
+					call_task_function(task,params.callback,event)
+				end
 			end
 		else
 			log("Unhandled event of type '"..typ.."'")

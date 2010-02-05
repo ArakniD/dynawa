@@ -65,36 +65,6 @@ dynawa.bitmap.parse_font = function (bmap)
 	return {chars=chars,widths=widths,height=height}
 end
 
---Actually display app's screen. Not to be called from user apps
-dynawa.display.update_screen = function()
-	local app = assert(dynawa.app.in_front,"No app 'in front', cannot show its screen")
-	local bitmap = assert(app.screen,"App in front ("..app.name..") does not have its screen")
-	dynawa.bitmap.show(bitmap,dynawa.display.flipped)
-	dynawa._display_updated = true
-end
-
---This is called from the app do display its screen
-dynawa.display.app_screen = function(bitmap)
-	local w,h = dynawa.bitmap.info(bitmap)
-	assert(w == dynawa.display.size.width and h == dynawa.display.size.height, "Invalid bitmap size")
-	local task = assert(_G.my,"Current task unknown, cannot determine current app")
-	local app = task.app
-	app.display = bitmap
-	if bitmap then
-		--log("App "..app.id.." wants to display something")
-		assert(type(bitmap)=="userdata","This is not bitmap but "..tostring(bitmap))
-		app.screen = bitmap
-		if not dynawa.app.in_front then
-			dynawa.app.to_front(app)
-		end
-		if app == dynawa.app.in_front then
-			dynawa.display.update_screen()
-		end
-	else --parameter was nil, app wants to be invisible
-		--#todo
-	end
-end
-
 --Load and parse font
 dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default10.png"))
 
