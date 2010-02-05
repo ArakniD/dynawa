@@ -2,6 +2,7 @@ require("dynawa")
 
 local apps = {
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/"),
+	dynawa.app.start(dynawa.dir.sys.."apps/widgets/"),
 	dynawa.app.start(dynawa.dir.apps.."button_test/"),
 }
 
@@ -20,10 +21,12 @@ end
 
 local function switch_app(event)
 	if event.button == "SWITCH" then
-		app_index = app_index + 1
-		if app_index > #apps then
-			app_index = 1
-		end
+		repeat
+			app_index = app_index + 1
+			if app_index > #apps then
+				app_index = 1
+			end
+		until apps[app_index].screen
 		local new_app = assert(apps[app_index])
 		_app_to_front(new_app)
 	end

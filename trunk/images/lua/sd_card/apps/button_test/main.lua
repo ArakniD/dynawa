@@ -14,9 +14,6 @@ local function scroll_line(text)
 end
 
 local function receive(event)
-	if not my.app.in_front then
-		return
-	end
 	count = count + 1
 	scroll_line(count..": "..event.button.." "..event.type)
 	if event.button=="CONFIRM" and event.type=="button_hold" then
@@ -26,6 +23,8 @@ local function receive(event)
 		else
 			dynawa.event.receive{event="button_down", callback=receive}
 		end
+	elseif event.button=="BOTTOM" and event.type=="button_hold" then
+		dynawa.event.send{type="new_widget"}
 	end
 end
 
