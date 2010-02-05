@@ -96,7 +96,7 @@ void Run( ) // this task gets called as soon as we boot up.
     //monitorTaskStart();
 
     // MV bcsp task requires higher pri??? why?
-    //Task_create( bcsp, "BCSP", 16000, 2, NULL );
+    //Task_create( bcsp, "BCSP", 8192, 1, NULL );
 
     //Serial usart(0);
 

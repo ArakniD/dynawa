@@ -381,6 +381,7 @@ void abcsp_panic(abcsp * thisInstance, unsigned panicCode)
     (void)thisInstance;
 	//printf("abcsp_panic: %u\n", panicCode);
 	TRACE_ERROR("abcsp_panic: %u\r\n", panicCode);
+    panic();
 }
 
 
