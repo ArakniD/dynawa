@@ -121,7 +121,24 @@ function dynawa.debug.update_files() --Asks for updated files and installs them 
 	dynawa.debug.send_raw("UPDATING_FILES")
 	local files=data.files_to_update
 	assert(files,"'files_to_update' not present in received data")
-	for fname,file in pairs(files) do --#todo create nonexistent directories
+	for fname,file in pairs(files) do
+		--create directory
+		local parts = {}
+		fname:gsub("(.-/)", function(part)
+			table.insert(parts,part)
+		end)
+		assert (parts[1]=="/")
+		if #parts > 1 then
+			parts[2] = parts[1]..parts[2]
+			table.remove(parts,1)
+			local dirname = ""
+			for i = 1, #parts do
+				dirname = dirname .. parts[i]
+				local dirname2 = dirname:match("(.*)/$")
+				local log=("MKDIR "..dirname2.." "..tostring(dynawa.file.mkdir(dirname2)))
+			end
+		end
+		
 		local fd = assert(io.open(fname,"w"),"Cannot open file "..fname.." for writing")
 		fd:write(file)
 		fd:close()

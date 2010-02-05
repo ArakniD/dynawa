@@ -51,7 +51,9 @@ local buttons_flip = {
 function dynawa.button_event(event)
 	local button=buttons_flip[dynawa.display.flipped][assert(event.button)]
 	assert(button)
-	dynawa.event.send {type=event.type,button=button}
+	local receiver = dynawa.app.in_front
+	dynawa.event.send {type=event.type, button = button, receiver=receiver} --Send to app in front
+	dynawa.event.send {type=event.type, button = button, receiver=assert(dynawa.apps["/_sys/apps/core/"])} --Send to core app
 end
 
 -- Handle all events in queue, including those new events that are generated during the handling of the original events!
