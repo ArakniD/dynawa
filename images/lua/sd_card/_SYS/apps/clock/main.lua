@@ -1,9 +1,10 @@
 require("dynawa")
 
+my.name = "Default Clock"
 local mem_min,mem_max = 9999999, 0
 local bg = dynawa.bitmap.from_png_file(my.dir.."mockup.png")
 local count = 0
-local tick_interval = 333
+local tick_interval = 500
 local sleeping = true
 
 local function tick()
