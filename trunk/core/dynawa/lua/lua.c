@@ -104,9 +104,11 @@ int lua_event_loop (void) {
             lua_pushstring(L, "button");
             lua_pushnumber(L, ev.data.button.id);
             lua_settable(L, -3);
+/*
 rtc_open();
 TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
 rtc_close();
+*/
             break;
         case EVENT_BUTTON_UP:
             TRACE_LUA("button %d up\r\n", ev.data.button.id);
