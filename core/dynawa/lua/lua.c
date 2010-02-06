@@ -66,6 +66,10 @@ int lua_event_loop (void) {
     while(1) {
         event ev;
         event_get(&ev, EVENT_WAIT_FOREVER);
+/*
+        ev.type = EVENT_BUTTON_DOWN;
+        ev.data.button.id = 1;
+*/
 
 /*
         int i;
@@ -100,6 +104,9 @@ int lua_event_loop (void) {
             lua_pushstring(L, "button");
             lua_pushnumber(L, ev.data.button.id);
             lua_settable(L, -3);
+rtc_open();
+TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
+rtc_close();
             break;
         case EVENT_BUTTON_UP:
             TRACE_LUA("button %d up\r\n", ev.data.button.id);
@@ -134,6 +141,10 @@ int lua_event_loop (void) {
 
         //if (lua_pcall(L, #in, #out, err handler) != 0)
         error = lua_pcall(L, 1, 0, 0);
+/*
+        lua_call(L, 1, 0);
+        error = 0;
+*/
 
         Led_setState(&led, 0);
         ticks = xTaskGetTickCount() - ticks;

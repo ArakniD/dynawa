@@ -23,15 +23,19 @@ int rtc_write(struct tm *new_time) {
     // rtc_wake();
     portENTER_CRITICAL ();
 
-    i2cMasterConf(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, I2CMASTER_WRITE);
-    i2cWriteByte(I2CRTC_STOPBIT);
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, I2CRTC_STOPBIT);
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGHR, BIN2BCD(new_time->tm_hour));
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGMIN, BIN2BCD(new_time->tm_min));
 
-    i2cMasterConf(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, I2CMASTER_WRITE);
-    i2cWriteByte(0x1);
-    i2cMasterConf(I2CRTC_PHY_ADDR, 1, I2CRTC_REGMIN, I2CMASTER_WRITE);
-    i2cWriteByte(0x1);
-    i2cMasterConf(I2CRTC_PHY_ADDR, 1, I2CRTC_REGHR, I2CMASTER_WRITE);
-    i2cWriteByte(0x15);
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGDATE, BIN2BCD(new_time->tm_mday));
+
+    uint16_t year = new_time->tm_year + 1900;
+    uint8_t century = (year - 2000) / 100;
+    uint8_t year_in_century = year % 100;
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGCENMON, (century << 6) | BIN2BCD(new_time->tm_mon + 1));
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGYEAR, BIN2BCD(year_in_century));
+    
+    i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, BIN2BCD(0));
 
     portEXIT_CRITICAL ();
     // rtc_sleep();
@@ -85,7 +89,8 @@ century:
     portEXIT_CRITICAL ();
     // rtc_sleep();
 
-    TRACE_INFO("rtc: %02d:%02d:%02d\r\n", curr_time->tm_hour, curr_time->tm_min, curr_time->tm_sec);
+    TRACE_INFO("rtc: %d.%02d.%02d %02d:%02d:%02d\r\n", curr_time->tm_year + 1900, curr_time->tm_mon + 1, curr_time->tm_mday, curr_time->tm_hour, curr_time->tm_min, curr_time->tm_sec);
+    return 0;
 }
 
 time_t rtc_get_epoch_seconds (unsigned int *milliseconds) {
