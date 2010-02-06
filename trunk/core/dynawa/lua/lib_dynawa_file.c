@@ -9,7 +9,7 @@ static int l_mkdir (lua_State *L) {
 
     TRACE_LUA("dynawa.file.mkdir(%s)\r\n", path);
 
-    if (mkdir(path, 0)) {
+    if (_mkdir(path, 0)) {
         //if (errno == EEXIST)
         lua_pushboolean(L, false);
         /* else
@@ -37,9 +37,9 @@ static int l_dir_stat (lua_State *L) {
     DIR dir;
     if ((res = f_opendir (&dir, path))) {
         TRACE_ERROR("f_opendir %d %s\r\n", res, f_ferrorlookup (res));
-        lua_pushfstring(L, "f_opendir %d %s\r\n", res, f_ferrorlookup (res));
+        lua_pushfstring(L, "f_opendir %d %s", res, f_ferrorlookup (res));
         lua_error(L);
-        lua_pushnil(L); 
+        //lua_pushnil(L); 
     } else {
         /* MV
         file_info.lfname = lfn_buff;

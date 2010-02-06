@@ -72,11 +72,14 @@ void Run( ) // this task gets called as soon as we boot up.
 
 
     //test();
+    scrWriteRect(0,126,40,127,0xffffff);
+    scrWriteRect(80,126,120,127,0xffffff);
 
     button_init();
     rtc_open();
-    //rtc_write();
+    //rtc_write(NULL);
     //rtc_read();
+    rtc_set_epoch_seconds(1265399017); /* 10/02/05 19:43 */
     TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
     rtc_close();
 

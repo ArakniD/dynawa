@@ -36,7 +36,7 @@ extern scr_buf_t * scrbuf;
 int scrInit(void)
 {
     //init hw, switch power on and clear display
-    //(void) oledInitHw();  
+    (void) oledInitHw();  
 
     //configure screen window
     scrscrX1=0; scrscrX2=OLED_RESOLUTION_X-1; 

@@ -13,3 +13,4 @@
 - reset controller memory access
 - vibra
 - beeper
+- setjmp/longjmp nefunguje pokud je thumb (lua/src/ldo.c)

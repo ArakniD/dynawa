@@ -46,13 +46,14 @@ int main( void )
     TRACE_INIT();
     TRACE_INFO("Image Boot.\n\r");
 
+    prvSetupHardware();
+
     //screen
     scrInit();
     fontSetCharPos(0,110);
     fontColor = SCR_COLOR_WHITE;
     TRACE_SCR("FreeRTOS Image\n\r");
 
-    prvSetupHardware();
 
     event_init(100);
     //button_init();

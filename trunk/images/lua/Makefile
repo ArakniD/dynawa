@@ -17,6 +17,7 @@ CONFIG_OPTS = \
 	-DCFG_FATFS \
 	-DCFG_USB \
 	-DCFG_USB_SER \
+	-DCFG_RTC \
 	-DBUTTON_TASK \
 	-DCFG_CONSOLE_USB
 
@@ -173,6 +174,11 @@ FAT_SRC= \
 FAT_INC= \
   -I$(CORE)/fatfs-0.07/src
 
+MONITOR_SRC = \
+  $(MONITOR)/args.c \
+  $(MONITOR)/argsdispatch.c \
+  $(MONITOR)/monitor.c
+
 THUMB_SRC= \
   ../../core/startup/extras.c \
   $(FREERTOS)/tasks.c \
@@ -203,7 +209,6 @@ THUMB_SRC= \
   $(LUA)/lcode.c \
   $(LUA)/ldblib.c \
   $(LUA)/ldebug.c \
-  $(LUA)/ldo.c \
   $(LUA)/ldump.c \
   $(LUA)/lfunc.c \
   $(LUA)/lgc.c \
@@ -227,6 +232,7 @@ THUMB_SRC= \
   $(LUA)/lvm.c \
   $(LUA)/lzio.c \
   $(LUA)/print.c \
+  $(LUA)/lnum.c \
   $(DYNAWA)/rtos.c \
   $(DYNAWA)/usbserial.c \
   $(DYNAWA)/serial.c \
@@ -246,9 +252,6 @@ THUMB_SRC= \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
   $(FAT_SRC) \
-  $(MONITOR)/args.c \
-  $(MONITOR)/argsdispatch.c \
-  $(MONITOR)/monitor.c \
   $(YABCSP)/crc.c \
   $(YABCSP)/init.c \
   $(YABCSP)/le.c \
@@ -271,7 +274,6 @@ THUMB_SRC= \
   $(PERIPHERALS)/gasgauge.c \
   $(PERIPHERALS)/amblightsensor.c \
   $(PERIPHERALS)/ledrgb.c \
-  $(LUA)/lnum.c \
   $(LWBT_SRC) \
   $(ZLIB)/adler32.c \
   $(ZLIB)/compress.c \
@@ -322,6 +324,7 @@ ARM_SRC= \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \
   $(SCREEN)/screen.c \
+  $(LUA)/ldo.c \
   $(DYNAWA)/io_isr.c
   
 CPP_ARM_SRC =
