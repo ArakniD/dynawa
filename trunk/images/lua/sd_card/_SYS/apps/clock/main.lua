@@ -4,13 +4,15 @@ my.name = "Default Clock"
 local mem_min,mem_max = 9999999, 0
 local bg = dynawa.bitmap.from_png_file(my.dir.."mockup.png")
 local count = 0
-local tick_interval = 500
+local tick_interval = 1000
 local sleeping = true
+local run_id
 
-local function tick()
-	if sleeping then
+local function tick(event)
+	if (not my.app.in_front) or (event.run_id ~= run_id) then
 		return
 	end
+	run_id = event.run_id
 	count = count + 1
 	local mem = collectgarbage("count")*1024
 	if mem > mem_max then
@@ -23,16 +25,15 @@ local function tick()
 	dynawa.bitmap.combine(scr,dynawa.bitmap.text_line(string.format("min %s / max %s",mem_min,mem_max),nil,{255,99,255}),0,11)
 	dynawa.event.send{type="display_bitmap",bitmap=scr}
 	local when = tick_interval - (dynawa.ticks() % tick_interval)
-	dynawa.delayed_callback{time=when,callback=tick}
+	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id}
 end
 
 local function to_front()
-	sleeping = false
-	tick()
+	run_id = dynawa.unique_id()
+	tick{run_id = run_id}
 end
 
 local function to_back()
-	sleeping = true
 end
 
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}

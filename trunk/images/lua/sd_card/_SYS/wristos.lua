@@ -1,6 +1,12 @@
 dynawa.version = {wristOS="0.1"}
 package.loaded.dynawa = dynawa
 
+local _unique_id_number = 0
+dynawa.unique_id = function()
+	_unique_id_number = _unique_id_number + 1
+	return _unique_id_number
+end
+
 --Start boot animation
 dofile(dynawa.dir.sys.."boot_anim/boot_anim.lua")	
 
