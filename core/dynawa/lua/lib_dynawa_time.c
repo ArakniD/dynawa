@@ -3,7 +3,14 @@
 #include "debug/trace.h"
 
 static int l_set (lua_State *L) {
-    TRACE_LUA("dynawa.time.set\r\n");
+
+    uint32_t now = luaL_checkint(L, 1);
+
+    TRACE_LUA("dynawa.time.set(%d)\r\n", now);
+
+    rtc_open();
+    rtc_set_epoch_seconds(now);
+    rtc_close();
 
     return 0;
 }

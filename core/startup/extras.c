@@ -920,7 +920,10 @@ int _gettimeofday (struct timeval *tp, struct timezone *tzp)
 #ifdef CFG_RTC
         unsigned int milliseconds;
 
+        rtc_open();
         tp->tv_sec = rtc_get_epoch_seconds (&milliseconds);
+        rtc_close();
+
         tp->tv_usec = milliseconds * 1000;
 #else
         tp->tv_sec = 0;
