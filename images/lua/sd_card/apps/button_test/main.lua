@@ -1,9 +1,10 @@
 require("dynawa")
 
+my.app.name = "Button Test App"
 local switch
 local screen = dynawa.bitmap.new (160,128,80,0,0)
 local count = 0
---local line, width, height = dynawa.bitmap.text_line("blablabla TEST TEST TEST ?!@#$%")
+dynawa.time.set(1000000000) -------------------------------------- #todo time setting
 
 local function scroll_line(text)
 	local line, width, height = dynawa.bitmap.text_line(text)

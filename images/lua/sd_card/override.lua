@@ -28,8 +28,6 @@ local function serialize(neco)
 	end
 end
 
-dynawa.debug.serialize = serialize
-
 local function split_string(str)
 	assert(type(str)=="string" and #str > 0)
 	local chunks={}
@@ -135,12 +133,12 @@ function dynawa.debug.update_files() --Asks for updated files and installs them 
 			for i = 1, #parts do
 				dirname = dirname .. parts[i]
 				local dirname2 = dirname:match("(.*)/$")
-				log("Creating dir: "..dirname)
+				--log("Creating dir: "..dirname)
 				dynawa.file.mkdir(dirname2)
 			end 
 		end
 		
-		log("Writing file: "..fname)
+		dynawa.debug.send_raw("WRITING_FILE "..fname)
 		local fd = assert(io.open(fname,"w"),"Cannot open file "..fname.." for writing")
 		fd:write(file)
 		fd:close()
