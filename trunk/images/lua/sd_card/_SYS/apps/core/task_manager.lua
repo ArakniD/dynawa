@@ -1,12 +1,6 @@
 require("dynawa")
 
-local apps = {
-	dynawa.app.start(dynawa.dir.sys.."apps/clock/"),
-	dynawa.app.start(dynawa.dir.sys.."apps/widgets/"),
-	dynawa.app.start(dynawa.dir.apps.."button_test/"),
-}
-
-local app_index = 1
+local apps,app_index
 
 local function _app_to_front(new_app)
 	local previous_app = dynawa.app.in_front --Can be nil immediately after boot!
@@ -47,7 +41,17 @@ local function sender_to_front(event)
 	_app_to_front(app)
 end
 
-dynawa.event.receive{event="button_down", callback=switch_app}
-dynawa.event.receive{event="me_to_front", callback=sender_to_front}
-dynawa.event.receive{event="app_to_front", callback=app_to_front}
+local function init()
+	dynawa.event.receive{event="button_down", callback=switch_app}
+	dynawa.event.receive{event="me_to_front", callback=sender_to_front}
+	dynawa.event.receive{event="app_to_front", callback=app_to_front}
+	apps = {
+		dynawa.app.start(dynawa.dir.sys.."apps/clock/"),
+		dynawa.app.start(dynawa.dir.sys.."apps/widgets/"),
+		dynawa.app.start(dynawa.dir.apps.."button_test/"),
+	}
+	app_index = 1
+end
+
+dynawa.delayed_callback{time = 0, callback=init}
 

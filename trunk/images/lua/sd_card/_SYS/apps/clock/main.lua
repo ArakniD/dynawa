@@ -2,7 +2,7 @@ require("dynawa")
 
 my.name = "Default Clock"
 local mem_min,mem_max = 9999999, 0
-local bg = dynawa.bitmap.from_png_file(my.dir.."mockup.png")
+local bg = assert(dynawa.bitmap.from_png_file(my.dir.."mockup.png"))
 local count = 0
 local tick_interval = 1000
 local sleeping = true
@@ -33,10 +33,6 @@ local function to_front()
 	tick{run_id = run_id}
 end
 
-local function to_back()
-end
-
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
-dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
 dynawa.event.send("me_to_front")
 
