@@ -135,10 +135,12 @@ function dynawa.debug.update_files() --Asks for updated files and installs them 
 			for i = 1, #parts do
 				dirname = dirname .. parts[i]
 				local dirname2 = dirname:match("(.*)/$")
-				local log=("MKDIR "..dirname2.." "..tostring(dynawa.file.mkdir(dirname2)))
-			end
+				log("Creating dir: "..dirname)
+				dynawa.file.mkdir(dirname2)
+			end 
 		end
 		
+		log("Writing file: "..fname)
 		local fd = assert(io.open(fname,"w"),"Cannot open file "..fname.." for writing")
 		fd:write(file)
 		fd:close()
