@@ -7,7 +7,8 @@ local function receive_bitmap(args)
 		error("App "..task.app.name.." cleared its screen while being in front")
 	end
 	task.app.screen = bitmap
-	log(task.app.name.." updated display")
+	--log(task.app.name.." updated display")
 end
 
 dynawa.event.receive{event = "display_bitmap", callback = receive_bitmap}
+
