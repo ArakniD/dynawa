@@ -3,12 +3,6 @@ my.app.name = "System Widget"
 local current_widget = nil
 local inactive_mask = dynawa.bitmap.from_png_file(my.dir.."inactive_mask.png")
 
-local unique_id_number = 0
-my.globals.unique_id = function()
-	unique_id_number = unique_id_number + 1
-	return "widget_"..unique_id_number
-end
-
 dofile (my.dir.."menu.lua")
 
 local function new_widget(event)

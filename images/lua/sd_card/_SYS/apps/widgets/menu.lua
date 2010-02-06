@@ -41,7 +41,7 @@ end
 
 my.globals.menu.new = function(args)
 	local menu = {type="menu",items={},size={width=150,height=118}}
-	menu.id = my.globals.unique_id()
+	menu.id = "menu_"..dynawa.unique_id()
 	for i=1,20 do
 		menu.items[i] = parse_menu_item("MENU ITEM #"..i.." oh yes >>")
 	end
