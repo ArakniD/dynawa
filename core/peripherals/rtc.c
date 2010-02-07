@@ -49,7 +49,8 @@ int rtc_read(struct tm *curr_time, unsigned int *milliseconds) {
     portENTER_CRITICAL ();
 
     if (milliseconds) {
-        *milliseconds = 0;
+        uint8_t b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC10100);
+        *milliseconds = b * 10;
     }
 
     uint8_t b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC);
