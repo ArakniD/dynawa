@@ -24,6 +24,7 @@ int rtc_write(struct tm *new_time) {
     // rtc_wake();
     portENTER_CRITICAL ();
 
+// TODO: sequential write to RTC
     i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, I2CRTC_STOPBIT);
 
     i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGDATE, BIN2BCD(new_time->tm_mday));
@@ -48,9 +49,10 @@ int rtc_read(struct tm *curr_time, unsigned int *milliseconds) {
     // rtc_wake();
     portENTER_CRITICAL ();
 
+// TODO: sequential read from RTC
     if (milliseconds) {
         uint8_t b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC10100);
-        *milliseconds = b * 10;
+        *milliseconds = BCD2BIN(b) * 10;
     }
 
     uint8_t b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC);
