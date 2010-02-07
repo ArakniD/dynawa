@@ -21,7 +21,7 @@ the specific language governing permissions and limitations under the License.
 #include "rtos.h"
 #include "debug/trace.h"
 
-#define TIMER_CYCLES_PER_MS 48
+#define TIMER_CYCLES_PER_MS 47
 
 
 static bool sync = true;

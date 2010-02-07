@@ -18,7 +18,15 @@ static int l_set (lua_State *L) {
 static int l_get (lua_State *L) {
     TRACE_LUA("dynawa.time.get\r\n");
 
-    return 1;
+    unsigned int seconds, milliseconds;
+
+    rtc_open();
+    seconds = rtc_get_epoch_seconds (&milliseconds);
+    rtc_close();
+
+    lua_pushnumber(L, seconds);
+    lua_pushnumber(L, milliseconds);
+    return 2;
 }
 
 static int l_milliseconds (lua_State *L) {

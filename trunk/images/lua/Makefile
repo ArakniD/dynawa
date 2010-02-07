@@ -258,10 +258,10 @@ THUMB_SRC= \
   $(YABCSP)/rx.c \
   $(YABCSP)/txmsg.c \
   $(YABCSP)/txslip.c \
-  $(DYNAWA)/bcsp/main.c \
-  $(DYNAWA)/bcsp/abcsp_support_functions.c \
-  $(DYNAWA)/bcsp/uSched.c \
-  $(DYNAWA)/bcsp/SerialCom.c \
+  $(DYNAWA)/bt/main.c \
+  $(DYNAWA)/bt/abcsp_support_functions.c \
+  $(DYNAWA)/bt/uSched.c \
+  $(DYNAWA)/bt/SerialCom.c \
   $(PERIPHERALS)/serial.c \
   $(PERIPHERALS)/spi.c \
   $(PERIPHERALS)/pmc/pmc.c \
@@ -359,7 +359,7 @@ INCLUDEDIRS = \
  $(FAT_INC) \
 -I$(CORE)/memories \
 -I$(CORE)/yabcsp/src \
--I$(DYNAWA)/bcsp/ \
+-I$(DYNAWA)/bt/ \
 -I$(PERIPHERALS) \
 -I$(ZLIB) \
 -I$(LIBPNG) \
