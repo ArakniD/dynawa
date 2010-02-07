@@ -64,6 +64,8 @@ my.globals.menu.new = function(menu0)
 	local size = menu.size
 	local raw_size = {width = size.width - menu.raw_start.x - 2, height = size.height - menu.raw_start.y - 2}
 	menu.raw_size = raw_size --raw_size and raw_start point to the area where menu items are displayed (minus menu border and banner)
+	menu.rows_fit = menu.raw_size.height / menu.line_height --How many rows fit into the raw bitmap (rational number!)
+	assert(menu.rows_fit >= 3, "Menu too small. At least 3 items must fit in the window")
 	menu.start = {x=5,y=5}
 	full_redraw(menu)
 	return menu
