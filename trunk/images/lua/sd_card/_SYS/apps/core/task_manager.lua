@@ -1,8 +1,7 @@
 require("dynawa")
 
-local apps,app_index
-
 local function _app_to_front(new_app)
+	assert(new_app)
 	local previous_app = dynawa.app.in_front --Can be nil immediately after boot!
 	dynawa.app.in_front = new_app
 	if previous_app == new_app then --do nothing
@@ -16,19 +15,50 @@ local function _app_to_front(new_app)
 	dynawa.event.send{type="you_are_now_in_front",receiver=new_app}
 end
 
-local function button_down(event)
-	if event.button == "SWITCH" then
-		repeat
-			app_index = app_index + 1
-			if app_index > #apps then
-				app_index = 1
+local function next_app_to_front()
+	local apps = {}
+	for app_id,app in pairs(dynawa.apps) do
+		if app.screen then
+			if not app.priority then
+				app.priority = "ZZZ"..dynawa.unique_id()
+				log("Setting priority of '"..app.name.."' to "..app.priority)
 			end
-		until apps[app_index].screen
-		local new_app = assert(apps[app_index])
-		_app_to_front(new_app)
+			table.insert(apps,app)
+		end
 	end
+	
+	assert(#apps > 0, "Attempt to switch apps when no app has screen")
+	
+	table.sort(apps, function(a,b)
+		return (a.priority < b.priority)
+	end)
+	
+	local cur_app_n = 0
+	local in_front = dynawa.app.in_front
+	
+	if in_front then
+		for i,app in ipairs(apps) do
+			if in_front == app then
+				cur_app_n = i
+			end
+		end
+	end
+	
+	local new_app_n = cur_app_n + 1
+	if new_app_n > #apps then
+		new_app_n = 1
+	end
+		
+	local new_app = assert(apps[new_app_n])
+	_app_to_front(new_app)
 end
 
+local function button_down(event)
+	if event.button == "SWITCH" then
+		next_app_to_front()
+	end
+end
+	
 local function button_hold(event)
 	if event.button == "CANCEL" then --application menu
 		local app = dynawa.app.in_front
@@ -55,12 +85,9 @@ local function init()
 	dynawa.event.receive{event="button_hold", callback=button_hold}
 	dynawa.event.receive{event="me_to_front", callback=sender_to_front}
 	dynawa.event.receive{event="app_to_front", callback=app_to_front}
-	apps = {
-		dynawa.app.start(dynawa.dir.sys.."apps/clock/"),
-		dynawa.app.start(dynawa.dir.sys.."apps/widgets/"),
-		dynawa.app.start(dynawa.dir.apps.."button_test/"),
-	}
-	app_index = 1
+	dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
+	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
+	dynawa.app.start(dynawa.dir.apps.."button_test/")
 end
 
 dynawa.delayed_callback{time = 0, callback=init}

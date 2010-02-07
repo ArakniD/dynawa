@@ -112,6 +112,7 @@ local function font_init()
 	fonts.dot = b_copy(bmap,0,65,5,5)
 end
 
+my.app.priority = "A"
 font_init()
 dynawa.time.set(1234567890)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
