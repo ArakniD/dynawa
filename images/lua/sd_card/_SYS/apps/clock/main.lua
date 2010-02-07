@@ -4,17 +4,13 @@ my.name = "Default Clock"
 local run_id
 local fonts
 
-local function full_render0(time)
-	local bg = dynawa.bitmap.new(160,128,0,80,0)
-	dynawa.bitmap.combine(bg,dynawa.bitmap.text_line(time.min.."-"..time.sec),60,60)
-	return bg
-end
-
 local function small_print(bitmap, chars, x)
 	local width, height = 13, 25
 	local y = 127 - height
 	for i, char in ipairs(chars) do
-		dynawa.bitmap.combine(bitmap, fonts.small[char], x, y)
+		if char >= 0 then --negative char == space
+			dynawa.bitmap.combine(bitmap, fonts.small[char], x, y)
+		end
 		x = x + width + 2
 	end
 	return x
@@ -38,6 +34,26 @@ local function full_render(time)
 	b_combine(bitmap,fonts.large[min2], 96, top)
 	b_combine(bitmap,fonts.medium[sec1], 160 - 17 - 18, top)
 	b_combine(bitmap,fonts.medium[sec2], 160 - 17, top)
+	
+	small_print(bitmap, {time.wday * 2 + 10, time.wday * 2 + 11}, 1) --day of week
+	local day1 = math.floor(time.day / 10)
+	local day2 = time.day % 10
+	if day1 == 0 then
+		day1 = -1
+	end
+	
+	local month1 = -1 --space
+	local month2 = time.month % 10
+	if time.month >= 10 then
+		month1 = 1
+	end
+	
+	local year1 = math.floor((time.year % 100) / 10)
+	local year2 = time.year % 10
+	
+	small_print(bitmap,{day1, day2, 10}, 42)
+	small_print(bitmap,{month1, month2, 10}, 76)
+	small_print(bitmap,{11, year1, year2}, 161 - (3*15))
 	
 	return bitmap
 end
@@ -70,8 +86,8 @@ local function tick(event)
 	
 	local when = 1000 - (dynawa.ticks() % 1000)
 	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id}
-	if when > 500 then
-		dynawa.delayed_callback{time=when-500, callback=dots_blink, bitmap = no_dots}
+	if when > 300 then
+		dynawa.delayed_callback{time=when-300, callback=dots_blink, bitmap = no_dots}
 	end
 end
 
@@ -97,8 +113,7 @@ local function font_init()
 end
 
 font_init()
-dynawa.time.set(1000000000)
-
+dynawa.time.set(1234567890)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
 dynawa.event.send("me_to_front")
 

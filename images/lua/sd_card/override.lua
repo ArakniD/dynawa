@@ -149,7 +149,7 @@ end
 function dynawa.debug.main_handler(event)
 	--dynawa.debug.send_raw("DEBUG.MAIN_HANDLER")
 	
-	if event.button == 4 and event.type == "button_hold" then --update files and restart WristOS]
+	if event.button == 1 and event.type == "button_hold" then --update files and restart WristOS]
 		dynawa.debug.update_files()
 		dynawa.debug.send_raw("RESTARTING")
 		boot_init()

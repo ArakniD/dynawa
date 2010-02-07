@@ -4,7 +4,6 @@ my.app.name = "Button Test App"
 local switch
 local screen = dynawa.bitmap.new (160,128,80,0,0)
 local count = 0
-dynawa.time.set(1000000000) -------------------------------------- #todo time setting
 
 local function scroll_line(text)
 	local line, width, height = dynawa.bitmap.text_line(text)
@@ -24,11 +23,15 @@ local function receive(event)
 		else
 			dynawa.event.receive{event="button_down", callback=receive}
 		end
-	elseif event.button=="BOTTOM" and event.type=="button_hold" then
-		dynawa.event.send{type="new_widget"}
 	end
+end
+
+local function show_menu(event)
+	dynawa.event.send{type="new_widget"}	
 end
 
 scroll_line("SCROLLING TEST APP :)")
 dynawa.event.receive{events={"button_up","button_down","button_hold"}, callback=receive}
+dynawa.event.receive{event="show_menu", callback=show_menu}
+
 
