@@ -1,3 +1,5 @@
+require("dynawa")
+
 my.app.name = "System Widget"
 
 local current_widget = nil

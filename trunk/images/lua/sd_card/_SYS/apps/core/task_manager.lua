@@ -16,7 +16,7 @@ local function _app_to_front(new_app)
 	dynawa.event.send{type="you_are_now_in_front",receiver=new_app}
 end
 
-local function switch_app(event)
+local function button_down(event)
 	if event.button == "SWITCH" then
 		repeat
 			app_index = app_index + 1
@@ -26,6 +26,15 @@ local function switch_app(event)
 		until apps[app_index].screen
 		local new_app = assert(apps[app_index])
 		_app_to_front(new_app)
+	end
+end
+
+local function button_hold(event)
+	if event.button == "CANCEL" then --application menu
+		local app = dynawa.app.in_front
+		if app then
+			dynawa.event.send{type="show_menu", receiver=app}
+		end
 	end
 end
 
@@ -42,7 +51,8 @@ local function sender_to_front(event)
 end
 
 local function init()
-	dynawa.event.receive{event="button_down", callback=switch_app}
+	dynawa.event.receive{event="button_down", callback=button_down}
+	dynawa.event.receive{event="button_hold", callback=button_hold}
 	dynawa.event.receive{event="me_to_front", callback=sender_to_front}
 	dynawa.event.receive{event="app_to_front", callback=app_to_front}
 	apps = {

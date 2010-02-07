@@ -131,7 +131,6 @@ dynawa.delayed_callback = function(args) --expects time, callback, [autorepeat:b
 	assert(args.callback,"No callback function specified")
 	assert(type(args.callback)=="function","Callback is not a function but "..type(args.callback))
 	local timer_id = assert(dynawa.timer.start(args.time,args.autorepeat))
-	--timer_id = assert(tonumber(tostring(timer_id):match("0x........")))
 	dynawa.hardware_vectors[timer_id] = args
 end
 
@@ -141,6 +140,7 @@ dynawa.event.dispatch = function (event)
 	--log("QUEUE: Dispatching event of type "..tostring(event.type))
 	local listeners = assert(dynawa.event.listeners)
 	local typ=event.type
+	local handled = false
 	if typ then
 		if listeners[typ] then
 			if event.receiver then --Send it only to tasks belonging to this app
@@ -148,14 +148,17 @@ dynawa.event.dispatch = function (event)
 				for task, params in pairs(listeners[typ]) do
 					if task.app == receiver then
 						call_task_function(task,params.callback,event)
+						handled = true
 					end
 				end
 			else
 				for task, params in pairs(listeners[typ]) do
 					call_task_function(task,params.callback,event)
+					handled = true
 				end
 			end
-		else
+		end
+		if not handled then
 			log("Unhandled event of type '"..typ.."'")
 		end
 	else --event doesn't have type, must have "callback" and "task"

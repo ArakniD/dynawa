@@ -95,6 +95,6 @@ dynawa.bitmap.text_line = function(line,font,color)
 end
 
 local screen = dynawa.bitmap.new(160,128,0,0,0)
-dynawa.bitmap.combine(screen,dynawa.bitmap.text_line("TEXT1 text2"),0,120)
+dynawa.bitmap.combine(screen,dynawa.bitmap.text_line("WristOS "..dynawa.version.wristOS),1,1)
 dynawa.bitmap.show(screen)
 
