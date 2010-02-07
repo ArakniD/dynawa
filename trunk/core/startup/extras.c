@@ -166,10 +166,11 @@ while (0)
 #define MONITOR_STDIN  0
 #define MONITOR_STDOUT 1
 #define MONITOR_STDERR 2
-#define MONITOR_UART0  3
-#define MONITOR_UART1  4
-#define MONITOR_USB    5
-#define MONITOR_FATFS  6
+#define MONITOR_DBG    3
+#define MONITOR_UART0  4
+#define MONITOR_UART1  5
+#define MONITOR_USB    6
+#define MONITOR_FATFS  7
 
 // 
 //
@@ -378,6 +379,7 @@ _ssize_t _read (int fd, void *ptr, size_t len)
 
         case MONITOR_STDOUT :
         case MONITOR_STDERR :
+        case MONITOR_DBG :
             break;
 
         case MONITOR_UART0 :
@@ -508,7 +510,12 @@ _ssize_t _write (int fd, const void *ptr, size_t len)
             break;
 
         case MONITOR_STDOUT :
+            {
+            int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
+            bytesUnWritten = len - bytesWritten;
+            }
         case MONITOR_STDERR :
+        case MONITOR_DBG :
             {
                 /*
                    for (i = 0; i < len; i++)
@@ -533,10 +540,6 @@ break;
 
 bytesUnWritten = len - i;
 */
-#if 1
-            int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
-            bytesUnWritten = len - bytesWritten;
-#else
             int i;
             char *p = (char*)ptr;
             for(i = 0; i < len; i++) {
@@ -546,10 +549,8 @@ bytesUnWritten = len - i;
                 dbg_usart_putchar(*p++);
             } 
             bytesUnWritten = 0;
-#endif
-    }
-    break;
-
+        }
+        break;
     case MONITOR_UART0 :
     /*
        {

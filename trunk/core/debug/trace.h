@@ -43,6 +43,7 @@
 //#define TR_BMP          
 //#define TR_SYS          
 //#define TR_TMR          
+//#define TR_RTC          
 //#define TR_SER          
 //#define TR_SD           
 //#define TR_USB          
@@ -117,6 +118,12 @@
 #else
     #define TRACE_TMR(...)      
 #endif // TR_TMR
+
+#if defined(TR_RTC)
+    #define TRACE_RTC(...)      rprintf(DBG,__VA_ARGS__)    
+#else
+    #define TRACE_RTC(...)      
+#endif // TR_RTC
 
 #if defined(TR_SER)
     #define TRACE_SER(...)      rprintf(DBG,__VA_ARGS__)    
