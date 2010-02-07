@@ -4,28 +4,20 @@
 
 assert(dynawa, "Dynawa library not detected")
 
---[[local bmp = {
-	[0] = dynawa.bitmap.new(160, 128, 0, 0, 255),
-	dynawa.bitmap.new(160, 128, 0, 255, 0),
-	dynawa.bitmap.new(160, 128, 255, 255, 0, 0),
-	dynawa.bitmap.new(160, 128, 0, 255, 255)
-}
-for i=1,25 do
-	dynawa.bitmap.show(bmp[i%4])
-end
-local i=0
-while true do
-	dynawa.bitmap.show(bmp[i%4])
-	local str=tostring(io.read(1))
-	io.write("GOT CHAR "..string.byte(str).."\n")
-	io.output():flush()
-	i=i+1
-end--]]
-
 --Note the following function can be called more than once because of "soft reboot".
 --The flag "dynawa.already_booted" can be used to determine if this is the case.
 function _G.boot_init()
 	dynawa.debug = nil
+	
+	--release any timers which were active sice the last run
+	if dynawa.hardware_vectors then
+		for id, args in pairs(dynawa.hardware_vectors) do
+			if args.hardware == "timer" then
+				dynawa.timer.cancel(id)
+			end
+		end
+	end
+	
 	rawset(_G,"my",nil)
 	dynawa.dir = {root="/"}
 	dynawa.dir.sys=dynawa.dir.root .. "_SYS/"	
