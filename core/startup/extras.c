@@ -514,6 +514,7 @@ _ssize_t _write (int fd, const void *ptr, size_t len)
             int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
             bytesUnWritten = len - bytesWritten;
             }
+            break;
         case MONITOR_STDERR :
         case MONITOR_DBG :
             {

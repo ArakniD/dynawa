@@ -3,11 +3,31 @@
 #include "debug/trace.h"
 #include "types.h"
 #include "ff.h"
+#include <stdlib.h>
+
+#define MAX_PATH_LEN    255
+
+// Not reentrant but who cares
+static char path_buff[MAX_PATH_LEN + 1];
 
 static int l_mkdir (lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
 
     TRACE_LUA("dynawa.file.mkdir(%s)\r\n", path);
+
+/* removing possible trailing separator */
+    int len = strlen(path);
+    if (len > 1 && (len--, (path[len] == '/' || path[len] == '\\'))) {
+/* TODO: check "   /" case */
+        if (len > MAX_PATH_LEN) {
+            lua_pushboolean(L, false);
+            return 1;
+        }
+
+        strncpy(path_buff, path, len);
+        path_buff[len] = '\0';
+        path = path_buff;
+    }
 
     if (_mkdir(path, 0)) {
         //if (errno == EEXIST)
