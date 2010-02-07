@@ -50,6 +50,7 @@ tbl.timer_fired = function (event)
 			log("id:"..tostring(k))
 		end]]
 	else
+		assert(event.hardware == "timer")
 		if not event.autorepeat then
 			dynawa.hardware_vectors[handle] = nil
 		end
@@ -103,9 +104,8 @@ end
 
 --This is the "real" main handler for incoming hardware events
 _G.private_main_handler = function(event)
-	--rawset(_G,"my",nil) --At this time it already should be nil in ANY non-error status
+	--rawset(_G,"my",nil) --At this time it already should be nil in ANY non-error state
 	local previous_display = (dynawa.app.in_front or {}).screen
-	dynawa._app_switched = nil
 	local typ = assert(event.type, "Event has no type")
 	local vector = assert(dynawa.event_vectors[typ],"Unknown hardware event type: "..tostring(typ))
 	if vector then

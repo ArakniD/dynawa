@@ -66,7 +66,7 @@ local function dots_blink(event)
 end
 
 local function tick(event)
-	if (run_id ~= event.run_id) or (not my.app.in_front) then
+	if (run_id ~= event.handle) then
 		return
 	end
 	local ts = os.date()
@@ -77,23 +77,26 @@ local function tick(event)
 
 	dynawa.event.send{type="display_bitmap",bitmap=with_dots}
 	
-	local t1,t2 = os.date("*t").sec, math.floor(dynawa.ticks()/1000) % 60
+	my.globals.count_t = ((my.globals.count_t or 0) + 1) % 60
+	
+	local t1,t2 = os.date("*t").sec, my.globals.count_t
 	local t0 = t2 - t1
 	if t0 < 0 then
 		t0 = t0 + 60
 	end
 	log("Timers difference "..t0.." ("..t1.." "..t2..")")
 	
-	local when = 1000 - (dynawa.ticks() % 1000)
-	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id}
-	if when > 300 then
-		dynawa.delayed_callback{time=when-300, callback=dots_blink, bitmap = no_dots}
-	end
+	dynawa.delayed_callback{time=500, callback=dots_blink, bitmap = no_dots}
 end
 
 local function to_front()
-	run_id = dynawa.unique_id()
-	tick{run_id = run_id}
+	run_id = dynawa.delayed_callback{time=1000, autorepeat=true, callback=tick}
+	tick{handle = run_id}
+end
+
+local function to_back()
+	dynawa.cancel_callback(run_id)
+	run_id = nil
 end
 
 local function font_init()
@@ -117,5 +120,6 @@ dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
 dynawa.time.set(1234567890)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
+dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
 dynawa.event.send("me_to_front")
 

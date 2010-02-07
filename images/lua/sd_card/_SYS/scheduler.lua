@@ -123,6 +123,7 @@ dynawa.delayed_callback = function(args) --expects time, callback, [autorepeat:b
 	if not args.task then
 		args.task = assert(_G.my,"Task of target callback not specified.")
 	end
+	args.hardware = "timer"
 	assert(args.time,"No time specified")
 	assert(type(args.time)=="number","Time is not a number but "..type(args.time))
 	if args.time < 0 then
@@ -130,8 +131,16 @@ dynawa.delayed_callback = function(args) --expects time, callback, [autorepeat:b
 	end
 	assert(args.callback,"No callback function specified")
 	assert(type(args.callback)=="function","Callback is not a function but "..type(args.callback))
-	local timer_id = assert(dynawa.timer.start(args.time,args.autorepeat))
-	dynawa.hardware_vectors[timer_id] = args
+	local handle = assert(dynawa.timer.start(args.time,args.autorepeat))
+	args.handle = handle
+	dynawa.hardware_vectors[handle] = args
+	return handle
+end
+
+dynawa.cancel_callback = function(handle) --expects time, callback, [autorepeat:bool]
+	assert(type(handle) == "userdata", "Handle is not userdata")
+	dynawa.hardware_vectors[handle] = nil
+	dynawa.timer.cancel(handle)
 end
 
 --Dispatches single event IMMEDIATELY (bypasses event queue)
