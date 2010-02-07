@@ -66,11 +66,11 @@ local function dots_blink(event)
 end
 
 local function tick(event)
-	if (run_id ~= event.handle) then
+	if (run_id ~= event.run_id) or (not my.app.in_front) then
 		return
 	end
-	local ts = os.date()
-	local no_dots = full_render(os.date("*t"))
+	local sec,msec = dynawa.time.get()
+	local no_dots = full_render(os.date("*t",sec))
 
 	local with_dots = dynawa.bitmap.combine(no_dots,fonts.dot,58,40+11,true)
 	dynawa.bitmap.combine(with_dots,fonts.dot,58,40+31)
@@ -79,23 +79,31 @@ local function tick(event)
 	
 	my.globals.count_t = ((my.globals.count_t or 0) + 1) % 60
 	
-	local t1,t2 = os.date("*t").sec, my.globals.count_t
+	local t1,t3 = dynawa.time.get()
+	t1 = t1 % 60
+	local t2 = my.globals.count_t
 	local t0 = t2 - t1
 	if t0 < 0 then
 		t0 = t0 + 60
 	end
-	log("Timers difference "..t0.." ("..t1.." "..t2..")")
-	
-	dynawa.delayed_callback{time=500, callback=dots_blink, bitmap = no_dots}
+	log("Timers difference "..t0.." ("..t1.." + "..t3.." ms, "..t2..")")
+	local sec2,msec2 = dynawa.time.get()
+	local when = 1100 - msec2
+	if when >= 1000 or (sec ~= sec2) then 
+		when = 800
+	end
+	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id}
+	if when > 600 then
+		dynawa.delayed_callback{time=500, callback=dots_blink, bitmap = no_dots}
+	end
 end
 
 local function to_front()
-	run_id = dynawa.delayed_callback{time=1000, autorepeat=true, callback=tick}
-	tick{handle = run_id}
+	run_id = dynawa.unique_id()
+	tick{run_id = run_id}
 end
 
 local function to_back()
-	dynawa.cancel_callback(run_id)
 	run_id = nil
 end
 

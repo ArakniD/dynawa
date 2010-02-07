@@ -54,6 +54,7 @@ tbl.timer_fired = function (event)
 		if not event.autorepeat then
 			dynawa.hardware_vectors[handle] = nil
 		end
+		event.sender = nil
 		dynawa.event.send(event)
 	end
 end
