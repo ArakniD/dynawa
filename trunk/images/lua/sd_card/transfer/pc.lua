@@ -69,7 +69,7 @@ local function get_files()
 	local stats={}
 	local dirmatch = local_dir:gsub("%.","%%%.")
 	--print("dirmatch = "..dirmatch)
-	local lsd=assert(io.popen("ls -Rl "..local_dir,"r"))
+	local lsd=assert(io.popen("ls --full-time -Rl "..local_dir,"r"))
 	local dir_name
 	for line in lsd:lines() do
 		--print ("line:"..line)
@@ -79,7 +79,7 @@ local function get_files()
 			--print ("dir: "..dir_name)
 		else
 			--print (line)
-			local fname = line:match("%d%d%d%d%-%d%d%-%d%d %d%d:%d%d (.+)$")
+			local fname = line:match("%d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d%.......... .%d%d%d%d (.+)$")
 			if fname then 
 				local match=false
 				for i,typ in ipairs(file_types) do
