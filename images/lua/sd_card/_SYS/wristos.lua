@@ -1,10 +1,30 @@
 dynawa.version = {wristOS="0.1"}
 package.loaded.dynawa = dynawa
 
-local _unique_id_number = 0
-dynawa.unique_id = function()
-	_unique_id_number = _unique_id_number + 1
-	return _unique_id_number
+
+local uid_last, uid_chars = {}, {}
+string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.)", function(ch)
+	table.insert(uid_chars,ch)
+end)
+
+dynawa.unique_id = function(num)
+	num=num or 1
+	local nums=uid_last
+	local chars=uid_chars
+	if not nums[num] then
+		nums[num]=1
+	else
+		nums[num]=nums[num]+1
+		if not chars[nums[num]] then
+			nums[num]=1
+			return dynawa.unique_id(num+1)
+		end
+	end
+	local result = {}
+	for i,num in ipairs(nums) do 
+		table.insert(result,assert(chars[num]))
+	end
+	return table.concat(result)
 end
 
 --Start boot animation
