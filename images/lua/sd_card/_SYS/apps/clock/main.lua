@@ -113,6 +113,7 @@ local function font_init()
 end
 
 my.app.priority = "A"
+dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
 dynawa.time.set(1234567890)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}

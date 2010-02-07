@@ -26,12 +26,6 @@ local function receive(event)
 	end
 end
 
-local function show_menu(event)
-	dynawa.event.send{type="new_widget"}	
-end
-
-scroll_line("SCROLLING TEST APP :)")
+scroll_line("BUTTONS+SCROLLING TEST APP :)")
 dynawa.event.receive{events={"button_up","button_down","button_hold"}, callback=receive}
-dynawa.event.receive{event="show_menu", callback=show_menu}
-
 

@@ -9,7 +9,7 @@ local function parse_menu_item(text,font,color)
 	return item, height
 end
 
-local function full_redraw(widget)
+local function inner_render(widget)
 	assert(widget.type=="menu")
 	local b_combine = dynawa.bitmap.combine
 	local b_new = dynawa.bitmap.new
@@ -39,21 +39,59 @@ local function full_redraw(widget)
 	return widget
 end
 
-my.globals.menu.new = function(args)
+local function full_redraw(menu)
+	inner_render(menu)
+	local bgbmp = assert(menu.app.screen)
+	bgbmp = dynawa.bitmap.combine(bgbmp,my.globals.inactive_mask,0,0,true)
+	dynawa.bitmap.combine(bgbmp,menu.bitmap,menu.start.x,menu.start.y)
+	dynawa.event.send{type="display_bitmap", bitmap=bgbmp}
+	return menu
+end
+
+my.globals.menu.new = function(menu0)
 	local menu = {type="menu",items={},size={width=150,height=118}}
-	for i=1,20 do
-		menu.items[i] = parse_menu_item("MENU ITEM #"..i.." oh yes >>")
+	menu.app = assert(menu0.app)
+	menu.items = {}
+	for i,item in ipairs(menu0.items) do
+		menu.items[i] = parse_menu_item(item)
 	end
 	menu.active_item = 2
 	menu.top_item = 1
-	local banner,h = parse_menu_item("MENU BANNER hahaha",nil,{0,0,0})
+	local banner,h = parse_menu_item(menu0.banner,nil,{0,0,0})
 	menu.banner = banner
 	menu.line_height = h
 	menu.raw_start = {x=2,y=menu.line_height + 3}
 	local size = menu.size
 	local raw_size = {width = size.width - menu.raw_start.x - 2, height = size.height - menu.raw_start.y - 2}
 	menu.raw_size = raw_size --raw_size and raw_start point to the area where menu items are displayed (minus menu border and banner)
+	menu.start = {x=5,y=5}
 	full_redraw(menu)
 	return menu
+end
+
+local function cursor_up(menu)
+	if menu.active_item > 1 then
+		menu.active_item = menu.active_item -1
+		full_redraw(menu)
+	end
+end
+
+local function cursor_down(menu)
+	if menu.active_item < #menu.items then
+		menu.active_item = menu.active_item + 1
+		full_redraw(menu)
+	end
+end
+
+my.globals.menu.button_event = function(menu, event)
+	if event.type == "button_down" then
+		if event.button == "TOP" then
+			cursor_up(menu)
+			return
+		elseif event.button == "BOTTOM" then
+			cursor_down(menu)
+			return
+		end
+	end
 end
 
