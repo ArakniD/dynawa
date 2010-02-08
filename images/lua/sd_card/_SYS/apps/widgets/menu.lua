@@ -1,19 +1,69 @@
 --included from widget/main.lua
 
 my.globals.menu={}
+local highlight_color = {0,0,130}
 local b_combine = dynawa.bitmap.combine
 local b_new = dynawa.bitmap.new
+local scroll_interval = 70 --ms
+local scroll_max_speed = 5
+local scroll_id = nil
+
+local function scrolling(event)
+	assert(event.id)
+	if event.id ~= scroll_id or not my.app.in_front then
+		return
+	end
+	local menu = event.menu
+	local w,h = menu.raw_size.width, menu.line_height
+	local x = menu.start.x + menu.raw_start.x
+	local y = menu.start.y + menu.raw_start.y + (menu.active_item - menu.top_item) * h
+	local lbitmap = menu.items[menu.active_item].bitmap
+	local lw = menu.items[menu.active_item].width
+	menu.scroll.position = menu.scroll.position + math.max(math.floor(menu.scroll.speed),0)
+	if menu.scroll.speed < scroll_max_speed then
+		menu.scroll.speed = menu.scroll.speed + 0.2
+	end
+	local delay = scroll_interval
+	if menu.scroll.position + w > lw then
+		menu.scroll.position = lw - w
+		delay = delay * 20
+	end
+	
+	local bitmap = b_new(w,h,unpack(highlight_color))
+	b_combine (bitmap, lbitmap, 0-menu.scroll.position, 0)
+	dynawa.event.send{type="display_bitmap", bitmap=bitmap, at={x,y}}
+	
+	if delay > scroll_interval then -- end of line, start again
+		menu.scroll.speed = -1
+		menu.scroll.position = 0
+	end
+	
+	dynawa.delayed_callback {callback = scrolling, time = delay, id = menu.scroll.id, menu = menu}
+end
+
+local function maybe_start_scrolling(menu)
+	scroll_id = nil
+	menu.scroll={}
+	local item = menu.items[menu.active_item]
+	if item.width <= menu.raw_size.width then
+		return
+	end
+	--start scrolling!
+	local scroll = {id = dynawa.unique_id(), speed = 1, position = 0}
+	menu.scroll = scroll
+	scroll_id = scroll.id
+	dynawa.delayed_callback {callback = scrolling, time = scroll_interval*10, id = scroll.id, menu = menu}
+end
 
 local function parse_menu_item(text,font,color)
 	local item = {text=assert(text)}
 	local height
-	item.bitmap, item.width, height = dynawa.bitmap.text_line(item.text,font,color)
-	return item, height
+	item.bitmap, item.width = dynawa.bitmap.text_line(item.text,font,color)
+	return item
 end
 
 local function raw_render(menu) --only the area with menu items, NOT borders / banner!
 	assert(menu.type=="menu")	
-	local highlight_color = {0,0,130}
 	local rawbm = b_new(menu.raw_size.width, menu.raw_size.height, 0,0,0)
 	
 	local item_n = assert(menu.top_item)
@@ -65,7 +115,7 @@ local function raw_redraw(menu)
 end
 
 my.globals.menu.new = function(menu0)
-	local menu = {type="menu",items={},size={width=150,height=118}}
+	local menu = {type="menu",items={},size={width=150,height=118},scroll={}}
 	menu.app = assert(menu0.app)
 	menu.items = {}
 	for i,item in ipairs(menu0.items) do
@@ -73,8 +123,9 @@ my.globals.menu.new = function(menu0)
 	end
 	menu.active_item = 2
 	menu.top_item = 1
-	local banner,h = parse_menu_item(menu0.banner,nil,{0,0,0})
+	local banner = parse_menu_item(menu0.banner,nil,{0,0,0})
 	menu.banner = banner
+	local w,h = assert(dynawa.bitmap.info(menu.items[1].bitmap))
 	menu.line_height = h
 	menu.raw_start = {x=2,y=menu.line_height + 3}
 	local size = menu.size
@@ -82,33 +133,51 @@ my.globals.menu.new = function(menu0)
 	menu.raw_size = raw_size --raw_size and raw_start point to the area where menu items are displayed (minus menu border and banner)
 	menu.rows_fit = menu.raw_size.height / menu.line_height --How many rows fit into the raw bitmap (rational number!)
 	assert(menu.rows_fit >= 3, "Menu too small. At least 3 items must fit in the window")
+	--log(menu.rows_fit)
 	menu.start = {x=5,y=5}
 	full_redraw(menu)
+	maybe_start_scrolling(menu)
 	return menu
 end
 
-local function cursor_up(menu)
-	if menu.active_item > 1 then
-		menu.active_item = menu.active_item -1
-		raw_redraw(menu)
+local function cursor_move(menu,offset)
+	assert(type(offset)=="number")
+	local new_item = menu.active_item + offset
+	if new_item > #menu.items then
+		new_item = #menu.items
 	end
-end
-
-local function cursor_down(menu)
-	if menu.active_item < #menu.items then
-		menu.active_item = menu.active_item + 1
-		raw_redraw(menu)
+	if new_item < 1 then
+		new_item = 1
 	end
+	if new_item == menu.active_item then
+		return 
+	end
+	if menu.top_item >= new_item then
+		menu.top_item = math.max(new_item - 1, 1)
+	end
+	if menu.top_item < new_item - math.floor(menu.rows_fit) + 1 then
+		menu.top_item = new_item - math.floor(menu.rows_fit) + 1
+	end
+	menu.active_item = new_item
+	raw_redraw(menu)
+	maybe_start_scrolling(menu)
 end
 
 my.globals.menu.button_event = function(menu, event)
 	if event.type == "button_down" then
 		if event.button == "TOP" then
-			cursor_up(menu)
+			cursor_move(menu,-1)
 			return
 		elseif event.button == "BOTTOM" then
-			cursor_down(menu)
+			cursor_move(menu,1)
 			return
+		end
+	elseif event.type == "button_hold" then
+		local jump = math.floor(menu.rows_fit)
+		if event.button == "TOP" then
+			cursor_move(menu, 0-jump)
+		elseif event.button == "BOTTOM" then
+			cursor_move(menu, jumpl)
 		end
 	end
 end
