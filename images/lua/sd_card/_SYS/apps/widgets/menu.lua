@@ -1,6 +1,8 @@
 --included from widget/main.lua
 
 my.globals.menu={}
+local b_combine = dynawa.bitmap.combine
+local b_new = dynawa.bitmap.new
 
 local function parse_menu_item(text,font,color)
 	local item = {text=assert(text)}
@@ -9,16 +11,9 @@ local function parse_menu_item(text,font,color)
 	return item, height
 end
 
-local function inner_render(widget)
-	assert(widget.type=="menu")
-	local b_combine = dynawa.bitmap.combine
-	local b_new = dynawa.bitmap.new
-	local menu = widget
-	local border_color = {99,99,255}
+local function raw_render(menu) --only the area with menu items, NOT borders / banner!
+	assert(menu.type=="menu")	
 	local highlight_color = {0,0,130}
-	local bgbm = b_new(menu.size.width, menu.size.height, unpack(border_color))
-	b_combine(bgbm,b_new(menu.raw_size.width+2,menu.raw_size.height+2,0,0,0),menu.raw_start.x-1, menu.raw_start.y-1)  --1px border around rawbm
-	b_combine(bgbm, menu.banner.bitmap,1,1) --banner
 	local rawbm = b_new(menu.raw_size.width, menu.raw_size.height, 0,0,0)
 	
 	local item_n = assert(menu.top_item)
@@ -33,18 +28,39 @@ local function inner_render(widget)
 		item_n = item_n + 1
 	until (y >= menu.raw_size.height) or (not menu.items[item_n])
 	
-	b_combine(bgbm, rawbm, menu.raw_start.x, menu.raw_start.y)
-	widget.bitmap = bgbm
 	--dynawa.debug.send{raw_start = menu.raw_start, raw_size = menu.raw_size, size = menu.size}
-	return widget
+	return rawbm
+end
+
+
+local function widget_render(menu)
+	assert(menu.type=="menu")
+	local border_color = {99,99,255}
+	local bgbm = b_new(menu.size.width, menu.size.height, unpack(border_color))
+	b_combine(bgbm,b_new(menu.raw_size.width+2,menu.raw_size.height+2,0,0,0),menu.raw_start.x-1, menu.raw_start.y-1)  --1px border around rawbm
+	b_combine(bgbm, menu.banner.bitmap,1,1) --banner
+	
+	local rawbm = raw_render(menu)
+	b_combine(bgbm, rawbm, menu.raw_start.x, menu.raw_start.y)
+	menu.bitmap = bgbm
+	--dynawa.debug.send{raw_start = menu.raw_start, raw_size = menu.raw_size, size = menu.size}
+	return menu
 end
 
 local function full_redraw(menu)
-	inner_render(menu)
 	local bgbmp = assert(menu.app.screen)
 	bgbmp = dynawa.bitmap.combine(bgbmp,my.globals.inactive_mask,0,0,true)
+	widget_render(menu)
 	dynawa.bitmap.combine(bgbmp,menu.bitmap,menu.start.x,menu.start.y)
 	dynawa.event.send{type="display_bitmap", bitmap=bgbmp}
+	return menu
+end
+
+local function raw_redraw(menu)
+	local rawbmp = raw_render(menu)
+	local x = menu.start.x + menu.raw_start.x
+	local y = menu.start.y + menu.raw_start.y
+	dynawa.event.send{type="display_bitmap", bitmap=rawbmp, at={x,y}}
 	return menu
 end
 
@@ -74,14 +90,14 @@ end
 local function cursor_up(menu)
 	if menu.active_item > 1 then
 		menu.active_item = menu.active_item -1
-		full_redraw(menu)
+		raw_redraw(menu)
 	end
 end
 
 local function cursor_down(menu)
 	if menu.active_item < #menu.items then
 		menu.active_item = menu.active_item + 1
-		full_redraw(menu)
+		raw_redraw(menu)
 	end
 end
 

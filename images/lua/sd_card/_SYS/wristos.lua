@@ -106,7 +106,6 @@ end
 --This is the "real" main handler for incoming hardware events
 _G.private_main_handler = function(event)
 	--rawset(_G,"my",nil) --At this time it already should be nil in ANY non-error state
-	local previous_display = (dynawa.app.in_front or {}).screen
 	local typ = assert(event.type, "Event has no type")
 	local vector = assert(dynawa.event_vectors[typ],"Unknown hardware event type: "..tostring(typ))
 	if vector then
@@ -115,11 +114,22 @@ _G.private_main_handler = function(event)
 		log("Unknown event type: "..typ)
 	end
 	dispatch_queue()
-	local new_display = (dynawa.app.in_front or {}).screen
-	--log("new_d="..tostring(new_display).." prev="..tostring(previous_display))
-	if new_display ~= previous_display then
-		dynawa.bitmap.show(new_display,dynawa.display.flipped)
+	local app = dynawa.app.in_front
+	if not app then --No app in front
+		return
 	end
+	assert(app.screen, "App in front ("..app.name..") has no display")
+	if app.screen_updates.full then
+		log("Updating full screen of "..app.name)
+		dynawa.bitmap.show(app.screen,dynawa.display.flipped)
+	else
+		for i, params in ipairs(app.screen_updates) do
+			log("Updating region: "..table.concat(params,","))
+			--dynawa.bitmap.show_partial(app.screen,params[1],params[2],params[3],params[4],params[1],params[2],dynawa.display.flipped)
+		end
+		dynawa.bitmap.show(app.screen,dynawa.display.flipped) --REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	end
+	app.screen_updates = {pixels = 0}
 end
 
 dynawa.app.start("/_sys/apps/core/")

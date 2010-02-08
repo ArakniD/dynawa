@@ -3,16 +3,18 @@ require("dynawa")
 local function _app_to_front(new_app)
 	assert(new_app)
 	local previous_app = dynawa.app.in_front --Can be nil immediately after boot!
-	dynawa.app.in_front = new_app
 	if previous_app == new_app then --do nothing
 		return
 	end
+	dynawa.app.in_front = new_app
+	--assert(new_app.screen,"App '"..new_app.name.."' cannot get to front because it has no screen")
 	new_app.in_front = true
 	if previous_app then
 		previous_app.in_front = nil
 		dynawa.event.send{type="you_are_now_in_back",receiver=previous_app}
 	end
 	dynawa.event.send{type="you_are_now_in_front",receiver=new_app}
+	new_app.screen_updates = {full=true} --This app MUST do full screen update
 end
 
 local function next_app_to_front()

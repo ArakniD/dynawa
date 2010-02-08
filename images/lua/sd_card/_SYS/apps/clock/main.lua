@@ -1,6 +1,5 @@
 require("dynawa")
 
-my.name = "Default Clock"
 local run_id
 local fonts
 
@@ -77,8 +76,8 @@ local function tick(event)
 
 	dynawa.event.send{type="display_bitmap",bitmap=with_dots}
 	
+--[[
 	my.globals.count_t = ((my.globals.count_t or 0) + 1) % 60
-	
 	local t1,t3 = dynawa.time.get()
 	t1 = t1 % 60
 	local t2 = my.globals.count_t
@@ -87,6 +86,8 @@ local function tick(event)
 		t0 = t0 + 60
 	end
 	log("Timers difference "..t0.." ("..t1.." + "..t3.." ms, "..t2..")")
+]]
+	
 	local sec2,msec2 = dynawa.time.get()
 	local when = 1100 - msec2
 	if when >= 1000 or (sec ~= sec2) then 
@@ -123,6 +124,7 @@ local function font_init()
 	fonts.dot = b_copy(bmap,0,65,5,5)
 end
 
+my.app.name = "Default Clock"
 my.app.priority = "A"
 dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
