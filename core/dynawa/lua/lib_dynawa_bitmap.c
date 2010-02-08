@@ -29,7 +29,7 @@ static int l_new (lua_State *L) {
     return 1;
 }
 
-static png_bytep c_alloc_png_rowbytes(png_infop info_ptr, int size, void *context) {
+static png_bytep c_alloc_png_rowbytes(png_infop info_ptr, uint32_t size, void *context) {
     TRACE_LUA("alloc_png_rowbytes %d\r\n", size);
     png_bytep rowbytes = malloc(size);
     *((png_bytep*)context) = rowbytes;
@@ -47,7 +47,7 @@ typedef struct {
     uint32_t offset;
 } png_read_io_context;
 
-static png_bytep alloc_png_rowbytes(png_infop info_ptr, int size, void *context) {
+static png_bytep alloc_png_rowbytes(png_infop info_ptr, uint32_t size, void *context) {
     png_alloc_rowbytes_context *lua_context = (png_alloc_rowbytes_context *)context;
     TRACE_LUA("alloc_png_rowbytes %d\r\n", size);
     bitmap *bmp = (bitmap*)lua_newuserdata(lua_context->L, sizeof(bitmap_header) + size);
@@ -123,12 +123,12 @@ static int l_copy (lua_State *L) {
     luaL_checktype(L, 1, LUA_TUSERDATA);
     bitmap *src_bmp = lua_touserdata(L, 1);
 
-    int x = luaL_checkint(L, 2);
-    int y = luaL_checkint(L, 3);
-    int width = luaL_checkint(L, 4);
-    int height = luaL_checkint(L, 5);
+    int16_t x = luaL_checkint(L, 2);
+    int16_t y = luaL_checkint(L, 3);
+    uint16_t width = luaL_checkint(L, 4);
+    uint16_t height = luaL_checkint(L, 5);
 
-    int bmp_size = bitmap_size(BMP_8RGBA, width, height);
+    uint32_t bmp_size = bitmap_size(BMP_8RGBA, width, height);
     bitmap *bmp = (bitmap*)lua_newuserdata(L, bmp_size);
     bitmap_set_header(bmp, BMP_8RGBA, width, height);
 
@@ -145,8 +145,8 @@ static int l_combine (lua_State *L) {
     luaL_checktype(L, 2, LUA_TUSERDATA);
     bitmap *ovl_bmp = lua_touserdata(L, 2);
 
-    int x = luaL_checkint(L, 3);
-    int y = luaL_checkint(L, 4);
+    int16_t x = luaL_checkint(L, 3);
+    int16_t y = luaL_checkint(L, 4);
 
     bool new_bitmap;
     if (lua_isnoneornil(L, 5)) {
@@ -158,9 +158,9 @@ static int l_combine (lua_State *L) {
     bitmap *dst_bmp;
     if (new_bitmap) {
         TRACE_LUA("new bitmap\r\n");
-        int width = bg_bmp->header.width;
-        int height = bg_bmp->header.height;
-        int bmp_size = bitmap_size(BMP_8RGBA, width, height);
+        uint16_t width = bg_bmp->header.width;
+        uint16_t height = bg_bmp->header.height;
+        uint32_t bmp_size = bitmap_size(BMP_8RGBA, width, height);
         dst_bmp = (bitmap*)lua_newuserdata(L, bmp_size);
         bitmap_set_header(dst_bmp, BMP_8RGBA, width, height);
     } else {
@@ -180,12 +180,12 @@ static int l_mask (lua_State *L) {
     luaL_checktype(L, 2, LUA_TUSERDATA);
     bitmap *msk_bmp = lua_touserdata(L, 2);
 
-    int x = luaL_checkint(L, 3);
-    int y = luaL_checkint(L, 4);
+    int16_t x = luaL_checkint(L, 3);
+    int16_t y = luaL_checkint(L, 4);
 
-    int width = msk_bmp->header.width;
-    int height = msk_bmp->header.height;
-    int bmp_size = bitmap_size(BMP_8RGBA, width, height);
+    uint16_t width = msk_bmp->header.width;
+    uint16_t height = msk_bmp->header.height;
+    uint32_t bmp_size = bitmap_size(BMP_8RGBA, width, height);
     bitmap *dst_bmp = (bitmap*)lua_newuserdata(L, bmp_size);
     bitmap_set_header(dst_bmp, BMP_8RGBA, width, height);
 
@@ -208,9 +208,53 @@ static int l_show (lua_State *L) {
         rotate = lua_toboolean(L, 2);
     }
 // TODO rotate flag
-    //TRACE_LUA("bmp %x\r\n", (uint8_t*)bmp + sizeof(bitmap_header));
-    scrWriteBitmapRGBA(0, 0, 159, 127, ((uint8_t*)bmp + sizeof(bitmap_header)));
-    //scrWriteBitmapRGBA(0, 0, 159, 127, (uint8_t*)0x10080000);
+    //scrWriteBitmapRGBA(0, 0, 159, 127, ((uint8_t*)bmp + sizeof(bitmap_header)));
+    scrWriteBitmapRGBA2(0, 0, 0, 0, 160, 128, bmp);
+    return 0;
+}
+
+static int l_show_partial (lua_State *L) {
+    TRACE_LUA("dynawa.bitmap.show_partial\r\n");
+
+    luaL_checktype(L, 1, LUA_TUSERDATA);
+    bitmap *bmp = lua_touserdata(L, 1);
+
+    int16_t x;
+    if (lua_isnoneornil(L, 2)) {
+        x = 0;
+    } else {
+        x = luaL_checkint(L, 2);
+    }
+    int16_t y;
+    if (lua_isnoneornil(L, 3)) {
+        y = 0;
+    } else {
+        y = luaL_checkint(L, 3);
+    }
+    uint16_t width;
+    if (lua_isnoneornil(L, 4)) {
+        width = bmp->header.width;
+    } else {
+        width = luaL_checkint(L, 4);
+    }
+    uint16_t height;
+    if (lua_isnoneornil(L, 5)) {
+        height = bmp->header.height;
+    } else {
+        height = luaL_checkint(L, 5);
+    }
+    int16_t scr_x = luaL_checkint(L, 6);
+    int16_t scr_y = luaL_checkint(L, 7);
+
+    bool rotate;
+    if (lua_isnoneornil(L, 8)) {
+        rotate = false;
+    } else {
+        luaL_checktype(L, 8, LUA_TBOOLEAN);
+        rotate = lua_toboolean(L, 8);
+    }
+// TODO rotate flag
+    scrWriteBitmapRGBA2(scr_x, scr_y, x, y, width, height, bmp);
     return 0;
 }
 
@@ -222,6 +266,7 @@ static const struct luaL_reg f_bitmap[] = {
     {"combine", l_combine},
     {"mask", l_mask},
     {"show", l_show},
+    {"show_partial", l_show_partial},
     {NULL, NULL}  /* sentinel */
 };
 
