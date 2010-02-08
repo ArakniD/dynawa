@@ -22,6 +22,7 @@
 #include <peripherals/oled/oled.h>
 #include "screen.h"
 #include "debug/trace.h"
+#include "bitmap.h"
 
 scr_coord_t scrscrX1;
 scr_coord_t scrscrX2;
@@ -186,7 +187,7 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
 
 #define rgb21w(r,g,b) ((((b)&0x3F)<<16)|(((g)&0x7)<<22)|(((g)>>3)&0x7)|(((r)&0x3f)<<3))
 #define rgb62w(r,g,b) ((((b)&0xfc)<<14)|(((g)&0x1c)<<20)|(((g)>>5)&0x7)|(((r)&0xfc)<<1))
-#define rgba2w(rgba)    ((((rgba) & 0xfc) << 1) | (((rgba) & 0xfc0000) >> 2) | (((rgba) & 0x1c00) << 12) | (((rgba) & 0xe000) >> 13))
+#define RGBA2W(rgba)    ((((rgba) & 0xfc) << 1) | (((rgba) & 0xfc0000) >> 2) | (((rgba) & 0x1c00) << 12) | (((rgba) & 0xe000) >> 13))
 
 /*
         _TRACE_INFO("%x\r\n", rgb2w(0xfc>>2, 0xfc>>2, 0xfc>>2));
@@ -204,12 +205,82 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
             // [RGB] 8b -> 6b
             //*pOLED = rgb2w((buf[i]&0xff)>>2,((buf[i]>>8)&0xff)>>2,((buf[i]>>16)&0xff)>>2);                  
             //*pOLED = buf[i];
-            *pOLED = rgba2w(buf[i]);
+            *pOLED = RGBA2W(buf[i]);
             //*pOLED = 0x11223344;
         }
 
     } else {
         //write to screen memory buffer 
 
+    }
+}
+
+void scrWriteBitmapRGBA2(scr_coord_t scr_x, scr_coord_t scr_y, scr_coord_t bmp_x, scr_coord_t bmp_y, uint16_t width, uint16_t height, bitmap *bmp)
+{
+    scr_coord_t x1,x2,y1,y2;
+    //volatile oled_access_fast *pFastOLED;  
+    volatile oled_access_cmd *pCMDOLED;
+    volatile oled_access *pOLED;
+
+    //_TRACE_INFO("scrWriteBitmapRGBA2 [%d %d] [%d %d] [%d %d] %x\r\n", scr_x, scr_y, bmp_x, bmp_y, width, height, bmp);
+
+    uint16_t bmp_width = bmp->header.width;
+    uint16_t bmp_height = bmp->header.height;
+
+    if (scr_x >= OLED_RESOLUTION_X || scr_y >= OLED_RESOLUTION_Y)
+        return;
+
+    if (scr_x < 0) {
+        width += scr_x;
+        scr_x = 0;
+    }
+    
+    if (scr_y < 0) {
+        height += scr_y;
+        scr_y = 0;
+    }
+
+    if (scr_x + width > OLED_RESOLUTION_X) {
+        width = OLED_RESOLUTION_X - scr_x;
+    }
+    if (scr_y + height > OLED_RESOLUTION_Y) {
+        height = OLED_RESOLUTION_Y - scr_y;
+    }
+    //_TRACE_INFO("scrWriteBitmapRGBA2 [%d %d] [%d %d] [%d %d] %x\r\n", scr_x, scr_y, bmp_x, bmp_y, width, height, bmp);
+    if (!bitmap_check_bounds(bmp, &bmp_x, &bmp_y, &width, &height)) {
+        return;
+    }
+    //_TRACE_INFO("scrWriteBitmapRGBA2 [%d %d] [%d %d] [%d %d] %x\r\n", scr_x, scr_y, bmp_x, bmp_y, width, height, bmp);
+
+    x1 = scr_x;
+    y1 = scr_y;
+
+    x2 = x1 + width - 1;
+    y2 = y1 + height - 1;
+
+    oledWriteCommand(MX1_ADDR, x1);
+    oledWriteCommand(MY1_ADDR, y1);
+    oledWriteCommand(MX2_ADDR, x2);
+    oledWriteCommand(MY2_ADDR, y2);
+    oledWriteCommand(MEMORY_ACCESSP_X, x1);
+    oledWriteCommand(MEMORY_ACCESSP_Y, y1);  
+    pCMDOLED=OLED_CMD_BASE;  
+    *pCMDOLED = (OLED_DDRAM<<1); //bit align
+
+    pOLED = OLED_PARAM_BASE;
+
+
+    uint32_t *rgba_data = (uint32_t*)((uint8_t*)bmp + sizeof(bitmap_header));
+
+    uint32_t bmp_addr = bmp_y * bmp_width + bmp_x;
+    uint32_t bmp_addr_wrap = bmp_width - width;
+
+    int x, y;
+    for (y = 0; y < height; y++) {          
+        for (x = 0; x < width; x++) {          
+            *pOLED = RGBA2W(rgba_data[bmp_addr]);
+            bmp_addr++;
+        }
+        bmp_addr += bmp_addr_wrap;
     }
 }
