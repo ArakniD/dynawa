@@ -15,7 +15,7 @@ local function small_print(bitmap, chars, x)
 	return x
 end
 
-local function full_render(time)
+local function full_render(time, full)
 	local top = 40
 	local bitmap = dynawa.bitmap.new(160,128,0,0,0)
 	local b_combine = dynawa.bitmap.combine
@@ -54,14 +54,19 @@ local function full_render(time)
 	small_print(bitmap,{month1, month2, 10}, 76)
 	small_print(bitmap,{11, year1, year2}, 161 - (3*15))
 	
-	return bitmap
+	dynawa.bitmap.combine(bitmap,fonts.dot,58,40+11)
+	dynawa.bitmap.combine(bitmap,fonts.dot,58,40+31)
+
+	dynawa.event.send{type="display_bitmap",bitmap=bitmap}
 end
 
-local function dots_blink(event)
+local function remove_dots(event)
 	if not my.app.in_front then
 		return
 	end
-	dynawa.event.send{type="display_bitmap",bitmap=assert(event.bitmap)}
+	local black = dynawa.bitmap.new(5,5,0,0,0)
+	dynawa.event.send{type="display_bitmap", bitmap = black, at={58,40+11}}
+	dynawa.event.send{type="display_bitmap", bitmap = black, at={58,40+31}}
 end
 
 local function tick(event)
@@ -69,13 +74,8 @@ local function tick(event)
 		return
 	end
 	local sec,msec = dynawa.time.get()
-	local no_dots = full_render(os.date("*t",sec))
+	full_render(os.date("*t",sec), event.full_render)
 
-	local with_dots = dynawa.bitmap.combine(no_dots,fonts.dot,58,40+11,true)
-	dynawa.bitmap.combine(with_dots,fonts.dot,58,40+31)
-
-	dynawa.event.send{type="display_bitmap",bitmap=with_dots}
-	
 --[[
 	my.globals.count_t = ((my.globals.count_t or 0) + 1) % 60
 	local t1,t3 = dynawa.time.get()
@@ -95,13 +95,13 @@ local function tick(event)
 	end
 	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id}
 	if when > 600 then
-		dynawa.delayed_callback{time=500, callback=dots_blink, bitmap = no_dots}
+		dynawa.delayed_callback{time=500, callback=remove_dots}
 	end
 end
 
 local function to_front()
 	run_id = dynawa.unique_id()
-	tick{run_id = run_id}
+	tick{run_id = run_id, full_render = true}
 end
 
 local function to_back()
@@ -122,6 +122,7 @@ local function font_init()
 		fonts.small[i] = b_copy(bmap,i*15,0,13,25)
 	end
 	fonts.dot = b_copy(bmap,0,65,5,5)
+	fonts.black = b_copy(bmap,5,65,5,5)
 end
 
 my.app.name = "Default Clock"

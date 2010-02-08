@@ -120,14 +120,14 @@ _G.private_main_handler = function(event)
 	end
 	assert(app.screen, "App in front ("..app.name..") has no display")
 	if app.screen_updates.full then
-		log("Updating full screen of "..app.name)
+		--log("Updating full screen of "..app.name)
 		dynawa.bitmap.show(app.screen,dynawa.display.flipped)
 	else
 		for i, params in ipairs(app.screen_updates) do
 			log("Updating region: "..table.concat(params,","))
-			--dynawa.bitmap.show_partial(app.screen,params[1],params[2],params[3],params[4],params[1],params[2],dynawa.display.flipped)
+			dynawa.bitmap.show_partial(app.screen,params[1],params[2],params[3],params[4],params[1],params[2],dynawa.display.flipped)
 		end
-		dynawa.bitmap.show(app.screen,dynawa.display.flipped) --REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		--dynawa.bitmap.show(app.screen,dynawa.display.flipped) --REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	end
 	app.screen_updates = {pixels = 0}
 end
@@ -136,5 +136,4 @@ dynawa.app.start("/_sys/apps/core/")
 
 --Discard boot animation script and bitmaps
 _G.boot_anim = nil
-	
 

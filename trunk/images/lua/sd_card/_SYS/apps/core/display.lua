@@ -27,7 +27,9 @@ local function receive_bitmap(args)
 		assert (bitmap, "You must provide a bitmap when doing region update")
 		local x = assert(at[1], "Missing first coordinate")
 		local y = assert(at[2], "Missing second coordinate")
-		assert(app.screen,"App "..app.name.." wants to do region update but has no screen")
+		if not app.screen then
+			error("App "..app.name.." wants to do region update but has no screen")
+		end
 		dynawa.bitmap.combine(app.screen,bitmap,x,y)
 		local updates = app.screen_updates
 		if updates.full then 

@@ -7,6 +7,7 @@ local function show_menu(event)
 		items = {
 			"Set time zone",
 			"Adjust clock",
+			"Very long string 1234567890 really very long, WOW it's totally huge line!",
 		}
 	}
 	for i = 1, 20 do
