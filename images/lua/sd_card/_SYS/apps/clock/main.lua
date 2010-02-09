@@ -3,61 +3,79 @@ require("dynawa")
 local run_id
 local fonts
 
-local function small_print(bitmap, chars, x)
+local function display(bitmap, x, y)
+	assert(bitmap)
+	assert(x)
+	assert(y)
+	dynawa.event.send{type="display_bitmap", bitmap = bitmap, at={x,y}}
+end
+
+local function small_print(chars, x)
 	local width, height = 13, 25
 	local y = 127 - height
 	for i, char in ipairs(chars) do
 		if char >= 0 then --negative char == space
-			dynawa.bitmap.combine(bitmap, fonts.small[char], x, y)
+			display(fonts.small[char], x, y)
 		end
 		x = x + width + 2
 	end
 	return x
 end
 
-local function full_render(time, full)
-	local top = 40
-	local bitmap = dynawa.bitmap.new(160,128,0,0,0)
-	local b_combine = dynawa.bitmap.combine
+local function render_date(time)
+	small_print({time.wday * 2 + 10, time.wday * 2 + 11}, 1) --day of week
+	local day1 = math.floor(time.day / 10)
+	local day2 = time.day % 10
+	if day1 == 0 then
+		day1 = -1
+	end
 
+	local month1 = -1 --space
+	local month2 = time.month % 10
+	if time.month >= 10 then
+		month1 = 1
+	end
+
+	local year1 = math.floor((time.year % 100) / 10)
+	local year2 = time.year % 10
+
+	small_print({day1, day2, 10}, 42)
+	small_print({month1, month2, 10}, 76)
+	small_print({11, year1, year2}, 161 - (3*15))
+end
+
+local function render(time, full)
+	local top = 40	
 	local sec1 = math.floor(time.sec / 10)
 	local sec2 = time.sec % 10
 	local min1 = math.floor(time.min / 10)
 	local min2 = time.min % 10
 	local hour1 = math.floor(time.hour / 10)
 	local hour2 = time.hour % 10
-
-	b_combine(bitmap,fonts.large[hour1], 0, top)
-	b_combine(bitmap,fonts.large[hour2], 27, top)
-	b_combine(bitmap,fonts.large[min1], 69, top)
-	b_combine(bitmap,fonts.large[min2], 96, top)
-	b_combine(bitmap,fonts.medium[sec1], 160 - 17 - 18, top)
-	b_combine(bitmap,fonts.medium[sec2], 160 - 17, top)
 	
-	small_print(bitmap, {time.wday * 2 + 10, time.wday * 2 + 11}, 1) --day of week
-	local day1 = math.floor(time.day / 10)
-	local day2 = time.day % 10
-	if day1 == 0 then
-		day1 = -1
+	if full ~= "no_time" then
+		display(fonts.medium[sec2], 160 - 17, top)
+		display(fonts.dot,58,40+11)
+		display(fonts.dot,58,40+31)
+		if full or sec2 == 0 then
+			display(fonts.medium[sec1], 160 - 17 - 18, top)
+			if sec1 == 0 then
+				full = true
+			end
+		end
 	end
 	
-	local month1 = -1 --space
-	local month2 = time.month % 10
-	if time.month >= 10 then
-		month1 = 1
+	if full == true then
+		display(fonts.large[hour1], 0, top)
+		display(fonts.large[hour2], 27, top)
+		display(fonts.large[min1], 69, top)
+		display(fonts.large[min2], 96, top)
 	end
 	
-	local year1 = math.floor((time.year % 100) / 10)
-	local year2 = time.year % 10
+	if full then
+		render_date(time)
+	end
 	
-	small_print(bitmap,{day1, day2, 10}, 42)
-	small_print(bitmap,{month1, month2, 10}, 76)
-	small_print(bitmap,{11, year1, year2}, 161 - (3*15))
-	
-	dynawa.bitmap.combine(bitmap,fonts.dot,58,40+11)
-	dynawa.bitmap.combine(bitmap,fonts.dot,58,40+31)
-
-	dynawa.event.send{type="display_bitmap",bitmap=bitmap}
 end
 
 local function remove_dots(event)
@@ -74,7 +92,7 @@ local function tick(event)
 		return
 	end
 	local sec,msec = dynawa.time.get()
-	full_render(os.date("*t",sec), event.full_render)
+	render(os.date("*t",sec), event.full_render)
 
 --[[
 	my.globals.count_t = ((my.globals.count_t or 0) + 1) % 60
@@ -89,19 +107,22 @@ local function tick(event)
 ]]
 	
 	local sec2,msec2 = dynawa.time.get()
-	local when = 1100 - msec2
-	if when >= 1000 or (sec ~= sec2) then 
-		when = 800
+	local when = 1000 - msec2
+	if event.full_render == "no_time" then
+		event.full_render = true
+	elseif event.full_render then
+		event.full_render = nil
 	end
-	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id}
-	if when > 600 then
-		dynawa.delayed_callback{time=500, callback=remove_dots}
+	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id, full_render = event.full_render}
+	if when > 700 then
+		dynawa.delayed_callback{time=666, callback=remove_dots}
 	end
 end
 
 local function to_front()
 	run_id = dynawa.unique_id()
-	tick{run_id = run_id, full_render = true}
+	display(dynawa.bitmap.new(160,128,0,0,0),0,0)
+	tick{run_id = run_id, full_render = "no_time"}
 end
 
 local function to_back()

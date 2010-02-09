@@ -1,13 +1,21 @@
 require ("dynawa")
 
 local display_size = dynawa.display.size
-local pixel_limit = display_size.width * display_size.height * 1.00
+local pixel_limit = display_size.width * display_size.height * 0.95
 
 local function receive_bitmap(args)
 	local task = assert(args.sender,"Unknown event sender")
 	local app = assert(task.app)
 	local bitmap = args.bitmap
 	local at = args.at
+	if at and at[1] == 0 and at[2] == 0 then
+		local w,h = dynawa.bitmap.info(bitmap)
+		if w == display_size.width and h == display_size.height then
+			at = nil
+			args.at = nil
+--			log("Region promoted to fullscreen")
+		end
+	end
 	if not at then --full screen
 		if not bitmap and app.in_front then
 			error("App "..app.name.." wants to disable its screen while being in front")
@@ -28,7 +36,7 @@ local function receive_bitmap(args)
 		local x = assert(at[1], "Missing first coordinate")
 		local y = assert(at[2], "Missing second coordinate")
 		if not app.screen then
-			error("App "..app.name.." wants to do region update but has no screen")
+			error("App "..app.name.." wants to do region update at "..x..","..y.." but has no screen")
 		end
 		dynawa.bitmap.combine(app.screen,bitmap,x,y)
 		local updates = app.screen_updates

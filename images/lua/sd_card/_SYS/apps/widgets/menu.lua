@@ -5,7 +5,7 @@ local highlight_color = {0,0,130}
 local b_combine = dynawa.bitmap.combine
 local b_new = dynawa.bitmap.new
 local scroll_interval = 70 --ms
-local scroll_max_speed = 5
+local scroll_max_speed = 6
 local scroll_id = nil
 
 local function scrolling(event)
@@ -21,7 +21,7 @@ local function scrolling(event)
 	local lw = menu.items[menu.active_item].width
 	menu.scroll.position = menu.scroll.position + math.max(math.floor(menu.scroll.speed),0)
 	if menu.scroll.speed < scroll_max_speed then
-		menu.scroll.speed = menu.scroll.speed + 0.2
+		menu.scroll.speed = menu.scroll.speed + 0.15
 	end
 	local delay = scroll_interval
 	if menu.scroll.position + w > lw then
@@ -177,7 +177,7 @@ my.globals.menu.button_event = function(menu, event)
 		if event.button == "TOP" then
 			cursor_move(menu, 0-jump)
 		elseif event.button == "BOTTOM" then
-			cursor_move(menu, jumpl)
+			cursor_move(menu, jump)
 		end
 	end
 end
