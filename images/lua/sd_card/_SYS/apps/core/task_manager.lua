@@ -89,6 +89,7 @@ local function init()
 	dynawa.event.receive{event="app_to_front", callback=app_to_front}
 	dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
+	dynawa.app.start(dynawa.dir.apps.."clock_bynari/")
 	dynawa.app.start(dynawa.dir.apps.."button_test/")
 end
 

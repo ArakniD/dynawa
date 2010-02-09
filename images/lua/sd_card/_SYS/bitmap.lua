@@ -2,6 +2,7 @@
 
 dynawa.display={flipped=false}
 dynawa.display.size={width=160,height=128}
+dynawa.fonts = {}
 
 dynawa.bitmap.info = function(bmap)
 	assert(type(bmap)=="userdata")
@@ -26,7 +27,8 @@ dynawa.bitmap.pixel = function(bmap, x, y)
 	return peek (offset, bmap), peek (offset + 1, bmap), peek (offset + 2, bmap), peek (offset + 3, bmap)
 end
 
-dynawa.bitmap.parse_font = function (bmap)
+dynawa.bitmap.load_font = function (fname)
+	local bmap = assert(dynawa.bitmap.from_png_file(fname),"Cannot load font bitmap: "..tostring(fname))
 	local white = dynawa.bitmap.new(20,20,255,255,255)
 	local mask = assert(dynawa.bitmap.mask)
 	local chars={}
@@ -51,7 +53,7 @@ dynawa.bitmap.parse_font = function (bmap)
 			widths[char_str] = width
 			lastx = x
 			char = char + 1
-			if char % 8 == 0 then
+			if char % 20 == 0 then
 				boot_anim()
 			end
 			if char > 128 or x > total_width then error("FUCK") end
@@ -62,15 +64,22 @@ dynawa.bitmap.parse_font = function (bmap)
 		end
 	until done
 	assert (char==128)
-	return {chars=chars,widths=widths,height=height}
+	local font = {chars=chars,widths=widths,height=height}
+	dynawa.fonts[fname] = font
+	return font
 end
 
 --Load and parse font
-dynawa.bitmap.default_font = dynawa.bitmap.parse_font(dynawa.bitmap.from_png_file("/_sys/fonts/default10.png"))
+dynawa.fonts.default = dynawa.bitmap.load_font("/_sys/fonts/default10.png")
+dynawa.fonts["/_sys/fonts/default10.png"] = dynawa.fonts.default
 
 dynawa.bitmap.text_line = function(line,font,color)
 	assert(type(line)=="string","First parameter is not string")
-	font = font or assert(dynawa.bitmap.default_font)
+	if not font then
+		font = "default"
+	end
+	assert (dynawa.fonts[font], "Unknown font: '"..tostring(font).."'")
+	font = dynawa.fonts[font]
 	local x = 0
 	local bmaps = {}
 	local xs = {}

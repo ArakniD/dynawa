@@ -45,7 +45,7 @@ local function receive_bitmap(args)
 		end
 		local w,h = dynawa.bitmap.info(bitmap)
 		updates.pixels = updates.pixels + (w * h)
-		if updates.pixels >= pixel_limit then
+		if updates.pixels >= pixel_limit or #updates > 10 then
 			app.screen_updates = {full=true}
 			return
 		end
