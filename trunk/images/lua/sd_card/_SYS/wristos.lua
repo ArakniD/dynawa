@@ -124,7 +124,7 @@ _G.private_main_handler = function(event)
 		dynawa.bitmap.show(app.screen,dynawa.display.flipped)
 	else
 		for i, params in ipairs(app.screen_updates) do
-			log("Partial render: "..table.concat(params,","))
+			--log("Partial render: "..table.concat(params,","))
 			dynawa.bitmap.show_partial(app.screen,params[1],params[2],params[3],params[4],params[1],params[2],dynawa.display.flipped)
 		end
 		--dynawa.bitmap.show(app.screen,dynawa.display.flipped) --REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

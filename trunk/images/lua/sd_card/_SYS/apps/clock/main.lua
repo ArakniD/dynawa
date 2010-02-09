@@ -128,7 +128,7 @@ end
 local function to_front()
 	run_id = dynawa.unique_id()
 	display(dynawa.bitmap.new(160,128,0,0,0),0,0)
-	tick{run_id = run_id, full_render = "no_time"}
+	tick{run_id = run_id, full_render = true}
 end
 
 local function to_back()
