@@ -45,31 +45,37 @@ local function render_date(time)
 end
 
 local function render(time, full)
-	local top = 40	
+	if full == "no_time" then
+		render_date(time)
+		return
+	end
+	local top = 40
 	local sec1 = math.floor(time.sec / 10)
 	local sec2 = time.sec % 10
-	local min1 = math.floor(time.min / 10)
-	local min2 = time.min % 10
-	local hour1 = math.floor(time.hour / 10)
-	local hour2 = time.hour % 10
-	
-	if full ~= "no_time" then
-		display(fonts.medium[sec2], 160 - 17, top)
-		display(fonts.dot,58,40+11)
-		display(fonts.dot,58,40+31)
-		if full or sec2 == 0 then
-			display(fonts.medium[sec1], 160 - 17 - 18, top)
-			if sec1 == 0 then
-				full = true
-			end
+	local mm_hh = full
+
+	display(fonts.medium[sec2], 160 - 17, top)
+	display(fonts.dot,58,40+11)
+	display(fonts.dot,58,40+31)
+	if full or sec2 == 0 then
+		display(fonts.medium[sec1], 160 - 17 - 18, top)
+		if sec1 == 0 then
+			mm_hh = true
 		end
 	end
 	
-	if full == true then
+	if mm_hh or full then
+		local min1 = math.floor(time.min / 10)
+		local min2 = time.min % 10
+		local hour1 = math.floor(time.hour / 10)
+		local hour2 = time.hour % 10
 		display(fonts.large[hour1], 0, top)
 		display(fonts.large[hour2], 27, top)
 		display(fonts.large[min1], 69, top)
 		display(fonts.large[min2], 96, top)
+		if time.hour + time.min == 0 then --Midnight
+			full = true
+		end
 	end
 	
 	if full then
@@ -150,7 +156,7 @@ my.app.name = "Default Clock"
 my.app.priority = "A"
 dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
-dynawa.time.set(1234567890)
+dynawa.time.set(1234569580)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
 dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
 dynawa.event.send("me_to_front")
