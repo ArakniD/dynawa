@@ -69,6 +69,9 @@ dofile(dynawa.dir.sys.."bitmap.lua")
 --SCHEDULER (apps + tasks + events) init
 dofile(dynawa.dir.sys.."scheduler.lua")
 
+--FILE + serializing init
+dofile(dynawa.dir.sys.."file.lua")
+
 --This table maps the 5 buttons from integers to strings, according to watch rotation
 local buttons_flip = {
 	[false]={[0]="TOP","CONFIRM","BOTTOM","SWITCH","CANCEL"},
