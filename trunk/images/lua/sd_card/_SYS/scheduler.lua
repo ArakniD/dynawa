@@ -60,7 +60,7 @@ dynawa.app.start = function(args)
 	assert(type(args.id)=="string","App identifier is not string but "..type(args.id))
 	args.id = args.id:lower()
 	assert(args.id:match("/$"),"App identifier "..args.id.." does not end with '/'")
-	local app={id=args.id,name=args.id,tasks={},globals={}}
+	local app={id=args.id,name=args.id,tasks={},globals={}, flags={}}
 	assert(not dynawa.apps[app.id],"App "..app.id.." cannot be started, is already running")
 	dynawa.apps[app.id]=app
 	dynawa.task.start{id=args.id.."main.lua",app=app}

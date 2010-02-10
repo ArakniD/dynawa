@@ -17,7 +17,7 @@ local function _app_to_front(new_app)
 	new_app.screen_updates = {full=true} --This app MUST do full screen update
 end
 
-local function next_app_to_front()
+local function app_switch()
 	local apps = {}
 	for app_id,app in pairs(dynawa.apps) do
 		if app.screen then
@@ -38,6 +38,11 @@ local function next_app_to_front()
 	local cur_app_n = 0
 	local in_front = dynawa.app.in_front
 	
+	if in_front.flags.ignore_app_switch then --App overrides standard SWITCH button press
+		log("App switch override")
+		return
+	end
+	
 	if in_front then
 		for i,app in ipairs(apps) do
 			if in_front == app then
@@ -57,7 +62,7 @@ end
 
 local function button_down(event)
 	if event.button == "SWITCH" then
-		next_app_to_front()
+		app_switch()
 	end
 end
 	
@@ -82,11 +87,24 @@ local function sender_to_front(event)
 	_app_to_front(app)
 end
 
+local function app_flags(event)
+	local flags = event.flags
+	assert (flags, "No flags specified")
+	assert (type(flags)=="table", "Flags collection is not a table")
+	local task = assert(event.sender,"No sender found in my_flags event")
+	local app = assert(task.app)
+	for k,v in pairs(flags) do
+		assert(type(k) == "string", "The id of flag '"..tostring(k).."' is not a string")
+	end
+	app.flags = flags
+end
+
 local function init()
 	dynawa.event.receive{event="button_down", callback=button_down}
 	dynawa.event.receive{event="button_hold", callback=button_hold}
 	dynawa.event.receive{event="me_to_front", callback=sender_to_front}
 	dynawa.event.receive{event="app_to_front", callback=app_to_front}
+	dynawa.event.receive{event="set_flags", callback=app_flags}
 	dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
 	dynawa.app.start(dynawa.dir.apps.."clock_bynari/")

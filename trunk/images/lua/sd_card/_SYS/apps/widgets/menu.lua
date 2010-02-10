@@ -115,13 +115,23 @@ local function raw_redraw(menu)
 end
 
 my.globals.menu.new = function(menu0)
-	local menu = {type="menu",items={},size={width=150,height=118},scroll={}}
+	local menu = {type="menu",items={},size={width=150,height=118},scroll={},id=menu0.id}
 	menu.app = assert(menu0.app)
 	menu.items = {}
-	for i,item in ipairs(menu0.items) do
-		menu.items[i] = parse_menu_item(item)
+	for i,item0 in ipairs(menu0.items) do
+		assert(item0.text)
+		local item = parse_menu_item(item0.text)
+		assert(item0.value)
+		item.value = item0.value
+		if menu0.active_value and menu0.active_value == item.value then
+			menu.active_item = i
+		end
+		menu.items[i] = item
 	end
-	menu.active_item = 2
+
+	if not menu.active_item then
+		menu.active_item = 1
+	end	
 	menu.top_item = 1
 	local banner = parse_menu_item(menu0.banner,nil,{0,0,0})
 	menu.banner = banner
@@ -133,7 +143,9 @@ my.globals.menu.new = function(menu0)
 	menu.raw_size = raw_size --raw_size and raw_start point to the area where menu items are displayed (minus menu border and banner)
 	menu.rows_fit = menu.raw_size.height / menu.line_height --How many rows fit into the raw bitmap (rational number!)
 	assert(menu.rows_fit >= 3, "Menu too small. At least 3 items must fit in the window")
-	--log(menu.rows_fit)
+	if menu.top_item < menu.active_item - math.floor(menu.rows_fit) + 1 then
+		menu.top_item = menu.active_item - math.floor(menu.rows_fit) + 1
+	end
 	menu.start = {x=5,y=5}
 	full_redraw(menu)
 	maybe_start_scrolling(menu)
@@ -163,9 +175,18 @@ local function cursor_move(menu,offset)
 	maybe_start_scrolling(menu)
 end
 
+local function confirmation(menu)
+	local item = menu.items[menu.active_item]
+	local event = {status = "confirmed", item_n = menu.active_item, item = item}
+	my.globals.widget_done(menu,event)
+end
+
 my.globals.menu.button_event = function(menu, event)
 	if event.type == "button_down" then
-		if event.button == "TOP" then
+		if event.button == "CONFIRM" then
+			confirmation(menu)
+			return
+		elseif event.button == "TOP" then
 			cursor_move(menu,-1)
 			return
 		elseif event.button == "BOTTOM" then
@@ -176,8 +197,10 @@ my.globals.menu.button_event = function(menu, event)
 		local jump = math.floor(menu.rows_fit)
 		if event.button == "TOP" then
 			cursor_move(menu, 0-jump)
+			return
 		elseif event.button == "BOTTOM" then
 			cursor_move(menu, jump)
+			return
 		end
 	end
 end

@@ -32,10 +32,24 @@ local function change_dot(x, y, gf, color)
 end
 
 local function text(time)
+	local style = my.globals.prefs.style
 	local font = "/_sys/fonts/default10.png"
 	local ticks = dynawa.bitmap.text_line(tostring(time.raw),font,{0,0,0})
 	local mem, w, h = dynawa.bitmap.text_line(collectgarbage("count") * 1024 .." "..time.wday,font,{0,0,0})
-	local bg = dynawa.bitmap.new (160, h, 200,200,200)
+	local bgcolor
+	if style == "red" then
+		bgcolor = {255,0,0}
+	elseif style == "white" then
+		bgcolor = {255,255,255}
+	elseif style == "blue/green" then
+		bgcolor = {0,255,0}
+		if time.raw % 2 == 0 then
+			bgcolor = {0,0,255}
+		end
+	else
+		bgcolor = {200,200,200}
+	end
+	local bg = dynawa.bitmap.new (160, h, unpack(bgcolor))
 	dynawa.bitmap.combine(bg, ticks, 1, 1)
 	dynawa.bitmap.combine(bg, mem, 159 - w, 1)
 	local y = math.floor(64 - h / 2)
@@ -52,6 +66,7 @@ local function to_bin (num)
 end
 
 local function update_dots(time, status)
+	local style = my.globals.prefs.style
 	local new = {}
 	local clk = clock.state
 	new[0] = to_bin(time.hour)
@@ -66,7 +81,13 @@ local function update_dots(time, status)
 				local dot = clk[i][j]
 				dot.gfx = new[i][j]
 				if status ~= "first" then
-					dot.color = {255,255,255}
+					if style ~= "blue/green" and style ~= "white" then
+						if style == "red" then
+							dot.color = {255,0,0}
+						else
+							dot.color = random_color()
+						end
+					end
 				end
 				change_dot(j,i,dot.gfx,dot.color)
 			end
@@ -74,9 +95,17 @@ local function update_dots(time, status)
 	end
 	local i = math.random(6) - 1
 	local j = math.random(6) - 1
-	local color = random_color()
-	change_dot(j,i,clk[i][j].gfx,color)
-	clk[i][j].color = color
+	local color
+	if style ~= "blue/green" and style ~= "white" then
+		if style == "red" then
+			local cl = math.random(40)
+			color = {math.random(100)+155,cl,cl}
+		else
+			color = random_color()
+		end
+		change_dot(j,i,clk[i][j].gfx,color)
+		clk[i][j].color = color
+	end
 end
 
 local function tick(event)
@@ -94,12 +123,26 @@ local function tick(event)
 end
 
 local function start()
+	local style = my.globals.prefs.style
 	clock = {state={}}
 	dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.new(160,128,0,0,0)}
 	for i = 0, 5 do
 		clock.state[i] = {}
 		for j = 0, 5 do
-			clock.state[i][j] = {gfx = "empty", color = random_color()}
+			local color
+			if style == "red" then
+				color = {150,0,0}
+			elseif style == "white" then
+				color = {255,255,255}
+			elseif style == "blue/green" then
+				color = {0,0,255}
+				if i >= 3 then
+					color = {0,255,0}
+				end
+			else
+				color = random_color()
+			end
+			clock.state[i][j] = {gfx = "empty", color = color}
 			--change_dot(i,j,"empty",color)
 		end
 	end
@@ -130,5 +173,7 @@ gfx_init()
 dynawa.time.set(1234569580)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
 dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
+dofile(my.dir.."bynari_prefs.lua")
 dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.new(160,128,255,0,0)}
+my.globals.prefs = dynawa.file.load_data() or {style = "default"}
 
