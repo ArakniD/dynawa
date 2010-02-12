@@ -21,29 +21,30 @@ local function new_widget(event)
 		error("Unknown widget type")
 	end
 	widget.app = app
+	if not widget.id then
+		widget.id = dynawa.unique_id()
+	end
 	local result = my.globals[widget.type].new(widget)
 	my.globals.current_widget = assert(result)
 	log("Widget to front")
 	dynawa.event.send{type="me_to_front"}
 end
 
-my.globals.widget_done = function (widget,event)
+my.globals.widget_result = function (widget,event)
 	event.id = widget.id --not mandatory
 	event.receiver = assert(widget.app)
-	event.type = "widget_done"
-	assert(event.status, "Widget_done event has no status")
+	event.type = "widget_result"
+	assert(event.status, "Widget_result event has no status")
 	dynawa.event.send(event)
-	dynawa.event.send{type="app_to_front", app = widget.app}
-	dynawa.event.send{type="display_bitmap", bitmap = nil}
-	my.globals.current_widget = nil
 end
 
-local function widget_cancelled()
+local function widget_closed()
 	local current_widget = my.globals.current_widget
-	if not current_widget then
-		return
+	if current_widget then
+		dynawa.event.send{type="app_to_front", app = current_widget.app}
+		dynawa.event.send{type="display_bitmap", bitmap = nil}
+		my.globals.current_widget = nil
 	end
-	my.globals.widget_done(current_widget,{status = "cancelled"})
 end
 
 local function button_event(event)
@@ -52,14 +53,14 @@ local function button_event(event)
 		return
 	end
 	if event.type == "button_down" and (event.button == "CANCEL" or event.button == "SWITCH") then
-		widget_cancelled()
+		widget_closed()
 		return
 	end
 	my.globals[current_widget.type].button_event (current_widget, event)
 end
 
 dynawa.event.receive{event="new_widget", callback=new_widget}
-dynawa.event.receive{event="you_are_now_in_back", callback=widget_cancelled}
+dynawa.event.receive{event="close_widget", callback=widget_closed}
 dynawa.event.send{type = "set_flags", flags = {ignore_app_switch = true}}
 dynawa.event.receive{events={"button_down","button_up","button_hold"}, callback=button_event}
 

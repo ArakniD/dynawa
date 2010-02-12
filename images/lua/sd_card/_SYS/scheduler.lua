@@ -86,7 +86,7 @@ dynawa.event.receive = function(args) --expects event OR events, callback
 			list[ev_type]={}
 		end
 		list[ev_type][task]={callback=callback}
-		log("Task "..task.id.." wanttts events: "..ev_type)
+		log("Task "..task.id.." wants events: "..ev_type)
 	end
 end
 
@@ -147,7 +147,7 @@ end
 --Dispatches single event IMMEDIATELY (bypasses event queue)
 --This should never be called directly from apps!
 dynawa.event.dispatch = function (event)	
-	--log("QUEUE: Dispatching event of type "..tostring(event.type))
+	--log("QUEUE: Dispatching event of type "..tostring(event.type).." from "..tostring((event.sender or {}).id).." to "..tostring((event.receiver or {}).id))
 	local listeners = assert(dynawa.event.listeners)
 	local typ=event.type
 	local handled = false
@@ -169,7 +169,7 @@ dynawa.event.dispatch = function (event)
 			end
 		end
 		if not handled then
-			log("NOTHING NOTHING of type '"..typ.."' from "..tostring((event.sender or {}).id))
+			log("Unhandled event of type '"..typ.."' from "..tostring((event.sender or {}).id).." to "..tostring((event.receiver or {}).id))
 		end
 	else --event doesn't have type, must have "callback" and "task"
 		assert (event.callback,"Event doesn't have callback specified")

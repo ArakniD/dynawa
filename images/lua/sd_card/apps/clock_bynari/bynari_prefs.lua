@@ -21,13 +21,13 @@ local function widget_done (event)
 	end
 	assert(event.item.value)
 	--log(event.item.value)
+	dynawa.event.send{type="new_widget", notification = {text="Color scheme changed", autoclose = true}}
 	if my.globals.prefs.style ~= event.item.value then
-		dynawa.event.send{type="new_widget", notification = {text="Color scheme changed"}}
 		my.globals.prefs.style = event.item.value
 		dynawa.file.save_data(my.globals.prefs)
 	end
 end
 
 dynawa.event.receive{event = "show_menu", callback = show_menu}
-dynawa.event.receive{event = "widget_done", callback = widget_done}
+dynawa.event.receive{event = "widget_result", callback = widget_done}
 
