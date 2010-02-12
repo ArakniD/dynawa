@@ -6,6 +6,7 @@ my.globals.current_widget = nil
 my.globals.inactive_mask = assert(dynawa.bitmap.from_png_file(my.dir.."inactive_mask.png"))
 
 dofile (my.dir.."menu.lua")
+dofile (my.dir.."notification.lua")
 
 local function new_widget(event)
 	local app=assert(event.sender.app)
@@ -13,12 +14,16 @@ local function new_widget(event)
 	if event.menu then
 		widget = event.menu
 		widget.type = "menu"
+	elseif event.notification then
+		widget = event.notification
+		widget.type = "notification"
 	else
-		error("Got unknown widget type from "..app.name)
+		error("Unknown widget type")
 	end
 	widget.app = app
 	local result = my.globals[widget.type].new(widget)
-	my.globals.current_widget = result
+	my.globals.current_widget = assert(result)
+	log("Widget to front")
 	dynawa.event.send{type="me_to_front"}
 end
 

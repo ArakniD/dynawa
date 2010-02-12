@@ -22,6 +22,7 @@ local function widget_done (event)
 	assert(event.item.value)
 	--log(event.item.value)
 	if my.globals.prefs.style ~= event.item.value then
+		dynawa.event.send{type="new_widget", notification = {text="Color scheme changed"}}
 		my.globals.prefs.style = event.item.value
 		dynawa.file.save_data(my.globals.prefs)
 	end

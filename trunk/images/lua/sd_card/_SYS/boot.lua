@@ -32,7 +32,7 @@ function _G.boot_init()
 		os.remove("no_override.lua")
 	else
 		--Try loading the (potential) boot override script stored in the default path
-		local override,err = loadfile("override.lua")
+		local override,err = loadfile("/override.lua")
 	
 		if (not override) and (not (err or ""):match("No such file or directory")) then
 			--Override script exists but cannot be loaded

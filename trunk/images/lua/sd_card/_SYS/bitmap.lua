@@ -27,6 +27,24 @@ dynawa.bitmap.pixel = function(bmap, x, y)
 	return peek (offset, bmap), peek (offset + 1, bmap), peek (offset + 2, bmap), peek (offset + 3, bmap)
 end
 
+--Adds inner border of specified thicknes and color to the bitmap.
+dynawa.bitmap.border = function (bitmap, thick, rgb)
+	local r,g,b = rgb[1],rgb[2],assert(rgb[3])
+	assert(thick > 0)
+	local w,h = dynawa.bitmap.info(bitmap)
+	local horiz = dynawa.bitmap.new(w,thick,r,g,b)
+	dynawa.bitmap.combine(bitmap, horiz, 0, 0)
+	dynawa.bitmap.combine(bitmap, horiz, 0, h-thick)
+	local vert = dynawa.bitmap.new(thick,h - thick - thick)
+	dynawa.bitmap.combine(bitmap, vert, 0, thick)
+	dynawa.bitmap.combine(bitmap, vert, w-thick, thick)
+	return bitmap
+end
+
+dynawa.busy = function(args)
+	----------------- #todo
+end
+
 dynawa.bitmap.load_font = function (fname)
 	local bmap = assert(dynawa.bitmap.from_png_file(fname),"Cannot load font bitmap: "..tostring(fname))
 	local white = dynawa.bitmap.new(20,20,255,255,255)
@@ -103,7 +121,7 @@ dynawa.bitmap.text_line = function(line,font,color)
 	return result, width, height
 end
 
-local screen = dynawa.bitmap.new(160,128,0,0,0)
+local screen = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,0,0,0)
 dynawa.bitmap.combine(screen,dynawa.bitmap.text_line("WristOS "..dynawa.version.wristOS),1,1)
 dynawa.bitmap.show(screen)
 
