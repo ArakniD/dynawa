@@ -7,6 +7,13 @@ string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.
 	table.insert(uid_chars,ch)
 end)
 
+local count = 0
+dynawa.loadfile = function(...)
+	count = count + 1
+	log("dofile "..count)
+	return dofile(...)
+end
+
 dynawa.unique_id = function(num)
 	num=num or 1
 	local nums=uid_last
@@ -94,7 +101,6 @@ local function dispatch_queue()
 	else
 		log("_G.my is nil")
 	end]]
-
 	local queue = assert(dynawa.event.queue)
 	local sanity = 999
 	assert(not _G.my,"There should be no active task at the start of dispatch_queue()")

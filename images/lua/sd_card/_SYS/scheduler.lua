@@ -35,6 +35,7 @@ dynawa.task.start = function(args) --expects id,app
 	if type(args)=="string" then
 		args={id=args}
 	end
+	dynawa.busy()
 	assert(type(args.id)=="string","Task identifier is not string but "..type(args.id))
 	args.id = args.id:lower()
 	assert(args.id:match("%.lua$"),"Task identifier "..args.id.." does not end with '.lua'")
@@ -85,7 +86,7 @@ dynawa.event.receive = function(args) --expects event OR events, callback
 			list[ev_type]={}
 		end
 		list[ev_type][task]={callback=callback}
-		log("Task "..task.id.." wants events: "..ev_type)
+		log("Task "..task.id.." wanttts events: "..ev_type)
 	end
 end
 
@@ -145,7 +146,7 @@ end
 
 --Dispatches single event IMMEDIATELY (bypasses event queue)
 --This should never be called directly from apps!
-dynawa.event.dispatch = function (event)
+dynawa.event.dispatch = function (event)	
 	--log("QUEUE: Dispatching event of type "..tostring(event.type))
 	local listeners = assert(dynawa.event.listeners)
 	local typ=event.type
@@ -168,7 +169,7 @@ dynawa.event.dispatch = function (event)
 			end
 		end
 		if not handled then
-			log("Unhandled event of type '"..typ.."'")
+			log("NOTHING NOTHING of type '"..typ.."' from "..tostring((event.sender or {}).id))
 		end
 	else --event doesn't have type, must have "callback" and "task"
 		assert (event.callback,"Event doesn't have callback specified")
