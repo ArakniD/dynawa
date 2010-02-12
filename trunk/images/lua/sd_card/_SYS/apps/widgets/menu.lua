@@ -199,10 +199,26 @@ end
 local function confirmation(menu)
 	local item = menu.items[menu.active_item]
 	local event = {status = "confirmed", item_n = menu.active_item, item = item}
-	my.globals.widget_done(menu,event)
+	my.globals.widget_result(menu,event)
+end
+
+local function autorepeat_do(event)
+	if my.globals.current_widget ~= event.menu then
+		return
+	end
+	if not event.menu.autorepeat then
+		return
+	end
+	my.globals.menu.button_event(event.menu, {button=event.menu.autorepeat, type = "button_down"})
+	dynawa.delayed_callback{time = 100, callback=autorepeat_do,menu = event.menu,type="menu_autorepeat"}
 end
 
 my.globals.menu.button_event = function(menu, event)
+	if event.type == "button_up" then
+		if event.button == menu.autorepeat then
+			menu.autorepeat = nil
+		end
+	end
 	if event.type == "button_down" then
 		if event.button == "CONFIRM" then
 			confirmation(menu)
@@ -215,14 +231,19 @@ my.globals.menu.button_event = function(menu, event)
 			return
 		end
 	elseif event.type == "button_hold" then
-		local jump = math.floor(menu.rows_fit)
+		if event.button == "TOP" or event.button == "BOTTOM" then --Autorepeat
+			menu.autorepeat = event.button
+			dynawa.event.send{receiver = my.app, type="menu_autorepeat", menu = menu}
+		end
+		--[[local jump = math.floor(menu.rows_fit)
 		if event.button == "TOP" then
 			cursor_move(menu, 0-jump)
 			return
 		elseif event.button == "BOTTOM" then
 			cursor_move(menu, jump)
 			return
-		end
+		end]]
 	end
 end
 
+dynawa.event.receive{event = "menu_autorepeat", callback = autorepeat_do}

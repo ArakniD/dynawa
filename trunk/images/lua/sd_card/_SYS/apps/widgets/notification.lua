@@ -8,11 +8,13 @@ local function full_redraw(notif)
 	bgbmp = dynawa.bitmap.combine(bgbmp,my.globals.inactive_mask,0,0,true)
 	dynawa.bitmap.combine(bgbmp,notif.bitmap,notif.start.x,notif.start.y)
 	dynawa.event.send{type="display_bitmap", bitmap=bgbmp}
+	log("Showing notification")
 	return notif
 end
 
 my.globals.notification.new = function(notif0)
 	local notif = {type="notification"}
+	notif.autoclose = notif0.autoclose
 	notif.text = assert(notif0.text)
 	notif.app = assert(notif0.app)
 	notif.id = notif0.id
@@ -31,8 +33,13 @@ end
 
 my.globals.notification.button_event = function(notif, event)
 	if event.type == "button_down" then
-		local event = {status = "cancelled"}
-		my.globals.widget_done(notif,event)
+		local event = {status = "dismissed"}
+		my.globals.widget_result(notif,event)
+		log("Notif dismissed")
+		if notif.autoclose then
+			log("Autoclosing")
+			dynawa.event.send{type="close_widget"}
+		end
 	end
 end
 

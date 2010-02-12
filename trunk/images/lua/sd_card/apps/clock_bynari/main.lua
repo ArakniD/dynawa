@@ -109,7 +109,7 @@ local function update_dots(time, status)
 end
 
 local function tick(event)
-	if not my.app.in_front or event.run_id ~= run_id then
+	if not my.app.in_front or event.run_id ~= clock.run_id then
 		return
 	end
 	local time_raw, msec = dynawa.time.get()
@@ -147,7 +147,7 @@ local function start()
 		end
 	end
 	clock.run_id = dynawa.unique_id()
-	tick{run_id = run_id, status = "first"}
+	tick{run_id = clock.run_id, status = "first"}
 end
 
 local function to_front()

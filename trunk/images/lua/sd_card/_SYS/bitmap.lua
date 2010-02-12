@@ -35,7 +35,7 @@ dynawa.bitmap.border = function (bitmap, thick, rgb)
 	local horiz = dynawa.bitmap.new(w,thick,r,g,b)
 	dynawa.bitmap.combine(bitmap, horiz, 0, 0)
 	dynawa.bitmap.combine(bitmap, horiz, 0, h-thick)
-	local vert = dynawa.bitmap.new(thick,h - thick - thick)
+	local vert = dynawa.bitmap.new(thick,h - thick - thick, r,g,b)
 	dynawa.bitmap.combine(bitmap, vert, 0, thick)
 	dynawa.bitmap.combine(bitmap, vert, w-thick, thick)
 	return bitmap
