@@ -7,11 +7,26 @@ string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.
 	table.insert(uid_chars,ch)
 end)
 
-local count = 0
-dynawa.loadfile = function(...)
-	count = count + 1
-	log("dofile "..count)
+dynawa.dofile = function(...)
+	dynawa.busy()
 	return dofile(...)
+end
+
+local busy_count = assert(dynawa.bitmap.from_png_file(dynawa.dir.sys.."busy_anim.png"),"Cannot load busy animation")
+local busy_bitmaps = {}
+local busy_last = 0
+for i = 0,3 do
+	busy_bitmaps[i] = dynawa.bitmap.copy(busy_count,0,16*i,27,16)
+end
+busy_count = 0
+dynawa.busy = function()
+	dynawa.is_busy = true
+	local ticks = dynawa.ticks()
+	if ticks - busy_last > 100 then
+		busy_count = (busy_count + 1) % 4
+		busy_last = ticks
+	end
+	dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,67,56)
 end
 
 dynawa.unique_id = function(num)
@@ -33,9 +48,6 @@ dynawa.unique_id = function(num)
 	end
 	return table.concat(result)
 end
-
---Start boot animation
-dofile(dynawa.dir.sys.."boot_anim/boot_anim.lua")	
 
 --create the table for handling the lowest level incoming hardware events
 -----------------------------------------------------------
@@ -128,8 +140,9 @@ _G.private_main_handler = function(event)
 		return
 	end
 	assert(app.screen, "App in front ("..app.name..") has no display")
-	if app.screen_updates.full then
+	if app.screen_updates.full or dynawa.is_busy then
 		--log("Updating full screen of "..app.name)
+		dynawa.is_busy = nil
 		dynawa.bitmap.show(app.screen,dynawa.display.flipped)
 	else
 		for i, params in ipairs(app.screen_updates) do
@@ -142,7 +155,4 @@ _G.private_main_handler = function(event)
 end
 
 dynawa.app.start("/_sys/apps/core/")
-
---Discard boot animation script and bitmaps
-_G.boot_anim = nil
 

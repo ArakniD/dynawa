@@ -85,7 +85,7 @@ end
 
 local function widget_render(menu)
 	assert(menu.type=="menu")
-	local border_color = {99,99,255}
+	local border_color = menu.border_color or {99,99,255}
 	local bgbm = b_new(menu.size.width, menu.size.height, unpack(border_color))
 	b_combine(bgbm,b_new(menu.raw_size.width+2,menu.raw_size.height+2,0,0,0),menu.raw_start.x-1, menu.raw_start.y-1)  --1px border around rawbm
 	b_combine(bgbm, menu.banner.bitmap,1,1) --banner
@@ -98,11 +98,18 @@ local function widget_render(menu)
 end
 
 local function full_redraw(menu)
-	local bgbmp = assert(menu.app.screen)
-	bgbmp = dynawa.bitmap.combine(bgbmp,my.globals.inactive_mask,0,0,true)
+	local bgbmp = menu.app.screen
+	if bgbmp then
+		bgbmp = dynawa.bitmap.combine(bgbmp,my.globals.inactive_mask,0,0,true)
+	end
 	widget_render(menu)
-	dynawa.bitmap.combine(bgbmp,menu.bitmap,menu.start.x,menu.start.y)
-	dynawa.event.send{type="display_bitmap", bitmap=bgbmp}
+	if bgbmp then
+		dynawa.bitmap.combine(bgbmp,menu.bitmap,menu.start.x,menu.start.y)
+		dynawa.event.send{type="display_bitmap", bitmap=bgbmp}
+	else
+		assert (menu.fullscreen,"The menu is not fullscreen and the caller does not have active screen. I cannot render the background.")
+		dynawa.event.send{type="display_bitmap", bitmap = menu.bitmap}
+	end
 	return menu
 end
 
@@ -117,6 +124,8 @@ end
 my.globals.menu.new = function(menu0)
 	local menu = {type="menu",items={},scroll={},id=menu0.id}
 	menu.app = assert(menu0.app)
+	menu.fullscreen = menu0.fullscreen
+	menu.border_color = menu0.border_color
 	menu.items = {}
 	local banner = parse_menu_item(menu0.banner,nil,{0,0,0})
 	menu.banner = banner
@@ -126,8 +135,11 @@ my.globals.menu.new = function(menu0)
 	local max_width = menu.banner.width
 	for i,item0 in ipairs(menu0.items) do
 		assert(item0.text)
-		local item = parse_menu_item(item0.text)
-		assert(item0.value)
+		local color
+		if not item0.value then
+			color = {255,255,0}
+		end
+		local item = parse_menu_item(item0.text, nil, color)
 		item.value = item0.value
 		if menu0.active_value and menu0.active_value == item.value then
 			menu.active_item = i
@@ -150,6 +162,9 @@ my.globals.menu.new = function(menu0)
 	local size = {width = raw_size.width + 4, height = raw_size.height + menu.banner.height + 5}
 	local new_width = math.min(size.width,dynawa.display.size.width - 6)
 	local new_height = math.min(size.height,dynawa.display.size.height - 6)
+	if menu.fullscreen then
+		new_width, new_height = dynawa.display.size.width, dynawa.display.size.height
+	end
 	raw_size = {width = raw_size.width + new_width - size.width, height = raw_size.height + new_height - size.height}
 	--log("raw_size: "..raw_size.width.."x"..raw_size.height)
 	size = {width = new_width, height = new_height}
@@ -164,7 +179,7 @@ my.globals.menu.new = function(menu0)
 	menu.size = size
 
 	menu.rows_fit = menu.raw_size.height / menu.line_height --How many rows fit into the raw bitmap (non-integer!)
-	assert(menu.rows_fit >= 3, "Menu too small. At least 3 items must fit in the window")
+	assert(menu.rows_fit >= 2, "Menu too small. At least 2 items must fit in the window")
 	if menu.top_item < menu.active_item - math.floor(menu.rows_fit) + 1 then
 		menu.top_item = menu.active_item - math.floor(menu.rows_fit) + 1
 	end
@@ -198,7 +213,10 @@ end
 
 local function confirmation(menu)
 	local item = menu.items[menu.active_item]
-	local event = {status = "confirmed", item_n = menu.active_item, item = item}
+	if not item.value then
+		return
+	end
+	local event = {status = "confirmed", item_n = menu.active_item, value = assert(item.value)}
 	my.globals.widget_result(menu,event)
 end
 

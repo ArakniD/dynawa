@@ -19,11 +19,10 @@ local function widget_done (event)
 	if event.status ~= "confirmed" then
 		return
 	end
-	assert(event.item.value)
-	--log(event.item.value)
+	assert(event.value)
 	dynawa.event.send{type="new_widget", notification = {text="Color scheme changed", autoclose = true}}
-	if my.globals.prefs.style ~= event.item.value then
-		my.globals.prefs.style = event.item.value
+	if my.globals.prefs.style ~= event.value then
+		my.globals.prefs.style = event.value
 		dynawa.file.save_data(my.globals.prefs)
 	end
 end
