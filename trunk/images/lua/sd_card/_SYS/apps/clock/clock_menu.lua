@@ -9,9 +9,10 @@ local function show_menu(event)
 			{text="Blah2",value="no"},
 			{text="Blah3",value="no"},
 			{text="Very long string 1234567890 really very long, WOW it's totally huge line!",value="no"},
+			{text="Very long dark string 1234567890 really very long, WOW it's totally huge line!"},
 			{text="BlahCCC",value="no"},
 			{text="Blah2",value="no"},
-			{text="Blah3",value="no"},
+			{text="Blah3"},
 			{text="Blah4",value="no"},
 			{text="Blah5",value="no"},
 		}

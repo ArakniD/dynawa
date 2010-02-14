@@ -156,8 +156,7 @@ my.app.name = "Default Clock"
 my.app.priority = "A"
 dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
-dynawa.time.set(1234569580)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
 dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
-dynawa.event.send("me_to_front")
+dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
 

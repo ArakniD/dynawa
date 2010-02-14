@@ -50,7 +50,7 @@ dynawa.task.start = function(args) --expects id,app
 	task.globals = app.globals
 	local my0 = _G.my
 	rawset(_G,"my",task)
-	dofile(task.id)
+	dynawa.dofile(task.id)
 	rawset(_G,"my",my0)
 end
 

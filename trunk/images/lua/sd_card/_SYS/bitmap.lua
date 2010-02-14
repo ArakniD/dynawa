@@ -2,6 +2,7 @@
 
 dynawa.display={flipped=false}
 dynawa.display.size={width=160,height=128}
+dynawa.bitmap.dummy_screen=dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, 255, 0, 0)
 dynawa.fonts = {}
 
 dynawa.bitmap.info = function(bmap)
@@ -41,10 +42,6 @@ dynawa.bitmap.border = function (bitmap, thick, rgb)
 	return bitmap
 end
 
-dynawa.busy = function(args)
-	----------------- #todo
-end
-
 dynawa.bitmap.load_font = function (fname)
 	local bmap = assert(dynawa.bitmap.from_png_file(fname),"Cannot load font bitmap: "..tostring(fname))
 	local white = dynawa.bitmap.new(20,20,255,255,255)
@@ -71,8 +68,8 @@ dynawa.bitmap.load_font = function (fname)
 			widths[char_str] = width
 			lastx = x
 			char = char + 1
-			if char % 20 == 0 then
-				boot_anim()
+			if char % 10 == 0 then
+				dynawa.busy()
 			end
 			if char > 128 or x > total_width then error("FUCK") end
 			r,g,b,a = dynawa.bitmap.pixel(bmap,x,1)
@@ -124,4 +121,5 @@ end
 local screen = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,0,0,0)
 dynawa.bitmap.combine(screen,dynawa.bitmap.text_line("WristOS "..dynawa.version.wristOS),1,1)
 dynawa.bitmap.show(screen)
+dynawa.busy()
 

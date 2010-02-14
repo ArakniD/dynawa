@@ -1,13 +1,5 @@
 require("dynawa")
 
-my.app.name = "System Widget"
-
-my.globals.current_widget = nil
-my.globals.inactive_mask = assert(dynawa.bitmap.from_png_file(my.dir.."inactive_mask.png"))
-
-dofile (my.dir.."menu.lua")
-dofile (my.dir.."notification.lua")
-
 local function new_widget(event)
 	local app=assert(event.sender.app)
 	local widget
@@ -41,7 +33,9 @@ end
 local function widget_closed()
 	local current_widget = my.globals.current_widget
 	if current_widget then
-		dynawa.event.send{type="app_to_front", app = current_widget.app}
+		if my.app.in_front then
+			dynawa.event.send{type="app_to_front", app = current_widget.app}
+		end
 		dynawa.event.send{type="display_bitmap", bitmap = nil}
 		my.globals.current_widget = nil
 	end
@@ -59,6 +53,11 @@ local function button_event(event)
 	my.globals[current_widget.type].button_event (current_widget, event)
 end
 
+my.app.name = "System Widget"
+my.globals.current_widget = nil
+my.globals.inactive_mask = assert(dynawa.bitmap.from_png_file(my.dir.."inactive_mask.png"))
+dynawa.dofile (my.dir.."menu.lua")
+dynawa.dofile (my.dir.."notification.lua")
 dynawa.event.receive{event="new_widget", callback=new_widget}
 dynawa.event.receive{event="close_widget", callback=widget_closed}
 dynawa.event.send{type = "set_flags", flags = {ignore_app_switch = true}}

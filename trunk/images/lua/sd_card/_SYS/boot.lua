@@ -3,6 +3,7 @@
 --Use "override.lua" to tune-up the boot process.
 
 assert(dynawa, "Dynawa library not detected")
+math.randomseed(os.time())
 
 --Note the following function can be called more than once because of "soft reboot".
 --The flag "dynawa.already_booted" can be used to determine if this is the case.
