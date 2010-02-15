@@ -1,27 +1,27 @@
 --menus for SuperMan
 my.globals.menus = {}
-my.globals.menus.file_browser = function(dir)
-	assert(type(dir)=="string")
+my.globals.menus.file_browser = function(dir0)
+	local dir = assert(dir0:gsub(":","/"))
+	dir = "/"..dir
 	assert(#dir >= 1)
 	log("opening dir "..dir)
-	local dir2 = assert(dir:match("(.*)/"))
-	if dir2 == "" then
-		dir2 = "/"
-	end
-	local dirstat = dynawa.file.dir_stat(dir2)
-	local menu = {banner = "Directory: "..dir, items={}}
+	local dirstat = dynawa.file.dir_stat(dir)
+	local menu = {banner = dir, items={}}
 	if not dirstat then
 		table.insert(menu.items,{text="(Invalid directory)"})
 	else
 		for k,v in pairs(dirstat) do
 			local txt = k.." ("..v..")"
-			log("Adding dirstat item: "..txt)
+			--log("Adding dirstat item: "..txt)
 			local location
 			if v == "dir" then
-				location = "file_browser:"..dir..k.."/"
+				location = "file_browser:"..dir0..k..":"
 			end
 			table.insert(menu.items,{text=txt,location=location})
 		end
+		table.sort(menu.items,function(it1,it2)
+			return it1.text < it2.text
+		end)
 	end
 	return menu
 end
