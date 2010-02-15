@@ -235,9 +235,9 @@ TRACE_BT("abcsp_pumptxmsgs\r\n");
 
 static unsigned char cmdIssueCount;
 
-static void initTestTask(void)
+static void u_init_bt_task(void)
 {
-    TRACE_BT("initTestTask\r\n");
+    TRACE_BT("u_init_bt_task\r\n");
 	NumberOfHciCommands = 0;
 	cmdIssueCount = 0;
 }
@@ -254,17 +254,20 @@ static void restartHandler(void);
 
 uint16 bc_state = 0;
 
-static void testTask(void)
+static void u_bt_task(bt_command *cmd)
 {
 	unsigned char * readBdAddr;
 
-    TRACE_BT("testTask begin\r\n");
+    TRACE_BT("u_bt_task begin\r\n");
 
-/*
-    if (cmd.id == BT_COMMAND_STOP) {
-        TerminateMicroSched();
+    if (cmd) {
+        switch(cmd->id) {
+        case BT_COMMAND_STOP:
+            // TODO: stop all BT connections
+            TerminateMicroSched();
+            break;
+        }
     }
-*/
 
 	cmdIssueCount++;
 	if (cmdIssueCount >= 100)
@@ -335,7 +338,7 @@ static void testTask(void)
             StartTimer(250000, restartHandler);
         }
 	}
-    TRACE_BT("testTask end\r\n");
+    TRACE_BT("u_bt_task end\r\n");
 }
 
 
@@ -459,7 +462,7 @@ void bt_task(void *p)
 
 
 
-	InitMicroSched(initTestTask, testTask);
+	InitMicroSched(u_init_bt_task, u_bt_task);
 
 	UartDrv_RegisterHandlers();
 	UartDrv_Configure(baudRate);
@@ -600,6 +603,7 @@ bool bt_get_command(bt_command *cmd) {
 }
 
 int bt_init() {
+    bc_state = BC_STATE_STOPPED;
     return 0;
 }
 
@@ -609,6 +613,10 @@ int bt_open() {
     bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
 
     return 0;
+}
+
+void bt_stop_callback() {
+    vQueueDelete(command_queue);
 }
 
 int bt_close() {

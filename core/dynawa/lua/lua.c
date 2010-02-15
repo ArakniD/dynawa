@@ -134,12 +134,28 @@ rtc_close();
             lua_pushlightuserdata(L, (void*)ev.data.timer.handle);
             lua_settable(L, -3);
             break;
+        case EVENT_BT_STARTED:
+            TRACE_LUA("bt started\r\n");
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "bluetooth");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "subtype");
+            lua_pushnumber(L, ev.type);
+            lua_settable(L, -3);
+            break;
         case EVENT_BT_STOPPED:
             TRACE_LUA("bt stopped\r\n");
             lua_newtable(L);
 
             lua_pushstring(L, "type");
-            lua_pushstring(L, "bt_stopped");
+            lua_pushstring(L, "bluetooth");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "subtype");
+            lua_pushnumber(L, ev.type);
             lua_settable(L, -3);
             break;
         default:

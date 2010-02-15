@@ -132,7 +132,7 @@ static void serviceBgInts(void)
 /* Task handling */
 
 static void (* uInitTask)(void);
-static void (* uTask)(void);
+static void (* uTask)(bt_command *cmd);
 static int runTaskFlag = 0;
 
 void ScheduleTaskToRun(void)
@@ -263,7 +263,8 @@ void MicroSched(void)
 {
     TimedEventType * timedEvent;
 	TIME now;
-    bt_command cmd;
+    bt_command bt_cmd;
+    bt_command *bt_cmd_ptr;
 
     TRACE_BT("MicroSched\r\n");
 	if (!terminationFlag && (uInitTask != NULL))
@@ -285,7 +286,8 @@ void MicroSched(void)
 		if (runTaskFlag)
 		{
 			runTaskFlag = 0;
-			uTask();
+			uTask(bt_cmd_ptr);
+            bt_cmd_ptr = NULL;
 		}
 
         while (timedEvents)
@@ -342,7 +344,8 @@ void MicroSched(void)
                     xQueueReceive(WakeUpEvent, &event, time_sub(timedEvents->when, now) / 1000); 
 				}
             }
-            if (bt_get_command(&cmd)) {
+            if (bt_get_command(&bt_cmd)) {
+                bt_cmd_ptr = &bt_cmd;
                 runTaskFlag = 1;
             }
         }
@@ -360,6 +363,7 @@ void MicroSched(void)
     }
     vQueueDelete(WakeUpEvent);
     vQueueDelete(SchedulerMutex);
+    bt_stop_callback();
 }
 
 void TerminateMicroSched(void)
