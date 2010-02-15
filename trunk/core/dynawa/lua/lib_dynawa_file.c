@@ -10,23 +10,31 @@
 // Not reentrant but who cares
 static char path_buff[MAX_PATH_LEN + 1];
 
-static int l_mkdir (lua_State *L) {
-    const char *path = luaL_checkstring(L, 1);
-
-    TRACE_LUA("dynawa.file.mkdir(%s)\r\n", path);
-
+static char *remove_trailing_slash(const char *path) {
 /* removing possible trailing separator */
     int len = strlen(path);
     if (len > 1 && (len--, (path[len] == '/' || path[len] == '\\'))) {
 /* TODO: check "   /" case */
         if (len > MAX_PATH_LEN) {
-            lua_pushboolean(L, false);
-            return 1;
+            return NULL;
         }
-
         strncpy(path_buff, path, len);
         path_buff[len] = '\0';
-        path = path_buff;
+        return path_buff;
+    } else {
+        return path;
+    }
+}
+
+static int l_mkdir (lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+
+    TRACE_LUA("dynawa.file.mkdir(%s)\r\n", path);
+
+    path = remove_trailing_slash(path);
+    if (path == NULL) {
+        lua_pushboolean(L, false);
+        return 1;
     }
 
     if (_mkdir(path, 0)) {
@@ -52,6 +60,12 @@ static int l_dir_stat (lua_State *L) {
     const char *path = luaL_checkstring(L, 1);
 
     TRACE_LUA("dynawa.file.dir_stat(%s)\r\n", path);
+
+    path = remove_trailing_slash(path);
+    if (path == NULL) {
+        lua_pushnil(L);
+        return 1;
+    }
 
     int res;
     DIR dir;

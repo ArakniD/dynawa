@@ -78,6 +78,7 @@ struct sys_timeouts {
 // MakingThings - add for lwip 1.3.0
 // hmm...to be implemented?
 //#define LWIP_PLATFORM_ASSERT(x) TRACE_ERROR(x) // fatal, print message and abandon execution.
+//#define LWIP_PLATFORM_ASSERT(x) TRACE_BT(x);panic() // fatal, print message and abandon execution.
 #define LWIP_PLATFORM_ASSERT(x) TRACE_BT(x) // fatal, print message and abandon execution.
 //#define LWIP_PLATFORM_ASSERT(x) // fatal, print message and abandon execution.
 #define LWIP_PLATFORM_DIAG(x)  TRACE_BT x // non-fatal, print a message

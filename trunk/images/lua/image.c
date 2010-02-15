@@ -1,11 +1,3 @@
-/*
-   make.c
-
-   make.c is the main project file.  The Run( ) task gets called on bootup, so stick any initialization stuff in there.
-   In Heavy, by default we set the USB, OSC, and Network systems active, but you don't need to if you aren't using them.
-   Furthermore, only register the OSC subsystems you need - by default, we register all of them.
-   */
-
 #include "core.h"
 #include "led.h"
 //#include "appled.h"
@@ -14,6 +6,7 @@
 #include <rtos.h>
 #include <usbserial.h>
 #include <serial.h>
+#include <task_param.h>
 
 #include "lua.h"
 
@@ -40,9 +33,17 @@ void usb( void* parameters );
 void usb_msd( void* parameters );
 void bcsp( void* parameters );
 
+bool in_panic_handler = false;
 void panic(void) {
-    TRACE_ERROR("!!!PANIC!!!\r\n");
-    while(1);
+    in_panic_handler = true;
+    TRACE_ERROR("!!!PANIC!!! %x\r\n", xTaskGetCurrentTaskHandle());
+    uint32_t count;
+    while(1) {
+        if (!(count % 10000))
+            TRACE_ERROR("*");
+        count++;
+    }
+    TRACE_ERROR("!!!PANIC2!!!\r\n");
 }
 
 void test() {
@@ -76,17 +77,18 @@ void Run( ) // this task gets called as soon as we boot up.
     scrWriteRect(80,126,120,127,0xffffff);
 
     button_init();
+    bt_init();
+
     rtc_open();
-    //rtc_write(NULL);
-    //rtc_read();
-    rtc_set_epoch_seconds(1265399017); /* 10/02/05 19:43 */
+    rtc_set_epoch_seconds(1265399017); // 10/02/05 19:43
     TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
     rtc_close();
-
-    UsbSerial_init();
+    
+    UsbSerial_open();
     while( !UsbSerial_isActive() )
         Task_sleep(10);
-    Task_sleep(500);
+    //Task_sleep(500);
+
 
     //Task_create( blinkLoop, "Blink", 400, 1, NULL );
     //Task_create( console, "console", 400, 1, NULL );
@@ -96,10 +98,10 @@ void Run( ) // this task gets called as soon as we boot up.
 #else
     //Task_create( lua, "LUA", 8192, 1, NULL );
 #endif
-    Task_create( lua_event_loop, "LUA_Event_loop", 8192, 1, NULL );
+    Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
     //monitorTaskStart();
 
-    // MV bcsp task requires higher pri??? why?
+    //bt_open();
     //Task_create( bcsp, "BCSP", 8192, 1, NULL );
 
     //Serial usart(0);
@@ -131,7 +133,6 @@ void Run( ) // this task gets called as soon as we boot up.
 
     // Starts the network up.  Will not return until a network is found...
     // Network_SetActive( true );
-    Task_delete( NULL );
 }
 
 // A very simple task...a good starting point for programming experiments.
@@ -165,7 +166,7 @@ void console( void* p )
     Led_init(&led);
     //led.setState( 0 );
 
-    UsbSerial_init();
+    UsbSerial_open();
     while( !UsbSerial_isActive() ) // while usb is not active
         Task_sleep(10);        // wait around for a little bit
 
@@ -190,7 +191,7 @@ void bc( void* p )
     //led.setState( 0 );
 
     TRACE_INFO("bc1\r\n");
-    Serial_init(0, 100);
+    Serial_open(0, 100);
     TRACE_INFO("bc2\r\n");
 
     char b[10];
@@ -211,7 +212,7 @@ void lua( void* p )
     (void)p;
 
     TRACE_INFO("lua\r\n");
-    UsbSerial_init();
+    UsbSerial_open();
     while( !UsbSerial_isActive() ) // while usb is not active
         Task_sleep(10);        // wait around for a little bit
 
@@ -314,7 +315,7 @@ void usb( void* p )
        TRACE_ERROR("SD card init failed!\r\n");
        }
        */
-    UsbSerial_init();
+    UsbSerial_open();
     MSDDInitialize();
     COMPOSITEDDriver_Initialize();
 
@@ -380,7 +381,13 @@ void bcsp( void* p )
 
     TRACE_INFO("bcsp\r\n");
 
-    bcsp_main();
+/*
+    // abort handler test
+    uint32_t x = *(uint32_t*)1;
+    TRACE_INFO("x %x\r\n", x);
+*/
+
+    //bcsp_main();
 }
 
 

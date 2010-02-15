@@ -19,6 +19,8 @@
 #include "rtos.h"
 #include "debug/trace.h"
 
+extern bool in_panic_handler;
+
 // The interrupt entry point is naked so we can control the context saving.
 void Serial0Isr_Wrapper( void ) __attribute__ ((naked));
 void Serial1Isr_Wrapper( void ) __attribute__ ((naked));
@@ -35,7 +37,7 @@ void SerialIsr_Handler( int index )
   long xTaskWokenByTxThis = false;
   long xTaskWokenByPostThis = false;
   Serial_Internal* si = &Serial_internals[index];
-  
+
   //TRACE_SER("SER ISR %d\r\n", index);
   unsigned int status = ( si->uart->US_CSR ) & ( si->uart->US_IMR ); // What caused the interrupt?
   if( status & AT91C_US_TXRDY ) 
@@ -54,13 +56,16 @@ void SerialIsr_Handler( int index )
    
   if( status & AT91C_US_RXRDY ) 
   { 
-    //TRACE_SER("SER ISR RX %d\r\n", index);
-    //TRACE_SER("Rx\r\n");
+/*
+    if (in_panic_handler)
+        TRACE_SER("SER ISR RX %d\r\n", index);
+*/
     /* The interrupt was caused by a character being received. Grab the 
     character from the RHR and place it in the queue or received  
     characters. */ 
     int t = si->uart->US_RHR;
     cChar = t & 0xFF; 
+    //if (!in_panic_handler)
     Queue_sendFromISR(si->rxQueue, &cChar, &xTaskWokenByPost );
   }
 

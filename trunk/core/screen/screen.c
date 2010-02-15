@@ -18,8 +18,8 @@
 #include <stdio.h>
 #include "hardware_conf.h"
 #include "firmware_conf.h"
-#include <utils/delay.h>
-#include <peripherals/oled/oled.h>
+#include "utils/delay.h"
+#include "peripherals/oled/oled.h"
 #include "screen.h"
 #include "debug/trace.h"
 #include "bitmap.h"

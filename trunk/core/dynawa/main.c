@@ -25,16 +25,21 @@ the specific language governing permissions and limitations under the License.
 #include <screen/screen.h>
 #include <screen/font.h>
 #include "main.h"
+#include "task_param.h"
 #include <monitor/monitor.h>
 
 scr_buf_t * scrbuf=NULL;
 xTaskHandle taskHandles [TASKHANDLE_LAST];
 
+void defaultFiqHandler();
+void defaultIrqHandler();
+void defaultSpuriousHandler();
+
 static void prvSetupHardware( void );
 void vApplicationIdleHook( void );
-void MakeStarterTask( void* parameters );
+void StarterTask( void* parameters );
 
-void MakeStarterTask( void* parameters )
+void StarterTask( void* parameters )
 {
     (void)parameters;
     Run( );
@@ -58,7 +63,7 @@ int main( void )
     event_init(100);
     //button_init();
     void* taskHandle;
-    xTaskCreate( MakeStarterTask, (signed char*)"Make", ( 1200 >> 2 ), NULL, 4, &taskHandle );
+    xTaskCreate( StarterTask, "starter", TASK_STACK_SIZE(TASK_STARTER_STACK), NULL, TASK_STARTER_PRI, &taskHandle );
     // new Task( MakeStarterTask, "Make", 1200, NULL, 4 );
 
     /*NOTE : Tasks run in system mode and the scheduler runs in Supervisor mode.
@@ -89,14 +94,27 @@ void kill( void )
 static void prvSetupHardware( void )
 {
 
+    unsigned int i;
+
+
+    //MV
+    /* Initialize AIC
+     ****************/
+    AT91C_BASE_AIC->AIC_IDCR = 0xFFFFFFFF;
+    AT91C_BASE_AIC->AIC_SVR[0] = (unsigned int) defaultFiqHandler;
+    for (i = 1; i < 31; i++) {
+
+        AT91C_BASE_AIC->AIC_SVR[i] = (unsigned int) defaultIrqHandler;
+    }
+    AT91C_BASE_AIC->AIC_SPU = (unsigned int) defaultSpuriousHandler;
+    //MV
+
     /* 
        When using the JTAG debugger the hardware is not always initialised to
        the correct default state.  This line just ensures that this does not
        cause all interrupts to be masked at the start.
-       */
-
+    */
     // Unstack nested interrupts
-    unsigned int i;
     for (i = 0; i < 8 ; i++)
         AT91C_BASE_AIC->AIC_EOICR = 0;
 

@@ -206,7 +206,7 @@ l2cap_write(struct bd_addr *bdaddr, struct pbuf *p, u16_t len)
 	maxsize = lp_pdu_maxsize();
 	q = p;
 
-    TRACE_BT("l2cap_write %d\r\n", len);
+    TRACE_BT("l2cap_write %x %d\r\n", bdaddr, len);
 	while(len && ret == ERR_OK) {
 		LWIP_DEBUGF(L2CAP_DEBUG, ("l2cap_write: len %d maxsize %d p->len %d\n", len, maxsize, p->len));
 		TRACE_BT ("l2cap_write: len %d maxsize %d p->len %d\n", len, maxsize, p->len);
@@ -261,6 +261,7 @@ l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_addr *bd
 	u8_t i;
 	u16_t rspstate = L2CAP_CFG_SUCCESS;
 
+    TRACE_BT("l2cap_process_sig %x\r\n", bdaddr);
 	if(q->len != q->tot_len) {
 		LWIP_DEBUGF(L2CAP_DEBUG, ("l2cap_process_sig: Fragmented packet received. Reassemble into one buffer\n"));
 		if((p = pbuf_alloc(PBUF_RAW, q->tot_len, PBUF_RAM)) != NULL) {
@@ -345,7 +346,9 @@ l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_addr *bd
                         CPU2U16LE((u8_t*)data->payload, L2CAP_CONN_REF_PSM);
 						//((u16_t *)data->payload)[1] = 0; /* No further info available */
                         CPU2U16LE((u8_t*)data->payload + 2, 0);
-						ret = l2cap_signal(pcb, L2CAP_CONN_RSP, sighdr->id, &(pcb->remote_bdaddr), data);
+                        // MV ERROR: pcb == NULL!!!
+						//ret = l2cap_signal(pcb, L2CAP_CONN_RSP, sighdr->id, &(pcb->remote_bdaddr), data);
+						ret = l2cap_signal(NULL, L2CAP_CONN_RSP, sighdr->id, bdaddr, data);
 					}
 				} else {
 					/* Initiate a new active pcb */
@@ -359,9 +362,12 @@ l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_addr *bd
                             CPU2U16LE((u8_t*)data->payload, L2CAP_CONN_REF_RES);
 							//((u16_t *)data->payload)[1] = 0; /* No further info available */
                             CPU2U16LE((u8_t*)data->payload + 2, 0);
-							ret = l2cap_signal(pcb, L2CAP_CONN_RSP, sighdr->id, &(pcb->remote_bdaddr), data);
+							// MV ERROR: pcb == NULL!!!
+                            //ret = l2cap_signal(pcb, L2CAP_CONN_RSP, sighdr->id, &(pcb->remote_bdaddr), data);
+							ret = l2cap_signal(NULL, L2CAP_CONN_RSP, sighdr->id, bdaddr, data);
 						}
 					}
+                    TRACE_BT("bd_addr_set %x %x\r\n", &(pcb->remote_bdaddr), bdaddr);
 					bd_addr_set(&(pcb->remote_bdaddr),bdaddr);
 
 					pcb->scid = l2cap_cid_alloc();
@@ -849,7 +855,7 @@ l2cap_input(struct pbuf *p, struct bd_addr *bdaddr)
 
 	pbuf_realloc(p, aclhdr->len);
 
-    TRACE_BT("l2cap_input\r\n");
+    TRACE_BT("l2cap_input %x\r\n", bdaddr);
 	for(inseg = l2cap_insegs; inseg != NULL; inseg = inseg->next) {
 		if(bd_addr_cmp(bdaddr, &(inseg->bdaddr))) {
 			break;
@@ -1118,6 +1124,8 @@ l2cap_signal(struct l2cap_pcb *pcb, u8_t code, u16_t ursp_id, struct bd_addr *re
 	struct l2cap_sig_hdr *sighdr;
 	struct l2cap_hdr *hdr;
 	err_t ret;
+
+    TRACE_BT("l2cap_signal %x\r\n", remote_bdaddr);
 
 	/* Alloc a new signal */
 	LWIP_DEBUGF(L2CAP_DEBUG, ("l2cap_signal: Allocate memory for l2cap_sig. Code = 0x%x\n", code));

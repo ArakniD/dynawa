@@ -1,5 +1,7 @@
-#ifndef BC_H__
-#define BC_H__
+#ifndef BT_H__
+#define BT_H__
+
+#include "task_param.h"
 
 #define BC_STATE_STARTED             10
 #define BC_STATE_ANAFREQ_SET         20
@@ -7,4 +9,10 @@
 #define BC_STATE_RESTARTING          1000
 #define BC_STATE_READY               10000
 
-#endif /* BC_H__ */
+#define BT_COMMAND_STOP     1
+
+typedef struct {
+    uint8_t id;
+} bt_command;
+
+#endif /* BT_H__ */

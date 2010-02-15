@@ -134,6 +134,14 @@ rtc_close();
             lua_pushlightuserdata(L, (void*)ev.data.timer.handle);
             lua_settable(L, -3);
             break;
+        case EVENT_BT_STOPPED:
+            TRACE_LUA("bt stopped\r\n");
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "bt_stopped");
+            lua_settable(L, -3);
+            break;
         default:
             TRACE_ERROR("Uknown event %x\r\n", ev.type);
         }

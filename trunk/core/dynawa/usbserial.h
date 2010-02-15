@@ -71,7 +71,8 @@ typedef struct {
   char slipInBuf[MAX_INCOMING_SLIP_PACKET];
 } UsbSerial; 
 
-void UsbSerial_init( void );
+void UsbSerial_open( void );
+void UsbSerial_close(void);
 bool UsbSerial_isActive( void );
 //int UsbSerial_read( char *buffer, int length, int timeout = -1);
 int UsbSerial_read( char *buffer, int length, int timeout );

@@ -4,6 +4,7 @@
 #include "event.h"
 #include "task.h"
 #include "queue.h"
+#include "task_param.h"
 
 
 #define BUTTON_TIMER_HW_INDEX   0
@@ -104,7 +105,7 @@ int button_init () {
     }
 
 #if defined(BUTTON_TASK)
-    if (xTaskCreate( button_task, "button_task", 800, NULL, 3, &button_task_handle ) != 1 ) {
+    if (xTaskCreate( button_task, "button", TASK_STACK_SIZE(TASK_BUTTON_STACK), NULL, TASK_BUTTON_PRI, &button_task_handle ) != 1 ) {
         return -1;
     }
 #endif

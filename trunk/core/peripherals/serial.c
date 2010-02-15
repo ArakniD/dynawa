@@ -103,7 +103,7 @@ void dbg_usart_putchar(char c)
     pDBG_USART->DBGU_THR = c;
     
 //MV
-    while (!(pDBG_USART->DBGU_CSR & AT91C_US_TXRDY));   // Wait for empty Tx buffer 
+    //while (!(pDBG_USART->DBGU_CSR & AT91C_US_TXRDY));   // Wait for empty Tx buffer 
     #elif defined(BOARD_V1)    
     while (!(pDBG_USART->US_CSR & AT91C_US_TXRDY));   // Wait for empty Tx buffer 
     pDBG_USART->US_THR = c;
