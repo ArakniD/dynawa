@@ -46,7 +46,7 @@ local function button_event(event)
 	if not current_widget then
 		return
 	end
-	if event.type == "button_down" and (event.button == "CANCEL" or event.button == "SWITCH") then
+	if event.type == "button_down" and event.button == "SWITCH" then
 		widget_closed()
 		return
 	end

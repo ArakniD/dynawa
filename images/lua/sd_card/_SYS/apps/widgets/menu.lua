@@ -128,6 +128,7 @@ my.globals.menu.new = function(menu0)
 	menu.border_color = menu0.border_color
 	menu.items = {}
 	menu.active_item = menu0.active_item
+	menu.on_cancel = menu0.on_cancel --Value to return when CANCEL is pressed
 	local banner = parse_menu_item(menu0.banner,nil,{0,0,0})
 	menu.banner = banner
 	local w,h = assert(dynawa.bitmap.info(menu.banner.bitmap))
@@ -221,6 +222,15 @@ local function confirmation(menu)
 	my.globals.widget_result(menu,event)
 end
 
+local function cancellation(menu)
+	if not menu.on_cancel then
+		dynawa.event.send{type="close_widget"}
+		return
+	end
+	local event = {status = "cancelled", value = menu.on_cancel}
+	my.globals.widget_result(menu,event)
+end
+
 local function autorepeat_do(event)
 	if my.globals.current_widget ~= event.menu then
 		return
@@ -247,6 +257,9 @@ my.globals.menu.button_event = function(menu, event)
 			return
 		elseif event.button == "BOTTOM" then
 			cursor_move(menu,1)
+			return
+		elseif event.button == "CANCEL" then
+			cancellation(menu)
 			return
 		end
 	elseif event.type == "button_hold" then

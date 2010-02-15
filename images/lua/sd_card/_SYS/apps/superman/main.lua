@@ -3,6 +3,7 @@
 local function get_menu_for_location(url)
 	assert(url)
 	local where, rest = url:match("(.-):(.*)")
+	log("Opening Superman for "..where.." "..rest)
 	local fn = my.globals.menus[where]
 	assert(fn, "Unknown go_to address: "..where)
 	return assert(fn(rest),"No menu returned for location "..url)
@@ -11,13 +12,13 @@ end
 
 my.globals.show_menu = function(args)
 	args = args or {}
-	local location = args.location
+	local location = args.location or ":"
 	local menu
-	if not location then --root menu
+	if location==":" then --root menu
 		menu = {}
 		menu.items = {
 			{text = "Bluetooth", location = "bluetooth:"},
-			{text = "File browser", location = "file_browser:/"},
+			{text = "File browser", location = "file_browser:"},
 			{text = "Adjust clock", location = "adjust_clock:"},
 			{text = "Nothing1"},
 			{text = "Nothing2"},
@@ -41,6 +42,10 @@ my.globals.show_menu = function(args)
 	assert(#menu2.items > 0, "No menu items in SuperMan menu")
 	menu2.active_item = args.active_item
 	--print("Active item in menu2: "..tostring(menu2.active_item))
+	local back_to = location:match("(.+:).-:")
+	if back_to then
+		menu2.on_cancel = {location = back_to}
+	end
 	dynawa.event.send{type="new_widget", menu = menu2}
 end
 
@@ -49,7 +54,6 @@ local function launch(event)
 end
 
 local function widget_result(event)
-	log("Superman got result")
 	local val = event.value
 	if not val then
 		for i = 1,1000 do
