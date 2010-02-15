@@ -113,6 +113,7 @@ irq_handler_address:
 fiq_handler_address:
   .word fiq_handler
 
+
   .section .init, "ax"
   .code 32
   .align 0
@@ -160,19 +161,41 @@ __boot_handler:
  ******************************************************************************/
 undef_handler:
 //  b undef_handler
-  b gen_handler
+ //   b gen_handler
+    stmfd sp!, {r0-r12, lr}
+    ldr     sp, =(__abort_mem+5*4)  @ Set sp_abt to data array with offset (restore later)
+    stmia   sp, {r0-r12}            @ Save first dataset in r0-r12 to array
+    sub     r0, lr, #4              @ Calculate PC value of undef instruction
+    mov     r1, #0                  @ Abort type
+    b       .abtstore               @ Save info, reset system
   
 swi_handler:
 //  b swi_handler
   b gen_handler
+
   
 pabort_handler:
 //  b pabort_handler
-  b gen_handler
-  
+//    b gen_handler
+    stmfd sp!, {r0-r12, lr}
+    ldr     sp, =(__abort_mem+5*4)  @ Set sp_abt to data array with offset (restore later)
+    stmia   sp, {r0-r12}            @ Save first dataset in r0-r12 to array
+    sub     r0, lr, #4              @ Calculate PC value of undef instruction
+    mov     r1, #1                  @ Abort type
+    b       .abtstore               @ Save info, reset system
+
 dabort_handler:
 //  b dabort_handler
-  b gen_handler
+//    b gen_handler
+/*
+stmfd sp!, {r0-r12, lr}
+    ldr     sp, =(__abort_mem+5*4)  @ Set sp_abt to data array with offset (restore later)
+    stmia   sp, {r0-r12}            @ Save first dataset in r0-r12 to array
+*/
+    //sub     r0, lr, #4              @ Calculate PC value of undef instruction
+sub     r0, lr, #8              @ Calculate PC value of undef instruction
+    mov     r1, #2                  @ Abort type
+    b       .abtstore               @ Save info, reset system
   
 _irq_handler:
 //  b irq_handler
@@ -182,12 +205,125 @@ fiq_handler:
 //  b fiq_handler
   b gen_handler
 
+@
+@  Store the abort type.  Then see if the sigil value is set, and if not,
+@  reset the abort counter to 0.
+@
+.abtstore:
+        ldr     r2, =__abort_typ        @ Abort type
+        str     r1, [r2]                @ Store it
+ldr     r2, =__abort_mem        @ Abort mem
+str     r0, [r2]                @ Store it
+
+//ldr     sp, =__stack_abt_end__
+bl      abort_dump
+
+        ldr     r2, =__abort_sig        @ Get the sigil address
+        ldr     r4, =ABORT_SIGIL        @ Load sigil value
+        ldr     r3, [r2]                @ Get sigil contents
+        cmp     r3, r4                  @ Sigil set?
+
+        strne   r4, [r2]                @ No, store sigil value
+        ldrne   r2, =__abort_cnt        @ No, load address of abort counter
+        movne   r4, #0                  @ No, Zero for store
+        strne   r4, [r2]                @ No, Clear counter
+
+@
+@  Now build up structure of registers and stack (r0 = abort address, r1 = 
+@  abort type).  This code is based heavily on the work of Roger Lynx, from 
+@  http://www.embedded.com/shared/printableArticle.jhtml?articleID=192202641
+@
+        mrs     r5, cpsr                @ Save current mode to R5 for mode switching
+        mrs     r6, spsr                @ spsr_abt = CPSR of dabt originating mode, save to r6 for mode switching
+        mov     r2, r6                  @ Building second dataset: r2 = CPSR of exception
+        tst     r6, #0x0f               @ Test mode of the raised exception
+        orreq   r6, r6, #0x0f           @ If 0, elevate from user mode to system mode
+        msr     cpsr_c, r6              @ Switch out from mode 0x17 (abort) to ...
+        mov     r3, lr                  @ ... dabt generating mode and state
+        mov     r4, sp                  @ ... Get lr (=r3) and sp (=r4)
+        msr     cpsr_c, r5              @ Switch back to mode 0x17 (abort)
+        cmp     r1, #1                  @ Test for prefetch abort
+        moveq   r1, #0                  @ Can't fetch instruction at the abort address
+        ldrne   r1, [r0]                @ r1 = [pc] (dabt)
+        ldr     sp, =__abort_mem        @ Reset sp to arrays starting address
+        stmia   sp, {r0-r4}             @ Save second dataset from r0 to r4
+
+        ldr     r1, =__abort_stk        @ Space where we'll store abort stack
+        mov     r2,#8                   @ Copy 8 stack entries
+.abtcopy:
+        ldr     r0, [r4], #4            @ Get byte from source, r4 += 4
+        str     r0, [r1], #4            @ Store byte to destination, r1 += 4
+        subs    r2, r2, #1              @ Decrement loop counter
+        bgt     .abtcopy                @ >= 0, go again
+
+        //b       .sysreset               @ And reset
+        ldr     sp, =__stack_abt_end__
+        bl      abort_dump
+
+@
+@  Force a system reset with ye olde watch dogge
+@
+        .set    SCB_RSIR_MASK, 0x0000000f
+        .set    SCB_RSIR,      0xe01fc180
+        .set    WD_MOD,        0xe0000000
+        .set    WD_TC,         0xe0000004
+        .set    WD_FEED,       0xe0000008
+        .set    WD_MOD_WDEN,   0x00000001
+        .set    WD_MOD_RESET,  0x00000002
+        .set    WD_MOD_TOF,    0x00000004
+        .set    WD_MOD_INT,    0x00000008
+        .set    WD_MOD_MASK,   0x0000000f
+        .set    WD_FEED_FEED1, 0x000000aa
+        .set    WD_FEED_FEED2, 0x00000055
+        .set    ABORT_SIGIL,   0xdeadc0de
+
+.sysreset:
+        ldr     r1, =__abort_cnt        @ Get the abort counter address
+        ldr     r0, [r1]                @ Load it
+        add     r0, r0, #1              @ Add 1
+        str     r0, [r1]                @ Store it back
+
+@
+@  Now enable the watch dog, and go into a loop waiting for a timeout
+@
+        ldr     r0, =SCB_RSIR_MASK
+        ldr     r1, =SCB_RSIR
+        str     r0, [r1]
+        ldr     r0, =WD_MOD_WDEN | WD_MOD_RESET
+        ldr     r1, =WD_MOD
+        str     r0, [r1]
+        ldr     r0, =120000
+        ldr     r1, =WD_TC
+        str     r0, [r1]
+        ldr     r0, =WD_FEED_FEED1
+        ldr     r1, =WD_FEED
+        str     r0, [r1]
+        ldr     r0, =WD_FEED_FEED2
+        ldr     r1, =WD_FEED
+        str     r0, [r1]
+        b       .
   .weak undef_handler, swi_handler, pabort_handler, dabort_handler, irq_handler, fiq_handler
 
   .extern kill
 
 gen_handler:
 //  b reset_handler
-  b kill
+//  b kill
+    b abort_dump
+  b gen_handler
+
+    .global __abort_dat
+    .global __abort_mem
+    .global __abort_typ
+    //MV .section .protected
+    .section .data
+    .align  0
+
+__abort_dat:  .word 0                   @ Dummy, not used
+__abort_sig:  .word 0                   @ Sigil to indicate data validity
+__abort_cnt:  .word 0                   @ Number of times we've aborted
+__abort_typ:  .word 0                   @ Type of abort (0=undef,1=pabort,2=dabort)
+__abort_mem:  .space (18 * 4), 0        @ Registers from abort state
+__abort_stk:  .space (8 * 4), 0         @ 8 stack entries from abort state
 
 

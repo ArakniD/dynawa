@@ -685,7 +685,8 @@ err_t sdp_service_attrib_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 		q  = pbuf_alloc(PBUF_RAW, SDP_PDUHDR_LEN+2, PBUF_RAM);
 		rsphdr = q->payload;
 		rsphdr->pdu = SDP_SAR_PDU;
-		rsphdr->id = reqhdr->id;
+		//rsphdr->id = reqhdr->id;
+		CPU2U16LE((u8_t *)&rsphdr->id, U16LE2CPU((u8_t*)&reqhdr->id));
 
 		/* Search for attributes and add them to a pbuf */
 		pbuf_header(p, -6);
@@ -708,7 +709,8 @@ err_t sdp_service_attrib_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 		pbuf_free(r);
 
 		/* Add paramenter length to header */
-		rsphdr->len = htons(q->tot_len - SDP_PDUHDR_LEN);
+		//rsphdr->len = htons(q->tot_len - SDP_PDUHDR_LEN);
+		CPU2U16LE((u8_t *)&rsphdr->len, htons(q->tot_len - SDP_PDUHDR_LEN));
 
 		{
 			u16_t i;

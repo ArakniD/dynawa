@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "uSched.h"
@@ -11,6 +10,11 @@
 #include "lwip/pbuf.h"
 
 abcsp AbcspInstanceData;
+
+#define BUG   0
+#define BCSP_TEST   0
+
+extern uint32_t bc_hci_event_count;
 
 extern int NumberOfHciCommands;
 extern uint16 bc_state;
@@ -28,6 +32,8 @@ void buf2pbuf(u8_t *b, struct pbuf *p, int hdr_len, int param_len) {
     while (rem_len) {
         if (p == NULL) {
             TRACE_ERROR("PBUF=NULL\r\n");
+            panic();
+            return;
         }
         int chunk_len = p->len;
         TRACE_BT("pbuf len %d\r\n", chunk_len); 
@@ -86,7 +92,14 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
 	else if (channel == HCI_EVENT_CHANNEL)
 	{
         TRACE_BT("HCI_EVENT_CHANNEL %x\r\n", (messageBuffer->buffer[0]));
-        if (bc_state == BC_STATE_READY) {
+        if (!BCSP_TEST && bc_state == BC_STATE_READY) {
+            TRACE_BT(">>>>> bc_hci_event_count %d\r\n", bc_hci_event_count);
+            //if (bc_hci_event_count == 9)
+            if (BUG && bc_hci_event_count == 5) {
+                panic();
+            }
+            bc_hci_event_count++;
+/*
             if (messageBuffer->buffer[0] == HCI_COMMAND_STATUS_EVENT) {
                 int cmd = ((((uint16) messageBuffer->buffer[HCI_CSE_COMMAND_OPCODE_HIGH_BYTE]) << 8)
                      | ((uint16) messageBuffer->buffer[HCI_CSE_COMMAND_OPCODE_LOW_BYTE]));
@@ -100,18 +113,25 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
                 for(i = 0 ; i < len; i++) {
                     TRACE_BT("%d=%x\r\n", i, messageBuffer->buffer[i]);
                 }
-            } else {
             }
+*/
             u8_t param_len = messageBuffer->buffer[1];
             int len = HCI_EVENT_HDR_LEN + param_len;
             TRACE_BT("total_len %d\r\n", len);
             struct pbuf *p;
-            if((p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL)) == NULL) {
+            //if((p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL)) == NULL) {
+            if((p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM)) == NULL) {
                 TRACE_ERROR("NOMEM\r\n");
+                panic();
             } else {
                 buf2pbuf(messageBuffer->buffer, p, HCI_EVENT_HDR_LEN, param_len);
                 hci_event_input(p);
                 pbuf_free(p);
+
+                TRACE_BT("<<<<< bc_hci_event_count %d\r\n", bc_hci_event_count);
+                if (BUG && bc_hci_event_count == 10) {
+                    panic();
+                }
             }
         } else {
             if (messageBuffer->buffer[0] == HCI_COMMAND_COMPLETE_EVENT)
@@ -159,17 +179,20 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
             int len = HCI_ACL_HDR_LEN + param_len;
             TRACE_BT("total_len %d\r\n", len);
             int i;
+/*
             for(i = 0 ; i < len; i++) {
                 TRACE_BT("%d=%x\r\n", i, messageBuffer->buffer[i]);
             }
+*/
             struct pbuf *p;
             //if((p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL)) == NULL) {
             if((p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM)) == NULL) {
                 TRACE_ERROR("NOMEM\r\n");
+                panic();
             } else {
                 buf2pbuf(messageBuffer->buffer, p, HCI_ACL_HDR_LEN, param_len);
                 hci_acl_input(p);
-                pbuf_free(p);
+                //pbuf_free(p);    // done by hci_acl_input()/l2cap_input()
             }
         }
     } else {
@@ -195,12 +218,14 @@ ABCSP_RXMSG * abcsp_rxmsg_create(abcsp * thisInstance, unsigned length)
 
 char * abcsp_rxmsg_getbuf(ABCSP_RXMSG * message, unsigned * bufferSize)
 {
-    (void)bufferSize;
+    // MV (void)bufferSize;
 	MessageBuffer * messageBuffer;
 
     TRACE_BT("abcsp_rxmsg_getbuf\r\n");
 	messageBuffer = (MessageBuffer *) message;
 
+    // MV
+    *bufferSize = messageBuffer->length - messageBuffer->index;
 	return (char *) &messageBuffer->buffer[messageBuffer->index];
 }
 
@@ -297,21 +322,21 @@ static void * confTimerHandle = NULL;
 
 static void bcspTimeout(void)
 {
-    TRACE_BT("bcspTimeout\r\n");
+    TRACE_INFO("bcspTimeout\r\n");
 	bcspTimerHandle = NULL;
 	abcsp_bcsp_timed_event(&AbcspInstanceData);
 }
 
 static void tshyTimeout(void)
 {
-    TRACE_BT("tshyTimeout\r\n");
+    TRACE_INFO("tshyTimeout\r\n");
 	tshyTimerHandle = NULL;
 	abcsp_tshy_timed_event(&AbcspInstanceData);
 }
 
 static void confTimeout(void)
 {
-    TRACE_BT("confTimeout\r\n");
+    TRACE_INFO("confTimeout\r\n");
 	confTimerHandle = NULL;
 	abcsp_tconf_timed_event(&AbcspInstanceData);
 }
@@ -403,7 +428,7 @@ void abcsp_uart_sendbytes(abcsp * thisInstance, unsigned number)
 void abcsp_txmsg_init_read(ABCSP_TXMSG * message)
 {
 	MessageBuffer * messageBuffer;
-    TRACE_BT("abcsp_txmsg_init_read\r\n");
+    TRACE_BT("abcsp_txmsg_init_read %x\r\n", message);
 
 	messageBuffer = (MessageBuffer *) message;
 	messageBuffer->index = 0;
@@ -412,7 +437,7 @@ void abcsp_txmsg_init_read(ABCSP_TXMSG * message)
 unsigned abcsp_txmsg_length(ABCSP_TXMSG * message)
 {
 	MessageBuffer * messageBuffer;
-    TRACE_BT("abcsp_txmsg_init_read\r\n");
+    TRACE_BT("abcsp_txmsg_length\r\n");
 
 	messageBuffer = (MessageBuffer *) message;
 	return messageBuffer->length;
@@ -422,7 +447,7 @@ char * abcsp_txmsg_getbuf(ABCSP_TXMSG * message, unsigned * bufferLength)
 {
 	MessageBuffer * messageBuffer;
 
-    TRACE_BT("abcsp_txmsg_init_read\r\n");
+    TRACE_BT("abcsp_txmsg_getbuf\r\n");
 	messageBuffer = (MessageBuffer *) message;
 	if (messageBuffer->index >= messageBuffer->length)
 	{

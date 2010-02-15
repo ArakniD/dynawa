@@ -33,7 +33,7 @@ void usbserial_onTxData(void *pArg, unsigned char status, unsigned int sent, uns
 
 static UsbSerial usbserial;
 
-void UsbSerial_init()
+void UsbSerial_open()
 {
 #if !defined(USB_COMPOSITE)
     CDCDSerialDriver_Initialize();
@@ -46,6 +46,12 @@ void UsbSerial_init()
     usbserial.justGot = 0;
     usbserial.rxBufCount = 0;
     usbserial.justWrote = 0;
+}
+
+void UsbSerial_close() {
+    USBD_Disconnect();
+    Semaphore_delete(usbserial.readSemaphore);
+    Semaphore_delete(usbserial.writeSemaphore);
 }
 
 /**

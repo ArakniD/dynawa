@@ -28,12 +28,11 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "debug/trace.h"
 
 #define SERIAL_CHANNEL 0
-#define DWORD uint16_t
 
 extern void BgIntPump(void);
 
-#define	TX_BUF_MAX_SIZE				((uint16_t) 4000)	/* the buffer size for incoming and outgoing characters */
-#define RX_BUF_MAX_SIZE				((uint16_t) 4000)
+#define	TX_BUF_MAX_SIZE				((uint16_t) 4096)	/* the buffer size for incoming and outgoing characters */
+#define RX_BUF_MAX_SIZE				((uint16_t) 4096)
 
 /* the following number can be used to limit the number of bytes send at the time to the YABCSP libray.
 If not defined as many bytes as possible are send to the library */
@@ -90,7 +89,7 @@ static char comPortString[128];
 
 extern abcsp AbcspInstanceData;
 
-void errorHandler(DWORD	line, char *file, char *text)
+void errorHandler(uint16_t	line, char *file, char *text)
 {
 #ifdef DEBUG_ENABLE
 	printf("Serial com error %s in file: %s, line %i\n", text, file, line);
@@ -104,11 +103,11 @@ bool_t setComDefault(char *dcbInitString)
     return TRUE;
 }
 
-bool_t	handleRxData(DWORD len, uint8_t	*data)
+bool_t	handleRxData(uint16_t len, uint8_t	*data)
 {
 	uint16_t	theRxSize;
 
-    TRACE_BT("handleRxData %d\r\n", len);
+    TRACE_BT("handleRxData %d %x %d %d\r\n", len, rxBuf, rxIn, rxSize);
 	//EnterCriticalSection(&rxMutex);
     xSemaphoreTake(rxMutex, portMAX_DELAY);
 	theRxSize = rxSize;
@@ -124,6 +123,7 @@ bool_t	handleRxData(DWORD len, uint8_t	*data)
 	{
 		rxIn = rxIn + (uint16_t) len;
 	}
+    TRACE_BT("handleRxData %d %d\r\n", rxIn, rxSize);
 
 	if (memchr(data, 0xC0, len) != NULL)  // BCSP delimiter character (0xC0) received
 	{
@@ -136,8 +136,8 @@ void txThreadFunc(void)
 {
 	//OVERLAPPED	osWrote	= {0};
 	//HANDLE		wroteDataEvent;
-	DWORD		bytesWritten;
-	DWORD		event;
+	uint16_t		bytesWritten;
+	uint16_t		event;
 	bool_t		txBusy;
 
 /*
@@ -173,48 +173,6 @@ void txThreadFunc(void)
 				//ResetEvent(txCloseDownEvent);
 				break;
 			}
-/*
-			//case WAIT_OBJECT_0 + WROTE_DATA_EVENT:
-			case WROTE_DATA_EVENT:
-			{
-				BOOL	success;
-
-				ResetEvent(osWrote.hEvent);
-
-				txBusy = FALSE;
-				success = GetOverlappedResult(comHandle, &osWrote, &bytesWritten, FALSE);
-				if (success)
-				{
-					if (bytesWritten > 0)
-					{
-						txOut = txOut + (uint16_t) bytesWritten;
-						if (txOut >= TX_BUF_MAX_SIZE)
-						{
-							txOut = 0;
-						}
-					}
-					else
-					{
-						bytesWritten = 0;
-					}
-					//EnterCriticalSection(&txMutex);
-                    xSemaphoreTake(txMutex, portMAX_DELAY);
-					txSize = txSize - (uint16_t) bytesWritten;
-					//LeaveCriticalSection(&txMutex);
-                    xSemaphoreGive(txMutex);
-				}
-				else
-				{
-					errorHandler(__LINE__, __FILE__, "Error when sending data (wrote complete error - data packet lost)");
-				}
-
-				if (txSize > 0)
-				{
-					SetEvent(newTxDataEvent);
-				}
-				break;
-			}
-*/
 
 			//case WAIT_OBJECT_0 + NEW_TX_DATA_EVENT:
 			case NEW_TX_DATA_EVENT:
@@ -224,74 +182,74 @@ void txThreadFunc(void)
 				/*	do not try to send while busy	*/
 				if (!txBusy)
 				{
-    bool keep_writing;
-do {
-    keep_writing = FALSE;
-					uint16_t	size;
-					uint16_t	no2Send;
+                    bool keep_writing;
+                    do {
+                        keep_writing = FALSE;
+                        uint16_t	size;
+                        uint16_t	no2Send;
 
-					//EnterCriticalSection(&txMutex);
-                    xSemaphoreTake(txMutex, portMAX_DELAY);
-					size = txSize;
-					//LeaveCriticalSection(&txMutex);
-                    xSemaphoreGive(txMutex);
-
-					if (size == 0)
-					{
-						/*	no data so take another loop	*/
-						break;
-					}
-
-					no2Send = size;
-					if (size + txOut > TX_BUF_MAX_SIZE)
-					{
-						no2Send = TX_BUF_MAX_SIZE - txOut;
-					}
-
-					//if (WriteFile(comHandle, &(txBuf[txOut]), no2Send, &bytesWritten, &osWrote))
-                    if (!Serial_write(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
-					{
-                        TRACE_BT("data written\r\n");
-                        bytesWritten = no2Send;
-						if (bytesWritten > 0)
-						{
-							txOut = txOut + (uint16_t) bytesWritten;
-							if (txOut >= TX_BUF_MAX_SIZE)
-							{
-								txOut = 0;
-							}
-						}
-						else
-						{
-							bytesWritten = 0;
-						}
-						//EnterCriticalSection(&txMutex);
+                        //EnterCriticalSection(&txMutex);
                         xSemaphoreTake(txMutex, portMAX_DELAY);
-						txSize = txSize - (uint16_t) bytesWritten;
-						//LeaveCriticalSection(&txMutex);
+                        size = txSize;
+                        //LeaveCriticalSection(&txMutex);
                         xSemaphoreGive(txMutex);
-						if (txSize > 0)
-						{
-                            keep_writing = TRUE;
-							//SetEvent(newTxDataEvent);
-						}
-					}
-					else
-					{
-/*
-						if (GetLastError() != ERROR_IO_PENDING)
-						{
-							errorHandler(__LINE__, __FILE__, "Serious error in write file (new data event) in tx thread");
-							break;
-						}
-						else
-						{
-							txBusy = TRUE;
-						}
-*/
-                        errorHandler(__LINE__, __FILE__, "Serious error in write file (new data event) in tx thread");
-					}
-} while(keep_writing);
+
+                        if (size == 0)
+                        {
+                            /*	no data so take another loop	*/
+                            break;
+                        }
+
+                        no2Send = size;
+                        if (size + txOut > TX_BUF_MAX_SIZE)
+                        {
+                            no2Send = TX_BUF_MAX_SIZE - txOut;
+                        }
+
+                        //if (WriteFile(comHandle, &(txBuf[txOut]), no2Send, &bytesWritten, &osWrote))
+                        if (!Serial_write(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
+                        {
+                            TRACE_BT("data written\r\n");
+                            bytesWritten = no2Send;
+                            if (bytesWritten > 0)
+                            {
+                                txOut = txOut + (uint16_t) bytesWritten;
+                                if (txOut >= TX_BUF_MAX_SIZE)
+                                {
+                                    txOut = 0;
+                                }
+                            }
+                            else
+                            {
+                                bytesWritten = 0;
+                            }
+                            //EnterCriticalSection(&txMutex);
+                            xSemaphoreTake(txMutex, portMAX_DELAY);
+                            txSize = txSize - (uint16_t) bytesWritten;
+                            //LeaveCriticalSection(&txMutex);
+                            xSemaphoreGive(txMutex);
+                            if (txSize > 0)
+                            {
+                                keep_writing = TRUE;
+                                //SetEvent(newTxDataEvent);
+                            }
+                        }
+                        else
+                        {
+    /*
+                            if (GetLastError() != ERROR_IO_PENDING)
+                            {
+                                errorHandler(__LINE__, __FILE__, "Serious error in write file (new data event) in tx thread");
+                                break;
+                            }
+                            else
+                            {
+                                txBusy = TRUE;
+                            }
+    */
+                            errorHandler(__LINE__, __FILE__, "Serious error in write file (new data event) in tx thread");
+                        }
+                    } while(keep_writing);
 				}
 				break;
 			}
@@ -321,15 +279,15 @@ do {
 
 void rxThreadFunc(void)
 {
-	DWORD		event;
+	uint16_t		event;
 	uint8_t		*rxData;
-	DWORD		bytesRead;
+	uint16_t		bytesRead;
 	bool_t		readSuccess;
 	bool_t		startRead;
 	uint16_t	theRxSize;
 	//COMSTAT		comStat;
-	DWORD		errors;
-	DWORD		numberToRead;
+	uint16_t		errors;
+	uint16_t		numberToRead;
 
 
 	rxData = rxBuf;
@@ -339,10 +297,12 @@ void rxThreadFunc(void)
 	while (TRUE)
 	{
 		//EnterCriticalSection(&rxMutex);
+        TRACE_BT("RxMutex take\r\n");
         xSemaphoreTake(rxMutex, portMAX_DELAY);
 		theRxSize = rxSize;
 		//LeaveCriticalSection(&rxMutex);
         xSemaphoreGive(rxMutex);
+        TRACE_BT("RxMutex given\r\n");
 
 		/*	find next position for rx data in and if any space available in buffer	*/
 		if (theRxSize == RX_BUF_MAX_SIZE)
@@ -377,8 +337,11 @@ void rxThreadFunc(void)
 				break;
 			}
 		}
+
+
         rxData = rxBuf + rxIn;
 
+#if 0
         int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
         TRACE_BT("AVAIL %d\r\n", bytesAvail);
         numberToRead =  bytesAvail > 0 ? bytesAvail : 1;
@@ -401,6 +364,45 @@ void rxThreadFunc(void)
                 handleRxData(bytesRead, rxData);
             }
         }
+#else
+
+        bytesRead = 0;
+        int count = 0;
+        while(1) {
+
+            int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
+            TRACE_BT("AVAIL %d\r\n", bytesAvail);
+
+            if (bytesRead) {
+                if (!bytesAvail) 
+                    break;
+                numberToRead = bytesAvail;
+            } else {
+                numberToRead =  bytesAvail > 0 ? bytesAvail : 1;
+            }
+            if (rxIn + bytesRead + numberToRead > RX_BUF_MAX_SIZE)
+            {
+                numberToRead = RX_BUF_MAX_SIZE - rxIn - bytesRead;
+            }
+            if (!numberToRead)
+                break;
+
+            TRACE_BT("READING %x %d\r\n", rxData, numberToRead);
+            int n = Serial_read(SERIAL_CHANNEL, rxData + bytesRead, numberToRead, -1);
+            TRACE_BT("DATA READ %d\r\n", n);
+            if (n < 0)
+            {
+                errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
+                bytesRead = n;
+                break;
+            }
+            bytesRead += n;
+            count++;
+        }
+        if (bytesRead > 0) {
+            handleRxData(bytesRead, rxData);
+        }
+#endif
 
 	}	/*	end while	*/
 
@@ -410,15 +412,15 @@ void rxThreadFunc(void)
 void rxThreadFunc_old(void)
 {
 	//OVERLAPPED	osRead	= {0};
-	DWORD		event;
+	uint16_t		event;
 	uint8_t		*rxData;
-	DWORD		bytesRead;
+	uint16_t		bytesRead;
 	bool_t		readSuccess;
 	bool_t		startRead;
 	uint16_t	theRxSize;
 	//COMSTAT		comStat;
-	DWORD		errors;
-	DWORD		numberToRead;
+	uint16_t		errors;
+	uint16_t		numberToRead;
 
 
 /*
@@ -613,8 +615,8 @@ static bool_t init(void)
 	}
 */
     
-    rxEvents = xQueueCreate(1, sizeof(DWORD)); 
-    txEvents = xQueueCreate(1, sizeof(DWORD)); 
+    rxEvents = xQueueCreate(1, sizeof(uint16_t)); 
+    txEvents = xQueueCreate(1, sizeof(uint16_t)); 
 
 	/*	create the file handle	*/
 /*
@@ -626,7 +628,7 @@ static bool_t init(void)
 		return FALSE;	
 	}
 */
-    Serial_init(SERIAL_CHANNEL, 1000);
+    Serial_open(SERIAL_CHANNEL, 1024);
 
 /*
 	sprintf(configurationString, "baud=%lu parity=E data=8 stop=1", baudRate);
@@ -680,7 +682,7 @@ void UartDrv_Configure(unsigned long theBaudRate)
 *******************************************************************************/
 bool_t UartDrv_Start(void)
 {
-	//DWORD	threadId;
+	//uint16_t	threadId;
 
     TRACE_BT("UartDrv_Start\r\n");
 	if (!init())
@@ -691,14 +693,14 @@ bool_t UartDrv_Start(void)
 	/*	tx and rx threads		*/
 	//txThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) txThreadFunc, NULL, 0, &threadId);
 	//if(txThread == INVALID_HANDLE_VALUE) 
-    if(xTaskCreate(txThreadFunc, "txThread", 256, 1, NULL, &txThread) != pdPASS ) 
+    if(xTaskCreate(txThreadFunc, "bt_tx", TASK_STACK_SIZE(TASK_BT_TX_STACK), TASK_BT_TX_PRI, NULL, &txThread) != pdPASS ) 
 	{
 		errorHandler(__LINE__, __FILE__, "Thread create failure");
 		return(FALSE);
 	}
 	//rxThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) rxThreadFunc, NULL, 0, &threadId);
 	//if(rxThread == INVALID_HANDLE_VALUE) 
-    if(xTaskCreate(rxThreadFunc, "rxThread", 256, 1, NULL, &rxThread) != pdPASS ) 
+    if(xTaskCreate(rxThreadFunc, "bt_rx", TASK_STACK_SIZE(TASK_BT_RX_STACK), TASK_BT_RX_PRI, NULL, &rxThread) != pdPASS ) 
 	{
 		errorHandler(__LINE__, __FILE__, "Thread create failure");
 		return(FALSE);
@@ -723,8 +725,19 @@ bool_t UartDrv_Start(void)
 void UartDrv_Stop(void)
 {
     TRACE_BT("UartDrv_Stop\r\n");
+
+    vTaskDelete(txThread);
+    vTaskDelete(rxThread);
+
+    vQueueDelete(txMutex);
+    vQueueDelete(rxMutex);
+
+    vQueueDelete(txEvents);
+    vQueueDelete(rxEvents);
+
+    Serial_close(SERIAL_CHANNEL);
 /*
-	DWORD threadExitCode;
+	uint16_t threadExitCode;
 
 	SetEvent(txCloseDownEvent);
 	SetEvent(rxCloseDownEvent);
@@ -803,7 +816,7 @@ bool_t UartDrv_Tx(uint8_t *theData, unsigned len, uint16_t *numSend)
 	uint16_t	size;
 
 	*numSend = 0;
-    TRACE_BT("UartDrv_Tx %d\r\n", len);
+    TRACE_BT("UartDrv_Tx %d %x %d %d\r\n", len, txBuf, txIn, txSize);
 	//EnterCriticalSection(&txMutex);
     xSemaphoreTake(txMutex, portMAX_DELAY);
 	size = txSize;
@@ -839,6 +852,7 @@ bool_t UartDrv_Tx(uint8_t *theData, unsigned len, uint16_t *numSend)
 		}
 	}
 	*numSend = len;
+    TRACE_BT("UartDrv_Tx %d %d %d\r\n", len, txIn, txSize);
 
 	//EnterCriticalSection(&txMutex);
     xSemaphoreTake(txMutex, portMAX_DELAY);
@@ -848,7 +862,7 @@ bool_t UartDrv_Tx(uint8_t *theData, unsigned len, uint16_t *numSend)
 
 	/*	signal tx thread that new data has arrived	*/
 	//SetEvent(newTxDataEvent);
-    DWORD event = NEW_TX_DATA_EVENT;
+    uint16_t event = NEW_TX_DATA_EVENT;
     //xQueueSend(txEvents, &event, portMAX_DELAY);
     xQueueSend(txEvents, &event, 0);
 	return TRUE;
@@ -968,6 +982,7 @@ void UartDrv_Rx(void)
 		noOfBytes = (RX_BUF_MAX_SIZE - rxOut);
 	}
 	bytesConsumed = abcsp_uart_deliverbytes(&AbcspInstanceData, &rxBuf[rxOut], noOfBytes);
+    TRACE_BT("abcsp_uart_deliverbytes %d\r\n", bytesConsumed);
 	rxOut = rxOut + bytesConsumed;
 
 	if (rxOut >= RX_BUF_MAX_SIZE)
@@ -984,7 +999,7 @@ void UartDrv_Rx(void)
 	if (bytesConsumed > 0)
 	{
 		//SetEvent(dataReadEvent);
-        DWORD event = DATA_READ_EVENT;
+        uint16_t event = DATA_READ_EVENT;
         //xQueueSend(rxEvents, &event, portMAX_DELAY);
         xQueueSend(rxEvents, &event, 0);
 	}

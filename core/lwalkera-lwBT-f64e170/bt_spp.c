@@ -490,6 +490,8 @@ err_t bt_spp_init(void)
 	struct rfcomm_pcb *rfcommpcb;
 	struct sdp_record *record;
 
+//return ERR_OK;
+
 	if((l2cappcb = l2cap_new()) == NULL) {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_spp_init: Could not alloc L2CAP PCB for SDP_PSM\n"));
 		return ERR_MEM;
@@ -963,7 +965,7 @@ err_t acl_conn_complete(void *arg, struct bd_addr *bdaddr)
 err_t read_bdaddr_complete(void *arg, struct bd_addr *bdaddr)
 {
 TRACE_BT("bdaddr %x %x\r\n", &(bt_spp_state.bdaddr), bdaddr);
-	//memcpy(&(bt_spp_state.bdaddr), bdaddr, 6);
+	//memcpy((void*)&(bt_spp_state.bdaddr), (void*)bdaddr, 6);
     int i;
     for(i = 0; i < BD_ADDR_LEN; i++ ) {
         TRACE_BT("bdaddr[%d]=%x\r\n", i, bdaddr->addr[i]);
@@ -1040,6 +1042,7 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_WRITE_SCAN_ENABLE.\n")); 
 						//hci_cmd_complete(NULL); /* Initialization done, don't come back */
+                        //MV hci_write_cod(cod_spp);
 					} else {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Unsuccessful HCI_WRITE_SCAN_ENABLE.\n"));
 						return ERR_CONN;
@@ -1048,8 +1051,8 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 				case HCI_SET_EVENT_FILTER:
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_SET_EVENT_FILTER.\n"));
-							hci_write_cod(cod_spp);
-							hci_write_scan_enable(HCI_SCAN_EN_INQUIRY | HCI_SCAN_EN_PAGE);
+                        hci_write_cod(cod_spp);
+                        hci_write_scan_enable(HCI_SCAN_EN_INQUIRY | HCI_SCAN_EN_PAGE);
 					} else {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Unsuccessful HCI_SET_EVENT_FILTER.\n"));
 						return ERR_CONN;

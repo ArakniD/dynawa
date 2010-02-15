@@ -4,6 +4,7 @@
 #include "png.h"
 #include "bitmap.h"
 #include "types.h"
+#include "peripherals/oled/oled.h"
 
 static int l_new (lua_State *L) {
     TRACE_LUA("dynawa.bitmap.new\r\n");
@@ -208,8 +209,8 @@ static int l_show (lua_State *L) {
         rotate = lua_toboolean(L, 2);
     }
 // TODO rotate flag
-    //scrWriteBitmapRGBA(0, 0, 159, 127, ((uint8_t*)bmp + sizeof(bitmap_header)));
-    scrWriteBitmapRGBA2(0, 0, 0, 0, 160, 128, bmp);
+    scrWriteBitmapRGBA(0, 0, OLED_RESOLUTION_X - 1, OLED_RESOLUTION_Y - 1, ((uint8_t*)bmp + sizeof(bitmap_header)));
+    //scrWriteBitmapRGBA2(0, 0, 0, 0, OLED_RESOLUTION_X, OLED_RESOLUTION_Y, bmp);
     return 0;
 }
 

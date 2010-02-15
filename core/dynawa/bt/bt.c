@@ -22,15 +22,23 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "abcsp_support_functions.h"
 #include "hci.h"
 #include "bccmd.h"
-#include "bc.h"
+#include "rtos.h"
 
 #include "lwip/pbuf.h"
 #include "lwip/mem.h"
 #include "lwip/sys.h"
 #include "lwbt/hci.h"
+#include "bt.h"
+#include "event.h"
 
 #include "debug/trace.h"
 
+
+#define BT_COMMAND_QUEUE_LEN 10
+
+uint32_t bc_hci_event_count;
+static Task bt_task_handle;
+static xQueueHandle command_queue;
 
 /* -------------------- Command line args processing -------------------- */
 
@@ -172,7 +180,10 @@ void phybusif_output(struct pbuf *p, u16_t len)
     u8_t *msg = malloc(len);
     if (msg == NULL) {
         TRACE_ERROR("NOMEM\r\n");
+        panic();
+        return;
     }
+    // TODO: pbuf2buf()
     int remain = len;
     struct pbuf *q = p;
     u8_t *b = msg;
@@ -180,6 +191,8 @@ void phybusif_output(struct pbuf *p, u16_t len)
     while (remain) {
         if (q == NULL) {
             TRACE_ERROR("PBUF=NULL\r\n");
+            panic();
+            return;
         }
         int offset = count ? 0 : 1; // to ignore payload[0] = packet type
 
@@ -217,6 +230,7 @@ TRACE_BT("abcsp_pumptxmsgs\r\n");
 
 	    pumpInternalMessage();
     } while (more_todo);
+    // MV } while (0);
 }
 
 static unsigned char cmdIssueCount;
@@ -245,6 +259,13 @@ static void testTask(void)
 	unsigned char * readBdAddr;
 
     TRACE_BT("testTask begin\r\n");
+
+/*
+    if (cmd.id == BT_COMMAND_STOP) {
+        TerminateMicroSched();
+    }
+*/
+
 	cmdIssueCount++;
 	if (cmdIssueCount >= 100)
 	{
@@ -374,6 +395,7 @@ static void restartHandler()
 {
     TRACE_INFO("BC RESTARTED\r\n");
     bc_state = BC_STATE_READY;
+    bc_hci_event_count = 0;
     Serial_setBaud(0, USART_BAUDRATE); 
     abcsp_init(&AbcspInstanceData);
 #if defined(TCPIP)
@@ -395,7 +417,8 @@ static void restartHandler()
 volatile AT91PS_PIO  pPIOB = AT91C_BASE_PIOB;
 volatile AT91PS_PIO  pPIOA = AT91C_BASE_PIOA;
 
-int bcsp_main()
+void bt_task(void *p)
+//int bcsp_main()
 {
     TRACE_BT("bcsp_main\r\n");
 
@@ -509,6 +532,12 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
 #define BCBOOT2_MASK (1 << 29)
 #define BCNRES_MASK (1 << 30)
 
+/*
+//MV CTS/RTS
+    pPIOA->PIO_PDR = (1 << 7);
+    pPIOA->PIO_PDR = (1 << 8);
+*/
+
     pPIOB->PIO_PER = BCBOOT0_MASK;
     pPIOB->PIO_OER = BCBOOT0_MASK;
     pPIOB->PIO_CODR = BCBOOT0_MASK; //set to log0
@@ -521,14 +550,14 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     pPIOB->PIO_OER = BCBOOT2_MASK;
     pPIOB->PIO_CODR = BCBOOT2_MASK; //set to log0
 
-    TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
+    //TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
 
     pPIOB->PIO_PER = BCNRES_MASK;
     pPIOB->PIO_OER = BCNRES_MASK;
     pPIOB->PIO_CODR = BCNRES_MASK; //set to log0
 
-    TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
-    TRACE_INFO("B_PIO_PSR %x\r\n", pPIOB->PIO_PSR);
+    //TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
+    //TRACE_INFO("B_PIO_PSR %x\r\n", pPIOB->PIO_PSR);
 
     Task_sleep(20);
 /*
@@ -537,8 +566,8 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     pPIOB->PIO_CODR = BCNRES_MASK; //set to log0
     Task_sleep(20);
 */
-    pPIOB->PIO_SODR = BCNRES_MASK;
-    TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
+    pPIOB->PIO_SODR = BCNRES_MASK; // Run BC, run!
+    //TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
 
     Task_sleep(10);
     bc_state = BC_STATE_STARTED;
@@ -548,7 +577,7 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     {
         TerminateMicroSched();
     } else {
-        TRACE_INFO("A_PIO_OSR %x\r\n", pPIOA->PIO_OSR);
+        //TRACE_INFO("A_PIO_OSR %x\r\n", pPIOA->PIO_OSR);
         //StartTimer(KEYBOARD_SCAN_INTERVAL, keyboardHandler);
 	    abcsp_init(&AbcspInstanceData);
         //StartTimer(PUMP_INTERVAL, pumpHandler);
@@ -556,5 +585,42 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
         UartDrv_Stop();
     }
 
+    pPIOB->PIO_CODR = BCNRES_MASK; // BC Stop
+
+    event ev;
+    ev.type = EVENT_BT_STOPPED;
+
+    event_post(&ev);
+
 	return 0;
+}
+
+bool bt_get_command(bt_command *cmd) {
+    return xQueueReceive(command_queue, cmd, 0);
+}
+
+int bt_init() {
+    return 0;
+}
+
+int bt_open() {
+
+    command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
+    bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
+
+    return 0;
+}
+
+int bt_close() {
+
+    bt_command cmd;
+
+    if (bt_task_handle != NULL) {
+        return 0;
+    }
+    cmd.id = BT_COMMAND_STOP;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return 0;
 }

@@ -246,6 +246,7 @@ THUMB_SRC= \
   $(DYNAWA)/lua/lib_dynawa_bitmap.c \
   $(DYNAWA)/lua/lib_dynawa_file.c \
   $(DYNAWA)/lua/lib_dynawa_time.c \
+  $(DYNAWA)/lua/lib_dynawa_bt.c \
   $(DYNAWA)/event.c \
   $(DYNAWA)/timer.c \
   $(DYNAWA)/button.c \
@@ -258,7 +259,7 @@ THUMB_SRC= \
   $(YABCSP)/rx.c \
   $(YABCSP)/txmsg.c \
   $(YABCSP)/txslip.c \
-  $(DYNAWA)/bt/main.c \
+  $(DYNAWA)/bt/bt.c \
   $(DYNAWA)/bt/abcsp_support_functions.c \
   $(DYNAWA)/bt/uSched.c \
   $(DYNAWA)/bt/SerialCom.c \
@@ -314,6 +315,8 @@ CPP_THUMB_SRC =
 #$(DYNAWA)/SAM7_EMAC_ISR.c \
 
 ARM_SRC= \
+  ../../core/startup/abort.c \
+  $(DYNAWA)/isr.c \
   $(FREERTOS)/portable/GCC/ARM7_AT91SAM7S/portISR.c \
   $(USB)/device/core/USBD_UDP.c \
   $(USB)/device/core/USBD_OTGHS.c \

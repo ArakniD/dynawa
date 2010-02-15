@@ -117,6 +117,10 @@ typedef unsigned int    uint;
 
 #else /* windows */
 //MV #error "must define machine type"
+
+// MV
+#include "types.h"
+/*
 typedef signed char     int8;
 typedef short           int16;
 typedef long            int32;
@@ -129,9 +133,10 @@ typedef unsigned char   uint8_t;
 typedef unsigned short  uint16_t;
 typedef unsigned long   uint32_t;
 typedef long			int32_t;
-typedef unsigned char   bool_t;
-
 typedef unsigned int    uint;
+typedef unsigned char   bool_t;
+*/
+
 
 #endif /* windows */
 #endif /* cygwin */

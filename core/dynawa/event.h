@@ -11,6 +11,7 @@
 #define EVENT_BUTTON_HOLD       2
 #define EVENT_BUTTON_UP         3
 #define EVENT_TIMER             10
+#define EVENT_BT_STOPPED        100
 
 typedef struct {
     uint8_t id;

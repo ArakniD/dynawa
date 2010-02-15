@@ -21,8 +21,7 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "chw.h"
 #include "uSched.h"
 #include "debug/trace.h"
-
-#define DWORD uint16_t
+#include "bt.h"
 
 //static HANDLE WakeUpEvent = NULL;
 static xQueueHandle WakeUpEvent;
@@ -56,8 +55,12 @@ void register_bg_int(int bgIntNumber, void (* bgIntFunction)(void))
 	{
 		//LeaveCriticalSection(&SchedulerMutex);
         xSemaphoreGive(SchedulerMutex);
+/*
 		fprintf(stderr, "PANIC: register_bg_int - unknown bgIntNumber (%d)!\n", bgIntNumber);
 		exit(0);
+*/
+		TRACE_ERROR("PANIC: register_bg_int - unknown bgIntNumber (%d)!\n", bgIntNumber);
+        panic();
 	}
 	//LeaveCriticalSection(&SchedulerMutex);
     xSemaphoreGive(SchedulerMutex);
@@ -65,29 +68,40 @@ void register_bg_int(int bgIntNumber, void (* bgIntFunction)(void))
 
 void bg_int1(void)
 {
-    TRACE_BT("bg_int1\r\n");
+    TRACE_BT(">>>bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
     //EnterCriticalSection(&SchedulerMutex);
     xSemaphoreTake(SchedulerMutex, portMAX_DELAY);
 	bgIntFlags |= BG_INT_1_FLAG_MASK;
 	//LeaveCriticalSection(&SchedulerMutex);
     xSemaphoreGive(SchedulerMutex);
+    TRACE_BT("bg_int1 Queue %x\r\n", xTaskGetCurrentTaskHandle());
 	//SetEvent(WakeUpEvent);
-    DWORD event = 1;
+    uint16_t event = 1;
     //xQueueSend(WakeUpEvent, &event, portMAX_DELAY);
     xQueueSend(WakeUpEvent, &event, 0);
+    TRACE_BT("<<<bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
 }
 
 void bg_int2(void)
 {
-    TRACE_BT("bg_int2\r\n");
+    TRACE_BT(">>>bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
     //EnterCriticalSection(&SchedulerMutex);
     xSemaphoreTake(SchedulerMutex, portMAX_DELAY);
 	bgIntFlags |= BG_INT_2_FLAG_MASK;
 	//LeaveCriticalSection(&SchedulerMutex);
     xSemaphoreGive(SchedulerMutex);
+    TRACE_BT("bg_int2 Queue %x\r\n", xTaskGetCurrentTaskHandle());
 	//SetEvent(WakeUpEvent);
-    DWORD event = 1;
+    uint16_t event = 1;
     //xQueueSend(WakeUpEvent, &event, portMAX_DELAY);
+    xQueueSend(WakeUpEvent, &event, 0);
+    TRACE_BT("<<<bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
+}
+
+void scheduler_wakeup(void)
+{
+    TRACE_BT("scheduler_wakeup\r\n");
+    uint16_t event = 2;
     xQueueSend(WakeUpEvent, &event, 0);
 }
 
@@ -234,7 +248,7 @@ void InitMicroSched(void (* initTask)(void), void (* task)(void))
 	//InitializeCriticalSection(&SchedulerMutex);
     SchedulerMutex = xSemaphoreCreateMutex();
 	//WakeUpEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    WakeUpEvent = xQueueCreate(1, sizeof(DWORD));
+    WakeUpEvent = xQueueCreate(1, sizeof(uint16_t));
 	terminationFlag = 0;
 
 	bgIntFunction1 = NULL;
@@ -249,6 +263,7 @@ void MicroSched(void)
 {
     TimedEventType * timedEvent;
 	TIME now;
+    bt_command cmd;
 
     TRACE_BT("MicroSched\r\n");
 	if (!terminationFlag && (uInitTask != NULL))
@@ -311,7 +326,7 @@ void MicroSched(void)
             {
                 //TRACE_BT("No timed events\r\n");
                 //WaitForSingleObject(WakeUpEvent, INFINITE);
-                DWORD event;
+                uint16_t event;
                 xQueueReceive(WakeUpEvent, &event, portMAX_DELAY); 
             }
             else
@@ -322,16 +337,29 @@ void MicroSched(void)
 				{
                     //WaitForSingleObject(WakeUpEvent, time_sub(timedEvents->when, now) / 1000);
 // TODO calc timeout in ticks
-                    DWORD event;
+                    uint16_t event;
                     TRACE_BT("wakeup event in %dms\r\n", time_sub(timedEvents->when, now) / 1000);
                     xQueueReceive(WakeUpEvent, &event, time_sub(timedEvents->when, now) / 1000); 
 				}
+            }
+            if (bt_get_command(&cmd)) {
+                runTaskFlag = 1;
             }
         }
 	}
 
 	//CloseHandle(WakeUpEvent);
 	//DeleteCriticalSection(&SchedulerMutex);
+
+    // !!! TODO Purge timedEvents list
+    while (timedEvents) {
+        timedEvent = timedEvents;
+        timedEvents = timedEvent->next;
+
+        free(timedEvent);
+    }
+    vQueueDelete(WakeUpEvent);
+    vQueueDelete(SchedulerMutex);
 }
 
 void TerminateMicroSched(void)

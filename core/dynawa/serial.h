@@ -65,7 +65,8 @@ extern Serial_Internal Serial_internals[SERIAL_PORTS];
 
 
 //Serial( int channel, int q_size = 100 );
-void Serial_init( int channel, int q_size );
+void Serial_open( int channel, int q_size );
+void Serial_close( int channel );
 void Serial_setBaud(int channel, int rate );
 int Serial_baud( int channel );
 

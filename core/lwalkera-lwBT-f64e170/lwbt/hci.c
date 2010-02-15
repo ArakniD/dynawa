@@ -212,19 +212,27 @@ struct hci_link * hci_get_link(struct bd_addr *bdaddr)
 {
 	struct hci_link *link;
 
-TRACE_BT(">>>hci_get_link\r\n");
-	for(link = hci_active_links; link != NULL; link = link->next) {
-TRACE_BT("link %x %x\r\n", &(link->bdaddr), bdaddr);
+TRACE_BT(">>>hci_get_link %x\r\n", bdaddr);
+/*
 int i;
 for(i=0;i<6;i++)
-//TRACE_BT("bdaddr[%d]=%x\r\n", i, link->bdaddr.addr[i]);
-TRACE_BT("bdaddr[%d]=%x\r\n", i, bdaddr->addr[i]);
+    TRACE_BT("bdaddr[%d]=%x\r\n", i, bdaddr->addr[i]);
+*/
+
+	for(link = hci_active_links; link != NULL; link = link->next) {
+TRACE_BT("link %x %x\r\n", &(link->bdaddr), bdaddr);
+/*
+int i;
+for(i=0;i<6;i++)
+TRACE_BT("bdaddr[%d]=%x\r\n", i, link->bdaddr.addr[i]);
+*/
+
 /*
 		if(bd_addr_cmp(&(link->bdaddr), bdaddr)) {
 			break;
 		}
 */
-        int equal = 1;
+        int i, equal = 1;
         for(i = 0; i < 6; i++) {
             if (link->bdaddr.addr[i] != bdaddr->addr[i]) {
                 equal = 0; 
@@ -671,6 +679,7 @@ TRACE_BT("hci_get_link\r\n");
 							break;
 						}
 					}
+                    // MV TODO: link == NULL
 					q = link->p;
 					/* Queued packet present? */
 					if (q != NULL) {
@@ -1431,6 +1440,8 @@ err_t lp_acl_write(struct bd_addr *bdaddr, struct pbuf *p, u16_t len, u8_t pb)
 	struct hci_link *link;
 	static struct hci_acl_hdr *aclhdr;
 	struct pbuf *q;
+
+    TRACE_BT("lp_acl_write %x\r\n", bdaddr);
 
 	/* Check if an ACL connection exists */ 
 	link = hci_get_link(bdaddr);

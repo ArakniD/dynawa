@@ -18,10 +18,20 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+// MV
+#include <inttypes.h>
+
 /* some types */
 #ifndef __cplusplus
+
+#undef bool
+
+//MV yabcsp/src/commonc.h
+// ?typedef unsigned bool;
 typedef unsigned char bool;
+
 #endif
+
 typedef unsigned char uchar;
 typedef unsigned char uint8;
 typedef unsigned int uint;
@@ -31,6 +41,9 @@ typedef long long int llong;
 typedef long long int longlong;
 typedef unsigned long long int ullong;
 typedef unsigned long long int ulonglong;
+
+// MV yabcsp
+typedef unsigned char   bool_t;
 
 #ifndef true
 #define true 1

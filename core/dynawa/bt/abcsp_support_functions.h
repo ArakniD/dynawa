@@ -2,7 +2,7 @@
 #define ABCSP_SUPPORT_FUNCTIONS_H__
 
 #include "abcsp.h"
-#include "bc.h"
+#include "bt.h"
 
 typedef struct
 {
