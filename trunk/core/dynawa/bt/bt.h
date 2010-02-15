@@ -3,6 +3,7 @@
 
 #include "task_param.h"
 
+#define BC_STATE_STOPPED             0
 #define BC_STATE_STARTED             10
 #define BC_STATE_ANAFREQ_SET         20
 #define BC_STATE_BAUDRATE_SET        30
