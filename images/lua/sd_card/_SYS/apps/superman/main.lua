@@ -16,8 +16,9 @@ my.globals.show_menu = function(args)
 	if not location then --root menu
 		menu = {}
 		menu.items = {
-			{text = "Adjust clock", location = "adjust_clock:"},
+			{text = "Bluetooth", location = "bluetooth:"},
 			{text = "File browser", location = "file_browser:/"},
+			{text = "Adjust clock", location = "adjust_clock:"},
 			{text = "Nothing1"},
 			{text = "Nothing2"},
 		}
@@ -33,11 +34,13 @@ my.globals.show_menu = function(args)
 		local item2 = {text = assert(item.text)}
 		--log("Added SuperMan menu text: "..item2.text)
 		if item.location then
-			item2.value={go_to=item.location}
+			item2.value={location=item.location,active_item = item.active_item}
 		end
 		table.insert(menu2.items, item2)
 	end
 	assert(#menu2.items > 0, "No menu items in SuperMan menu")
+	menu2.active_item = args.active_item
+	--print("Active item in menu2: "..tostring(menu2.active_item))
 	dynawa.event.send{type="new_widget", menu = menu2}
 end
 
@@ -54,8 +57,8 @@ local function widget_result(event)
 		end
 		return
 	end
-	if val.go_to then
-		my.globals.show_menu{location = val.go_to}
+	if val.location then
+		my.globals.show_menu{location = val.location, active_item = val.active_item}
 		return
 	end
 	log("Confirmation value not handled by SuperMan")

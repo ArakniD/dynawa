@@ -119,6 +119,7 @@ local function init()
 	dynawa.event.receive{event="set_flags", callback=app_flags}
 	dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
+	dynawa.app.start(dynawa.dir.sys.."apps/bluetooth/")
 	dynawa.app.start(dynawa.dir.sys.."apps/superman/")
 	dynawa.app.start(dynawa.dir.apps.."clock_bynari/")
 	dynawa.app.start(dynawa.dir.apps.."button_test/")

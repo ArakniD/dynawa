@@ -127,6 +127,7 @@ my.globals.menu.new = function(menu0)
 	menu.fullscreen = menu0.fullscreen
 	menu.border_color = menu0.border_color
 	menu.items = {}
+	menu.active_item = menu0.active_item
 	local banner = parse_menu_item(menu0.banner,nil,{0,0,0})
 	menu.banner = banner
 	local w,h = assert(dynawa.bitmap.info(menu.banner.bitmap))
