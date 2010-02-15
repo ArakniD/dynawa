@@ -57,8 +57,11 @@ dynawa.event_vectors = tbl
 tbl.button_down = function (event)
 	dynawa.button_event(event)
 end
+
 tbl.button_up = tbl.button_down
+
 tbl.button_hold = tbl.button_down
+
 tbl.timer_fired = function (event)
 	local handle = assert(event.handle,"HW event of type timer_fired has no handle")
 	local event = dynawa.hardware_vectors[handle]
@@ -76,6 +79,11 @@ tbl.timer_fired = function (event)
 		event.sender = nil
 		dynawa.event.send(event)
 	end
+end
+
+tbl.bluetooth = function (event)
+	event.receiver = dynawa.apps["/_sys/apps/bluetooth/"]
+	dynawa.event.send(event)
 end
 
 tbl=nil
