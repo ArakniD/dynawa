@@ -435,6 +435,7 @@ all: output/$(IMAGE_NAME).bin
   
 output/$(IMAGE_NAME).bin : output/$(IMAGE_NAME).elf
 	$(OBJCOPY) output/$(IMAGE_NAME).elf -O binary output/$(IMAGE_NAME).bin
+	cp output/$(IMAGE_NAME).bin sd_card/main.bin
 	
 output/$(IMAGE_NAME).elf : $(ARM_OBJ) $(THUMB_OBJ) $(CPP_ARM_OBJ) $(CPP_THUMB_OBJ) $(CRT0)
 	$(CC) $(CFLAGS) $(ARM_OBJ) $(THUMB_OBJ) $(CPP_ARM_OBJ) $(CPP_THUMB_OBJ) -nostartfiles -x assembler-with-cpp $(CRT0) $(LINKER_FLAGS) -lm

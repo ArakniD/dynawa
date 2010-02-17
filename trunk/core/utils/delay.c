@@ -48,16 +48,16 @@
 */
 void delay(uint32_t us)
 {
-    *AT91C_PMC_PCER = (1 << AT91C_ID_TC0);  // Enable Clock for TC0
-    *AT91C_TC0_CMR = 1;                     // select MCK/8 as clock
-    *AT91C_TC0_RC = us * STEPS;             // set compare register C 
-    *AT91C_TC0_CCR = 5;                     // enable clock, reset and start timer
+    *AT91C_PMC_PCER = (1 << AT91C_ID_TC2);  // Enable Clock for TC2
+    *AT91C_TC2_CMR = 1;                     // select MCK/8 as clock
+    *AT91C_TC2_RC = us * STEPS;             // set compare register C 
+    *AT91C_TC2_CCR = 5;                     // enable clock, reset and start timer
 
     // wait for timer to complete
     // when the compace C flag is set, we're done
-    while ((*AT91C_TC0_SR & AT91C_TC_CPCS) == 0) asm volatile ("nop");
+    while ((*AT91C_TC2_SR & AT91C_TC_CPCS) == 0) asm volatile ("nop");
     
-    *AT91C_PMC_PCDR = (1 << AT91C_ID_TC0);  // Disable Clock for TC0
+    *AT91C_PMC_PCDR = (1 << AT91C_ID_TC2);  // Disable Clock for TC2
 }
 
 /**

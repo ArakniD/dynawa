@@ -44,10 +44,11 @@ the specific language governing permissions and limitations under the License.
 Task Task_create( TaskLoop loop, const char* name, int stackDepth, int priority, void* params )
 {
     Task task;
-    if( xTaskCreate( loop, (const signed char*)name, ( stackDepth >> 2 ), params, priority, &task ) != 1 )
+    if( xTaskCreate( loop, (const signed char*)name, ( stackDepth >> 2 ), params, priority, &task ) != 1 ) {
         return NULL; 
-    else
-        xTaskSetContext( &task, task );
+    } else {
+        //xTaskSetContext( task, task );
+    }
     return task;
 }
 
@@ -303,7 +304,7 @@ Task Task_nextTask( Task task )
         tcb = RTOS_getNextTaskControlBlock( task );
     }
     xTaskResumeAll( );
-    return (tcb) ? (Task*)xTaskGetContext(tcb) : NULL;
+    return (tcb) ? (Task)xTaskGetContext(tcb) : NULL;
 }
 
 /**********************************************************************************
@@ -338,7 +339,7 @@ Task RTOS_findTaskByName( const char* name ) // static
         tcb = RTOS_findTask( (char*)name, -1 );
     }
     xTaskResumeAll();
-    return (tcb) ? (Task*)xTaskGetContext(tcb) : NULL;
+    return (tcb) ? (Task)xTaskGetContext(tcb) : NULL;
 }
 
 /**
@@ -369,7 +370,7 @@ Task RTOS_findTaskByID( int id ) // static
         tcb = RTOS_findTask( NULL, id );
     }
     xTaskResumeAll();
-    return (tcb) ? (Task*)xTaskGetContext(tcb) : NULL;
+    return (tcb) ? (Task)xTaskGetContext(tcb) : NULL;
 }
 
 /**
@@ -384,7 +385,7 @@ Task RTOS_findTaskByID( int id ) // static
   */
 Task RTOS_currentTask( ) // static
 {
-    return (Task*)xTaskGetContext(xTaskGetCurrentTaskHandle());
+    return (Task)xTaskGetContext(xTaskGetCurrentTaskHandle());
 }
 
 /**
@@ -449,7 +450,7 @@ void* RTOS_getNextTaskControlBlock( void* task )
     void* lowTask = NULL;
     void* highTask = NULL;
     void* tcb = NULL;
-    Task* t;
+    //Task* t;
     unsigned portBASE_TYPE uxQueue = RTOS_topTaskPriority( ) + 1;
 
     if( task == NULL )
@@ -579,7 +580,7 @@ void* RTOS_findTask( char *taskName, int taskID )
 void* RTOS_iterateByID( int id, xList* pxList )
 {
     void *pxNextTCB, *pxFirstTCB;
-    Task* t;
+    //Task* t;
     listGET_OWNER_OF_NEXT_ENTRY( pxFirstTCB, pxList );
     do
     {
@@ -597,7 +598,7 @@ void* RTOS_iterateByID( int id, xList* pxList )
 void* RTOS_iterateByName( char* taskName, xList* pxList )
 {
     void *pxNextTCB, *pxFirstTCB;
-    Task* t;
+    //Task* t;
     listGET_OWNER_OF_NEXT_ENTRY( pxFirstTCB, pxList );
     do
     {
@@ -615,7 +616,7 @@ void* RTOS_iterateByName( char* taskName, xList* pxList )
 void* RTOS_iterateForNextTask( void** lowTask, int* lowID, void** highTask, int* highID, int currentID, xList* pxList )
 {
     void *pxNextTCB, *pxFirstTCB;
-    Task* t;
+    //Task* t;
     listGET_OWNER_OF_NEXT_ENTRY( pxFirstTCB, pxList );
     do
     {

@@ -1,7 +1,7 @@
 #ifndef LP5521_H_
 #define LP5521_H_
 
-#define LEDRGB_PHY_ADDR 0x64
+#define LEDRGB_PHY_ADDR (0x64 >> 1)
 
 //register ENABLE
 #define LEDRGB_REG_ENABLE 0x00
@@ -28,7 +28,7 @@
 
 
 //register CONFIG
-#define LEDRGB_REG_CONFIG 0x01
+#define LEDRGB_REG_CONFIG 0x08
 //bits
 #define LEDRGB_CPMODE_AUTO (0x3<<3)
 #define LEDRGB_PWM_HF (0x1<<6)
