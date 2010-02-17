@@ -1052,7 +1052,10 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_SET_EVENT_FILTER.\n"));
                         hci_write_cod(cod_spp);
+                        // discoverable
                         hci_write_scan_enable(HCI_SCAN_EN_INQUIRY | HCI_SCAN_EN_PAGE);
+                        // nondiscoverable
+                        //hci_write_scan_enable(HCI_SCAN_EN_PAGE);
 					} else {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Unsuccessful HCI_SET_EVENT_FILTER.\n"));
 						return ERR_CONN;

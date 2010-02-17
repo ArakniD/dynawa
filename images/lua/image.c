@@ -71,6 +71,8 @@ void Run( ) // this task gets called as soon as we boot up.
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();
 
+    //ledrgb_open();
+    //ledrgb_set(0x4, 0, 0, 0x80);
 
     //test();
     scrWriteRect(0,126,40,127,0xffffff);
@@ -98,7 +100,8 @@ void Run( ) // this task gets called as soon as we boot up.
 #else
     //Task_create( lua, "LUA", 8192, 1, NULL );
 #endif
-    Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
+    //Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
+    xTaskCreate(lua_event_loop, "lua", TASK_STACK_SIZE(TASK_LUA_STACK), TASK_LUA_PRI, NULL, NULL);
     //monitorTaskStart();
 
     //bt_open();

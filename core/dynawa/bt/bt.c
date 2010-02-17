@@ -423,7 +423,10 @@ volatile AT91PS_PIO  pPIOA = AT91C_BASE_PIOA;
 void bt_task(void *p)
 //int bcsp_main()
 {
-    TRACE_BT("bcsp_main\r\n");
+    TRACE_BT("bt_task %x\r\n", xTaskGetCurrentTaskHandle());
+
+    ledrgb_open();
+    ledrgb_set(0x4, 0, 0, BT_LED_HIGH);
 
     // TODO sys_init();
 #ifdef PERF
@@ -443,7 +446,7 @@ void bt_task(void *p)
     ip_init();
     //udp_init();
     tcp_init();
-    printf("TCP/IP initialized.\n");
+    TRACE_INFO("TCP/IP initialized.\r\n");
 #endif
     lwbt_memp_init();
     //phybusif_init(argv[1]);
@@ -458,9 +461,6 @@ void bt_task(void *p)
     ppp_init();
 #endif
     TRACE_INFO("Bluetooth initialized.\r\n");
-
-
-
 
 	InitMicroSched(u_init_bt_task, u_bt_task);
 
@@ -575,6 +575,7 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     Task_sleep(10);
     bc_state = BC_STATE_STARTED;
 
+    TRACE_BT("BC restarted\r\n");
  
     if (!UartDrv_Start())
     {
@@ -586,16 +587,19 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
         //StartTimer(PUMP_INTERVAL, pumpHandler);
         MicroSched();
         UartDrv_Stop();
+        CloseMicroSched();
     }
 
     pPIOB->PIO_CODR = BCNRES_MASK; // BC Stop
+    bc_state = BC_STATE_STOPPED;
 
     event ev;
     ev.type = EVENT_BT_STOPPED;
 
     event_post(&ev);
-
-	return 0;
+    ledrgb_set(0x4, 0, 0, 0x0);
+    ledrgb_close();
+    vTaskDelete(NULL);
 }
 
 bool bt_get_command(bt_command *cmd) {
@@ -610,7 +614,8 @@ int bt_init() {
 int bt_open() {
 
     command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
-    bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
+    //bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
+    xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), TASK_BT_MAIN_PRI, NULL, &bt_task_handle);
 
     return 0;
 }
@@ -623,7 +628,7 @@ int bt_close() {
 
     bt_command cmd;
 
-    if (bt_task_handle != NULL) {
+    if (bt_task_handle == NULL) {
         return 0;
     }
     cmd.id = BT_COMMAND_STOP;

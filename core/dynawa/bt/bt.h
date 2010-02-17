@@ -12,6 +12,9 @@
 
 #define BT_COMMAND_STOP     1
 
+#define BT_LED_LOW          0x40
+#define BT_LED_HIGH         0xff
+
 typedef struct {
     uint8_t id;
 } bt_command;

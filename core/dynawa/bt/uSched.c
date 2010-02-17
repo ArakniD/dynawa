@@ -264,7 +264,7 @@ void MicroSched(void)
     TimedEventType * timedEvent;
 	TIME now;
     bt_command bt_cmd;
-    bt_command *bt_cmd_ptr;
+    bt_command *bt_cmd_ptr = NULL;
 
     TRACE_BT("MicroSched\r\n");
 	if (!terminationFlag && (uInitTask != NULL))
@@ -361,6 +361,11 @@ void MicroSched(void)
 
         free(timedEvent);
     }
+}
+
+void CloseMicroSched(void) {
+    TRACE_BT("CloseMicroSched\r\n");
+
     vQueueDelete(WakeUpEvent);
     vQueueDelete(SchedulerMutex);
     bt_stop_callback();

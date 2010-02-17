@@ -45,6 +45,7 @@ void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, ui
   }
   pTWI->TWI_IADR = int_addr;
   pTWI->TWI_CWGR = 0x048080; //I2C clk cca 40kHz 
+  //pTWI->TWI_CWGR = 0x049090; //I2C clk cca 40kHz 
   pTWI->TWI_CR = AT91C_TWI_SVDIS; //disable slave
   pTWI->TWI_CR = AT91C_TWI_MSEN; //enable master
 }
