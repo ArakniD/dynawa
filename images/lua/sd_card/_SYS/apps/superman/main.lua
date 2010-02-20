@@ -7,6 +7,9 @@ local function open_my_menu(event)
 	end
 	if type(menu) == "string" then
 		menu = my.globals.get_menu_by_url(menu)
+		if not menu then
+			return
+		end
 	end
 	if not menu.app then
 		menu.app = app
@@ -34,19 +37,29 @@ my.globals.get_menu_by_url = function(url)
 	end
 	local gen = assert(my.globals.menus[url1],"Cannot find SuperMan generator for menu with URL '"..url.."'")
 	local menu = gen(args)
+	if not menu then
+		return nil
+	end
 	menu.url = url
 	return menu
 end
 
 local function launch_superman(event)
 	my.app.menu_stack = nil
-	local menu = my.globals.get_menu_by_url("file_browser:/")
+	local menu = my.globals.get_menu_by_url("root")
 	--dynawa.event.send{type = "me_to_front"}
 	dynawa.event.send{type = "open_my_menu", menu = menu}
 end
 
 local function menu_result(event)
 	assert (event.menu.app == my.app,"SuperMan's menu_result() got "..event.menu.app.name.."'s result")
+	if event.menu.proxy then
+		--This is a SuperMan's view of other app's menu. Let's re-route the result back to the original app.
+		event.receiver = event.menu.proxy
+		event.sender = nil
+		dynawa.event.send(event)
+		return
+	end
 	assert (event.menu == my.globals.active_menu,"This is not SuperMan's active menu")
 	local value = event.value
 	if type(value)=="table" and value.result then
@@ -90,7 +103,7 @@ local function cancel_pressed()
 	assert (menu, "Menu cancel received but there is no active menu")
 	local app = assert(menu.app)
 	assert (app.menu_stack)
-	log("SM cancel pressed. Menus on stack = "..#app.menu_stack)
+	--log("SM cancel pressed. Menus on stack = "..#app.menu_stack)
 	assert (menu == app.menu_stack[1])
 	table.remove(app.menu_stack,1)
 	if #app.menu_stack == 0 then
@@ -105,7 +118,7 @@ local function confirm_pressed()
 	assert (menu, "Menu confirm received but there is no active menu")
 	local app = assert(menu.app)
 	local item = menu.items[menu.active_item]
-	if not (item.after_select or item.value) then
+	if not (next(item.after_select) or item.value) then
 		return --Non-clickable (yellow text)
 	end
 	dynawa.event.send{type = "menu_result", receiver = app, value = item.value, menu = menu}

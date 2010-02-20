@@ -7,12 +7,7 @@ local function open_popup(event)
 		bgbmp = event.sender.app.screen
 		log("Sender screen = "..tostring(event.sender.screen))
 	end
-	if not bgbmp then
-		bgbmp = dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, 0,0,0)
-	end
 	my.globals.sender = event.sender.app
-	dynawa.event.send {type = "display_bitmap", bitmap = bgbmp}
-	dynawa.event.send {type = "me_to_front"}
 	
 	local textbmp = dynawa.bitmap.text_line(event.text,nil)
 	local txtw,txth = dynawa.bitmap.info(textbmp)
@@ -22,8 +17,14 @@ local function open_popup(event)
 	dynawa.bitmap.border(bmp,1,{0,0,0})
 	dynawa.bitmap.combine(bmp, textbmp, 4, 4)
 	local start = {math.floor((dynawa.display.size.width - w) / 2), math.floor((dynawa.display.size.height - h) / 2)}
-	
-	dynawa.event.send {type = "display_bitmap", at = start, bitmap = bmp}
+	local screen
+	if bgbmp then
+		screen = dynawa.bitmap.combine(bgbmp, bmp, start[1], start[2], true)
+	else --We don't have active screen, fall back to black background
+		screen = dynawa.bitmap.combine(dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, 0,0,0), bmp, start[1], start[2])
+	end
+	dynawa.event.send {type = "display_bitmap", bitmap = screen}
+	dynawa.event.send {type = "me_to_front"}
 end
 
 local function button(event)

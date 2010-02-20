@@ -33,7 +33,11 @@ local function parse(menu)
 		menu.skin = {}
 	end
 	if not menu.skin.border_color then
-		menu.skin.border_color = {99,99,255}
+		if menu.app and menu.app == dynawa.apps["/_sys/apps/superman/"] then
+			menu.skin.border_color = {255,0,255}
+		else
+			menu.skin.border_color = {99,99,255}
+		end
 	end
 	if not menu.skin.highlight_color then
 		menu.skin.highlight_color = {0,0,128}
@@ -54,12 +58,15 @@ local function parse(menu)
 	menu.banner.size.w, menu.banner.size.h = dynawa.bitmap.info(menu.banner.bitmap)
 	assert(menu.items)
 	if #menu.items == 0 then
-		table.insert(menu.items,{text="(No items in this menu)"})
+		table.insert(menu.items,{text="[This menu is empty]"})
 	end
 	for i, item in ipairs(menu.items) do
+		if not item.after_select then
+			item.after_select = {}
+		end
 		if not item.bitmap then
 			local color = nil
-			if not (item.value or (item.after_select and next(item.after_select))) then
+			if not (item.value or next(item.after_select)) then
 				color = menu.skin.infotext_color
 			end
 			assert(item.text,"Menu item has no bitmap and no text")
