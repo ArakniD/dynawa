@@ -7,12 +7,18 @@ dynawa.hardware_vectors={}
 dynawa.event={queue = {},listeners = {}}
 
 --helper function to call task functions after correctly setting the "my" global
-dynawa.call_task_function = function(task, fn, ...)
+dynawa.call_task_function = function(task, fn, event)
 	assert(task.app,"Not a valid task")
+	local sender, reply_callback = event.sender, event.reply_callback
 	assert(type(fn)=="function","Not a function")
 	local my0 = _G.my
 	rawset(_G,"my",task)
-	local result = fn(...)
+	local result = fn(event)
+	if reply_callback then
+		assert(sender,"Event with 'reply_callback' has no sender task. I don't know where to send the reply")
+		assert(result,"Task "..task.id.." did not provide reply to 'reply_callback' event. You must return something other than nil!")
+		dynawa.event.send{task = sender, callback = reply_callback, reply = result, original_event = event}
+	end
 	rawset(_G,"my",my0)
 	return result
 end
@@ -170,6 +176,10 @@ dynawa.event.dispatch = function (event)
 			end
 		end
 		if not handled then
+			if event.reply_callback then
+				--Event with reply_callback was not handled. Report it to caller.
+				dynawa.event.send{task = assert(event.sender,"No sender in original event"), callback = event.reply_callback, original_event = event}
+			end
 			log("Unhandled event of type '"..typ.."' from "..tostring((event.sender or {}).id).." to "..tostring((event.receiver or {}).id))
 		end
 	else --event doesn't have type, must have "callback" and "task"

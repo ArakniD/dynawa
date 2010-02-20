@@ -30,7 +30,7 @@ local function app_switch(args)
 			end
 			if app ~= superman then
 				table.insert(apps,app)
-				log ("Considering "..app.name.." for app switch")
+				--log ("Considering "..app.name.." for app switch")
 			end
 		end
 	end
@@ -82,6 +82,15 @@ local function app_switch(args)
 	end
 end
 
+local function menu_received(event)
+	local menu = event.reply
+	if not menu then
+		error("Did not receive reply to 'your_menu' from "..event.original_event.receiver.name)
+	end
+	assert(event.sender.app == event.original_event.receiver)
+	dynawa.event.send{type="open_my_menu", app = event.sender.app, menu = menu}
+end
+
 local function open_app_menu() --CANCEL button held
 	local app = assert(dynawa.app.in_front)
 	if app == dynawa.apps["/_sys/apps/superman/"] then
@@ -92,7 +101,7 @@ local function open_app_menu() --CANCEL button held
 		return
 	end
 	assert(app.screen, app.name.." has no screen")
-	dynawa.event.send{type="open_your_menu", receiver = app}
+	dynawa.event.send{type="your_menu", receiver = app, reply_callback = menu_received}
 	--[[if app then
 		dynawa.event.send{type="show_menu", receiver=app}
 	end]]

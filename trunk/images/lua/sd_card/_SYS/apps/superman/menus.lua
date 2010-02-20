@@ -1,5 +1,34 @@
 --menus for SuperMan
 my.globals.menus = {}
+
+my.globals.menus.root = function()
+	local menu = {banner = "SuperMan"}
+	menu.items = {
+		{text = "Bluetooth", after_select = {go_to="app_menu:/_sys/apps/bluetooth/"}},
+		{text = "File Browser", after_select = {go_to="file_browser"}},
+		{text = "Bynari Clock app menu", after_select = {go_to = "app_menu:/apps/clock_bynari/"}},
+		{text = "Core app menu (test)", after_select = {go_to = "app_menu:/_sys/apps/core/"}},
+		{text = "Apps (not yet)"},
+		{text = "Shortcuts (not yet)"},
+	}
+	return menu
+end
+
+local function app_menu2(event)
+	if event.reply then
+		local menu = event.reply
+		menu.proxy = assert(event.sender.app)
+		dynawa.event.send{type = "open_my_menu", menu = menu}
+	else
+		dynawa.event.send{type="open_popup", text="This app has no menu"}
+	end
+end
+
+my.globals.menus.app_menu = function(app_id)
+	local app = assert(dynawa.apps[app_id],"There is no active app with id '"..app_id.."'")
+	dynawa.event.send{type = "your_menu", receiver = app, reply_callback = app_menu2}
+end
+
 my.globals.menus.file_browser = function(dir)
 	if not dir then
 		dir = "/"
@@ -22,20 +51,6 @@ my.globals.menus.file_browser = function(dir)
 		table.sort(menu.items,function(it1,it2)
 			return it1.text < it2.text
 		end)
-	end
-	return menu
-end
-
-my.globals.menus.bluetooth = function(item)
-	local item = tonumber(item)
-	local btapp = assert(dynawa.apps["/_sys/apps/bluetooth/"])
-	local btitems = assert(btapp.globals.superman_menu)
-	if item then
-		btitems[item].callback()
-	end
-	local menu = {banner="Bluetooth", items={}}
-	for i, item in ipairs(btitems) do
-		table.insert(menu.items,{text=item.text,location="bluetooth:"..i,active_item = i})
 	end
 	return menu
 end
