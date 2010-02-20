@@ -19,15 +19,19 @@ local function _app_to_front(new_app)
 end
 
 local function app_switch(args)
+	local superman = dynawa.apps["/_sys/apps/superman/"]
 	args = args or {}
 	local apps = {}
 	for app_id,app in pairs(dynawa.apps) do
-		if app.screen then
+		if app.screen or app.menu_stack then
 			if not app.priority then
 				app.priority = "ZZZ"..dynawa.unique_id()
 				--log("Setting priority of '"..app.name.."' to "..app.priority)
 			end
-			table.insert(apps,app)
+			if app ~= superman then
+				table.insert(apps,app)
+				log ("Considering "..app.name.." for app switch")
+			end
 		end
 	end
 	
@@ -40,7 +44,11 @@ local function app_switch(args)
 	local cur_app_n = 0
 	local in_front = dynawa.app.in_front
 	
-	if in_front and in_front.flags.ignore_app_switch and not args.default_to_front then --App overrides standard SWITCH button press
+	if in_front == superman and superman.globals.active_menu then
+		in_front = assert(superman.globals.active_menu.app)
+	end
+	
+	if in_front and in_front ~= superman and in_front.flags.ignore_app_switch and not args.default_to_front then --App overrides standard SWITCH button press
 		--log("App switch override")
 		return
 	end
@@ -60,9 +68,34 @@ local function app_switch(args)
 			new_app_n = 1
 		end
 	end
-		
+	
 	local new_app = assert(apps[new_app_n])
-	_app_to_front(new_app)
+	
+	--log("New_app_n = "..new_app_n)
+	--log(#apps.." apps to switch between")
+	
+	if new_app.menu_stack then
+		_app_to_front(superman)
+		dynawa.event.send{type = "open_my_menu", app=new_app}
+	else
+		_app_to_front(new_app)
+	end
+end
+
+local function open_app_menu() --CANCEL button held
+	local app = assert(dynawa.app.in_front)
+	if app == dynawa.apps["/_sys/apps/superman/"] then
+		return --SuperMan's CANCEL HOLD is handled by SuperMan itself
+	end
+	--At this time we are sure there is some bitmap (not menu) "on top"
+	if app.flags.ignore_menu_open then
+		return
+	end
+	assert(app.screen, app.name.." has no screen")
+	dynawa.event.send{type="open_your_menu", receiver = app}
+	--[[if app then
+		dynawa.event.send{type="show_menu", receiver=app}
+	end]]
 end
 
 local function button_down(event)
@@ -73,10 +106,8 @@ end
 	
 local function button_hold(event)
 	if event.button == "CANCEL" then --application menu
-		local app = dynawa.app.in_front
-		if app then
-			dynawa.event.send{type="show_menu", receiver=app}
-		end
+		open_app_menu()
+		return
 	elseif event.button == "SWITCH" then --SuperMan
 		dynawa.event.send{type="launch_superman"}
 	end
@@ -117,9 +148,10 @@ local function init()
 	dynawa.event.receive{event="app_to_front", callback=app_to_front}
 	dynawa.event.receive{event="default_app_to_front", callback=default_app_to_front}
 	dynawa.event.receive{event="set_flags", callback=app_flags}
-	dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
+	--dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
 	dynawa.app.start(dynawa.dir.sys.."apps/bluetooth/")
+	dynawa.app.start(dynawa.dir.sys.."apps/popup/")
 	dynawa.app.start(dynawa.dir.sys.."apps/superman/")
 	dynawa.app.start(dynawa.dir.apps.."clock_bynari/")
 	dynawa.app.start(dynawa.dir.apps.."button_test/")

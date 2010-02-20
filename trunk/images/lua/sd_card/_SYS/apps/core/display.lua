@@ -30,7 +30,7 @@ local function receive_bitmap(args)
 			app.screen_updates = nil
 		end
 		app.screen = bitmap
-		log("Setting "..app.name.."'s display to "..tostring(bitmap))
+		--log("Setting "..app.name.."'s display to "..tostring(bitmap))
 	else  --region update
 		assert (bitmap, "You must provide a bitmap when doing region update")
 		local x = assert(at[1], "Missing first coordinate")

@@ -173,7 +173,7 @@ gfx_init()
 dynawa.time.set(1234569580)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
 dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
-dofile(my.dir.."bynari_prefs.lua")
 my.globals.prefs = dynawa.file.load_data() or {style = "default"}
 dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
+dofile(my.dir.."bynari_prefs.lua")
 
