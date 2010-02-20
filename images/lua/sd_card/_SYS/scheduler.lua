@@ -6,8 +6,8 @@ dynawa.tasks={}
 dynawa.hardware_vectors={}
 dynawa.event={queue = {},listeners = {}}
 
---private helper function to call task functions after correctly setting the "my" global
-local function call_task_function(task, fn, ...)
+--helper function to call task functions after correctly setting the "my" global
+dynawa.call_task_function = function(task, fn, ...)
 	assert(task.app,"Not a valid task")
 	assert(type(fn)=="function","Not a function")
 	local my0 = _G.my
@@ -146,7 +146,8 @@ end
 
 --Dispatches single event IMMEDIATELY (bypasses event queue)
 --This should never be called directly from apps!
-dynawa.event.dispatch = function (event)	
+dynawa.event.dispatch = function (event)
+	local call_task_function = dynawa.call_task_function
 	--log("QUEUE: Dispatching event of type "..tostring(event.type).." from "..tostring((event.sender or {}).id).." to "..tostring((event.receiver or {}).id))
 	local listeners = assert(dynawa.event.listeners)
 	local typ=event.type

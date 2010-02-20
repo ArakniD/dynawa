@@ -1,81 +1,155 @@
 ----SuperMan
-
-local function get_menu_for_location(url)
-	assert(url)
-	local where, rest = url:match("(.-):(.*)")
-	log("Opening Superman for "..where.." "..rest)
-	local fn = my.globals.menus[where]
-	assert(fn, "Unknown go_to address: "..where)
-	return assert(fn(rest),"No menu returned for location "..url)
+local function open_my_menu(event)
+	local app = assert(event.app or event.sender.app)
+	local menu = event.menu
+	if not menu then
+		menu = assert((app.menu_stack or {})[1],"Open_menu_for_app didn't specify the menu and "..app.name.."'s menu stack is empty")
+	end
+	if type(menu) == "string" then
+		menu = my.globals.get_menu_by_url(menu)
+	end
+	if not menu.app then
+		menu.app = app
+	end
+	if not app.menu_stack then
+		app.menu_stack = {menu}
+	end
+	if app.menu_stack[1] ~= menu then 
+		table.insert(app.menu_stack,1,menu)
+	end
+	assert(type(menu)=="table", "Menu is not a table")
+	my.globals.active_menu = menu
+	my.globals.render(menu)
+	dynawa.event.send{type="me_to_front"}
 end
 
+my.globals.get_menu_by_url = function(url)
+	assert(type(url)=="string", "URL is "..tostring(url))
+	local url1,args = url:match("(.+):(.*)")
+	if not url1 then
+		url1 = url
+	end
+	if args == "" then
+		args = nil
+	end
+	local gen = assert(my.globals.menus[url1],"Cannot find SuperMan generator for menu with URL '"..url.."'")
+	local menu = gen(args)
+	menu.url = url
+	return menu
+end
 
-my.globals.show_menu = function(args)
-	args = args or {}
-	local location = args.location or ":"
-	local menu
-	if location==":" then --root menu
-		menu = {}
-		menu.items = {
-			{text = "Bluetooth", location = "bluetooth:"},
-			{text = "File browser", location = "file_browser:"},
-			{text = "Adjust clock", location = "adjust_clock:"},
-			{text = "Nothing1"},
-			{text = "Nothing2"},
-		}
+local function launch_superman(event)
+	my.app.menu_stack = nil
+	local menu = my.globals.get_menu_by_url("file_browser:/")
+	--dynawa.event.send{type = "me_to_front"}
+	dynawa.event.send{type = "open_my_menu", menu = menu}
+end
+
+local function menu_result(event)
+	assert (event.menu.app == my.app,"SuperMan's menu_result() got "..event.menu.app.name.."'s result")
+	assert (event.menu == my.globals.active_menu,"This is not SuperMan's active menu")
+	local value = event.value
+	if type(value)=="table" and value.result then
+		assert(type(value.result)=="string", "Result key is not string")
+		local call = my.globals.results[value.result]
+		assert(cell, "No call defined for SuperMan result '"..value.result.."'")
+		call(value)
+	end
+end
+
+local autorepeating = false
+
+local function autorepeat_do(event)
+	if not autorepeating then
+		return
+	end
+	my.globals.move_cursor(assert(event.direction))
+	dynawa.delayed_callback{time = 100, callback=autorepeat_do, direction = event.direction}
+end
+
+local function autorepeat_start(dir)
+	autorepeating = true
+	autorepeat_do{direction = dir}
+end
+
+local function close_active_menu()
+	local menu = assert(my.globals.active_menu)
+	local app = assert(menu.app)
+	my.globals.active_menu = nil
+	app.menu_stack = nil
+	if app.screen and app ~= my.app then
+		dynawa.event.send{type="app_to_front", app=app}
 	else
-		menu = get_menu_for_location(location)
+		dynawa.event.send{type="default_app_to_front"}
 	end
-	
-	local menu2 = {items={}}
-	menu2.banner = menu.banner or "SuperMan"
-	menu2.border_color = {200,200,0}
-	menu2.fullscreen = true
-	for i,item in ipairs(menu.items) do
-		local item2 = {text = assert(item.text)}
-		--log("Added SuperMan menu text: "..item2.text)
-		if item.location then
-			item2.value={location=item.location,active_item = item.active_item}
+	dynawa.event.send{type="display_bitmap", bitmap = nil}
+end
+
+local function cancel_pressed()
+	local menu = my.globals.active_menu
+	assert (menu, "Menu cancel received but there is no active menu")
+	local app = assert(menu.app)
+	assert (app.menu_stack)
+	log("SM cancel pressed. Menus on stack = "..#app.menu_stack)
+	assert (menu == app.menu_stack[1])
+	table.remove(app.menu_stack,1)
+	if #app.menu_stack == 0 then
+		close_active_menu()
+	else
+		dynawa.event.send{type="open_my_menu"}
+	end
+end
+
+local function confirm_pressed()
+	local menu = my.globals.active_menu
+	assert (menu, "Menu confirm received but there is no active menu")
+	local app = assert(menu.app)
+	local item = menu.items[menu.active_item]
+	if not (item.after_select or item.value) then
+		return --Non-clickable (yellow text)
+	end
+	dynawa.event.send{type = "menu_result", receiver = app, value = item.value, menu = menu}
+	if item.after_select.go_to then
+		dynawa.event.send{type = "open_my_menu", menu = item.after_select.go_to}
+	end
+	if item.after_select.close_menu then
+		close_active_menu()
+	end
+end
+
+local function button(event)
+	if event.type == "button_down" then
+		if event.button == "TOP" then
+			my.globals.move_cursor(-1)
+		elseif event.button == "BOTTOM" then
+			my.globals.move_cursor(1)
+		elseif event.button == "CANCEL" then
+			cancel_pressed()
+		elseif event.button == "CONFIRM" then
+			confirm_pressed()
 		end
-		table.insert(menu2.items, item2)
-	end
-	assert(#menu2.items > 0, "No menu items in SuperMan menu")
-	menu2.active_item = args.active_item
-	--print("Active item in menu2: "..tostring(menu2.active_item))
-	local back_to = location:match("(.+:).-:")
-	if back_to then
-		menu2.on_cancel = {location = back_to}
-	end
-	dynawa.event.send{type="new_widget", menu = menu2}
-end
-
-local function launch(event)
-	my.globals.show_menu{location=nil}
-end
-
-local function widget_result(event)
-	local val = event.value
-	if not val then
-		for i = 1,1000 do
-			dynawa.busy()
+	elseif event.type == "button_hold" then
+		if event.button == "TOP" then
+			autorepeat_start(-1)
+		elseif event.button == "BOTTOM" then
+			autorepeat_start(1)
+		elseif event.button == "CANCEL" then
+			close_active_menu()
 		end
-		return
+	elseif event.type == "button_up" then
+		if event.button == "TOP" or event.button == "BOTTOM" then
+			autorepeating = false
+		end
 	end
-	if val.location then
-		my.globals.show_menu{location = val.location, active_item = val.active_item}
-		return
-	end
-	log("Confirmation value not handled by SuperMan")
-	--dynawa.event.send{type="close_widget"}
-end
-
-local function me_in_front(event)
-	dynawa.event.send{type="default_app_to_front"}
 end
 
 my.app.name = "SuperMan"
+my.app.priority = "z"
+dynawa.event.send{type = "set_flags", flags = {ignore_app_switch = true, ignore_menu_open = true}}
+dynawa.dofile(my.dir.."render.lua")
 dynawa.dofile(my.dir.."menus.lua")
-dynawa.event.receive{event="launch_superman",callback=launch}
-dynawa.event.receive{event="widget_result",callback=widget_result}
-dynawa.event.receive{event="you_are_now_in_front",callback=me_in_front}
-
+dynawa.event.receive{event="launch_superman",callback=launch_superman}
+dynawa.event.receive{event="menu_result",callback=menu_result}
+dynawa.event.receive{event="open_my_menu",callback=open_my_menu}
+--dynawa.event.receive{event="you_are_now_in_back",callback=me_in_back}
+dynawa.event.receive{events={"button_down","button_up","button_hold"}, callback = button}
