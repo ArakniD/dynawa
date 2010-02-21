@@ -88,6 +88,7 @@ end
 local function close_active_menu()
 	local menu = assert(my.globals.active_menu)
 	local app = assert(menu.app)
+	log("close active menu: app="..app.name)
 	my.globals.active_menu = nil
 	app.menu_stack = nil
 	if app.screen and app ~= my.app then
@@ -107,7 +108,7 @@ local function cancel_pressed()
 	assert (menu == app.menu_stack[1])
 	table.remove(app.menu_stack,1)
 	if #app.menu_stack == 0 then
-		close_active_menu()
+		dynawa.event.send("close_active_menu")
 	else
 		dynawa.event.send{type="open_my_menu"}
 	end
@@ -126,11 +127,12 @@ local function confirm_pressed()
 		dynawa.event.send{type = "open_my_menu", menu = item.after_select.go_to}
 	end
 	if item.after_select.close_menu then
-		close_active_menu()
+		dynawa.event.send("close_active_menu")
 	end
 	if item.after_select.popup then
 		dynawa.event.send{type="open_popup",text = item.after_select.popup}
 	end
+
 end
 
 local function button(event)
@@ -150,7 +152,7 @@ local function button(event)
 		elseif event.button == "BOTTOM" then
 			autorepeat_start(1)
 		elseif event.button == "CANCEL" then
-			close_active_menu()
+			dynawa.event.send("close_active_menu")
 		end
 	elseif event.type == "button_up" then
 		if event.button == "TOP" or event.button == "BOTTOM" then
@@ -167,5 +169,5 @@ dynawa.dofile(my.dir.."menus.lua")
 dynawa.event.receive{event="launch_superman",callback=launch_superman}
 dynawa.event.receive{event="menu_result",callback=menu_result}
 dynawa.event.receive{event="open_my_menu",callback=open_my_menu}
---dynawa.event.receive{event="you_are_now_in_back",callback=me_in_back}
+dynawa.event.receive{event="close_active_menu",callback=close_active_menu}
 dynawa.event.receive{events={"button_down","button_up","button_hold"}, callback = button}

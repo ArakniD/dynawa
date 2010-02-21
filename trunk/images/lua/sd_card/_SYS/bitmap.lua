@@ -44,6 +44,7 @@ end
 
 dynawa.bitmap.load_font = function (fname)
 	local bmap = assert(dynawa.bitmap.from_png_file(fname),"Cannot load font bitmap: "..tostring(fname))
+	--log("Parsing font: "..fname)
 	local white = dynawa.bitmap.new(20,20,255,255,255)
 	local mask = assert(dynawa.bitmap.mask)
 	local chars={}
@@ -92,7 +93,7 @@ dynawa.bitmap.text_line = function(line,font,color)
 	if not dynawa.fonts[font] then
 		dynawa.fonts[font] = dynawa.bitmap.load_font(font)
 	end
-	font = dynawa.fonts[font]
+	font = assert(dynawa.fonts[font])
 	local x = 0
 	local bmaps = {}
 	local xs = {}

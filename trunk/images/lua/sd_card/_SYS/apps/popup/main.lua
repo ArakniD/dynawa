@@ -1,3 +1,6 @@
+--Popup
+require("dynawa")
+
 local function open_popup(event)
 	local bgbmp = event.background
 	if type(bgbmp) == "table" then
@@ -5,9 +8,10 @@ local function open_popup(event)
 	end
 	if not bgbmp then
 		bgbmp = event.sender.app.screen
-		log("Sender screen = "..tostring(event.sender.screen))
+		--log("Sender screen = "..tostring(event.sender.screen))
 	end
 	my.globals.sender = event.sender.app
+	log("Popup sender = "..my.globals.sender.name)
 	
 	local bgcolor = {0,40,0}
 	if event.style == "error" then
