@@ -78,22 +78,20 @@ dynawa.bitmap.load_font = function (fname)
 			end
 		end
 	until done
-	assert (char==128)
+	--assert (char==128)
 	local font = {chars=chars,widths=widths,height=height}
 	dynawa.fonts[fname] = font
 	return font
 end
 
---Load and parse font
-dynawa.fonts.default = dynawa.bitmap.load_font("/_sys/fonts/default10.png")
-dynawa.fonts["/_sys/fonts/default10.png"] = dynawa.fonts.default
-
 dynawa.bitmap.text_line = function(line,font,color)
 	assert(type(line)=="string","First parameter is not string")
 	if not font then
-		font = "default"
+		font = assert(dynawa.settings.default_font)
 	end
-	assert (dynawa.fonts[font], "Unknown font: '"..tostring(font).."'")
+	if not dynawa.fonts[font] then
+		dynawa.fonts[font] = dynawa.bitmap.load_font(font)
+	end
 	font = dynawa.fonts[font]
 	local x = 0
 	local bmaps = {}
@@ -113,9 +111,97 @@ dynawa.bitmap.text_line = function(line,font,color)
 	end
 	if color then
 		assert(#color == 3,"Color should have 3 numeric elements (r,g,b)")
-		result = dynawa.bitmap.mask(dynawa.bitmap.new(width,height,color[1],color[2],color[3]),result,0,0)
+		if color[1] + color[2] + color[3] ~= 3*255 then
+			result = dynawa.bitmap.mask(dynawa.bitmap.new(width,height,color[1],color[2],color[3]),result,0,0)
+		end
 	end
 	return result, width, height
+end
+
+function dynawa.bitmap.text_lines(args)
+	local words = {}
+	args.width = args.width or dynawa.display.size.width - 4
+	assert(args.width >= 40, "Width is less than 40")
+	local text = assert(args.text, "No text supplied")
+	string.gsub(text.." ","(.-) ", function(word)
+		assert(#word > 0)
+		--log("word:"..word)
+		local bitmap, w, h = dynawa.bitmap.text_line(word, args.font, args.color)
+		table.insert(words, {text = word, bitmap = bitmap, w = w, h = h})
+	end)
+	assert(#words > 0)
+	local _dummy, space_width, line_height = dynawa.bitmap.text_line(" ",args.font)
+	local lines, line = {}, {}
+	for i, word in ipairs(words) do
+		if not next(line) then
+			line = {w=0,h=line_height,w=0,words={}}
+		end
+		local new_w = line.w + word.w
+		if line.w > 0 then
+			new_w = new_w + space_width
+		end
+		if new_w > args.width and (#line.words > 0) then --New line
+			table.insert(lines, line)
+			line = {words = {word}, h = line_height, w=word.w}
+		else
+			table.insert(line.words, word)
+			line.w = new_w
+		end
+	end
+	if line.w > 0 then
+		table.insert(lines, line)
+	end
+	--log("Lines = "..#lines)
+	local maxwidth = 0
+	local given_w = args.width
+	for i, line in ipairs(lines) do
+		if line.w > given_w then
+			assert(#line.words == 1,"Line is too wide but it has more than 1 word")
+			local word = line.words[1]
+			local text = assert(word.text)
+			assert(#text >= 5)
+			local center = math.floor((#text + 1) / 2)
+			local left = center - 1
+			local right = center + 1
+			local flip = true
+			repeat
+				word.text = text:sub(1,left).."..."..text:sub(right)
+				if flip then
+					right = right + 1
+					assert(right < #text)
+				else
+					left = left - 1
+					assert(left > 1)
+				end
+				flip = not flip
+				word.bitmap, word.w, word.h = dynawa.bitmap.text_line(word.text, args.font, args.color)
+			until word.w <= given_w
+			line.w = word.w
+		end
+		if line.w > maxwidth then
+			maxwidth = line.w
+		end
+	end
+	local width = args.width
+	if args.autoshrink then
+		assert(maxwidth <= width)
+		width = maxwidth
+	end
+	local height = #lines * line_height
+	local bitmap = dynawa.bitmap.new(width, height, 255,0,0,0)
+	local b_combine = dynawa.bitmap.combine
+	for i, line in ipairs(lines) do
+		local x = (i-1) * line_height
+		local y = 0
+		if args.center then
+			y = math.floor((width - line.w)/2)
+		end
+		for j, word in ipairs(line.words) do
+			b_combine(bitmap, word.bitmap, y, x)
+			y = y + word.w + space_width
+		end
+	end
+	return bitmap, width, height
 end
 
 local screen = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,0,0,99)

@@ -1,11 +1,13 @@
 --menus for SuperMan
 my.globals.menus = {}
+my.globals.results = {}
 
 my.globals.menus.root = function()
-	local menu = {banner = "SuperMan"}
+	local menu = {banner = "SuperMan root"}
 	menu.items = {
 		{text = "Bluetooth", after_select = {go_to="app_menu:/_sys/apps/bluetooth/"}},
 		{text = "File Browser", after_select = {go_to="file_browser"}},
+		{text = "Default font size", after_select = {go_to = "default_font_size"}},
 		{text = "Bynari Clock app menu", after_select = {go_to = "app_menu:/apps/clock_bynari/"}},
 		{text = "Core app menu (test)", after_select = {go_to = "app_menu:/_sys/apps/core/"}},
 		{text = "Apps (not yet)"},
@@ -35,23 +37,52 @@ my.globals.menus.file_browser = function(dir)
 	end
 	log("opening dir "..dir)
 	local dirstat = dynawa.file.dir_stat(dir)
-	local menu = {banner = "Dir: "..dir, items={}}
+	local menu = {banner = "File browser: "..dir, items={}}
 	if not dirstat then
-		table.insert(menu.items,{text="(Invalid directory)"})
+		table.insert(menu.items,{text="[Invalid directory]"})
 	else
-		for k,v in pairs(dirstat) do
-			local txt = k.." ("..v..")"
-			--log("Adding dirstat item: "..txt)
-			local location = nil
-			if v == "dir" then
-				location = "file_browser:"..dir..k.."/"
+		if next(dirstat) then
+			for k,v in pairs(dirstat) do
+				local txt = k.." ["..v.."]"
+				--log("Adding dirstat item: "..txt)
+				local location = nil
+				if v == "dir" then
+					location = "file_browser:"..dir..k.."/"
+				end
+				table.insert(menu.items,{text=txt,after_select={go_to = location}})
 			end
-			table.insert(menu.items,{text=txt,after_select={go_to = location}})
+		else
+			table.insert(menu,items,{text="[Empty directory]"})
 		end
 		table.sort(menu.items,function(it1,it2)
 			return it1.text < it2.text
 		end)
 	end
 	return menu
+end
+
+my.globals.menus.default_font_size = function(dir)
+	local dir = dynawa.dir.sys.."fonts/"
+	local dirstat = assert(dynawa.file.dir_stat(dir),"Cannot open fonts directory")
+	local menu = {banner = "Select default system font:", items = {}}
+	for k,v in pairs(dirstat) do
+		if type(v) == "number" then
+			local font_id = dir..k
+			local bitmap,w,h = dynawa.bitmap.text_lines{text = "Quick brown fox jumped over the lazy dog", font = font_id}
+			table.insert(menu.items,{bitmap = bitmap, fontsize = h, value = {result = "default_font_changed", font_id = font_id}, 
+				after_select = {close_menu = true, popup = "Default system font changed"}})
+		end
+	end
+	table.sort(menu.items, function(a,b)
+		return (a.fontsize < b.fontsize)
+	end)
+	return menu
+end
+
+my.globals.results.default_font_changed = function(value)
+	local font_id = assert(value.font_id)
+	dynawa.settings.default_font = font_id
+	dynawa.fonts = {}
+	dynawa.file.save_settings()
 end
 
