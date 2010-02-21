@@ -85,7 +85,7 @@ end
 local function menu_received(event)
 	local menu = event.reply
 	if not menu then
-		error("Did not receive reply to 'your_menu' from "..event.original_event.receiver.name)
+		return
 	end
 	assert(event.sender.app == event.original_event.receiver)
 	dynawa.event.send{type="open_my_menu", app = event.sender.app, menu = menu}

@@ -9,11 +9,15 @@ local function open_popup(event)
 	end
 	my.globals.sender = event.sender.app
 	
+	local bgcolor = {0,40,0}
+	if event.style == "error" then
+		bgcolor = {128,0,0}
+	end
 	local textbmp = dynawa.bitmap.text_line(event.text,nil)
 	local txtw,txth = dynawa.bitmap.info(textbmp)
 	local w,h = txtw + 8, txth + 8
-	local bmp = dynawa.bitmap.new(w,h, 0,40,0)
-	dynawa.bitmap.border(bmp,2,{40,255,40})
+	local bmp = dynawa.bitmap.new(w,h, unpack(bgcolor))
+	dynawa.bitmap.border(bmp,2,{255,255,255})
 	dynawa.bitmap.border(bmp,1,{0,0,0})
 	dynawa.bitmap.combine(bmp, textbmp, 4, 4)
 	local start = {math.floor((dynawa.display.size.width - w) / 2), math.floor((dynawa.display.size.height - h) / 2)}

@@ -20,7 +20,7 @@ local function app_menu2(event)
 		menu.proxy = assert(event.sender.app)
 		dynawa.event.send{type = "open_my_menu", menu = menu}
 	else
-		dynawa.event.send{type="open_popup", text="This app has no menu"}
+		dynawa.event.send{type="open_popup", text="This app has no menu", style = "error"}
 	end
 end
 
