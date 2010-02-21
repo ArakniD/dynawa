@@ -34,7 +34,7 @@ local function parse(menu)
 	end
 	if not menu.skin.border_color then
 		if menu.app and menu.app == dynawa.apps["/_sys/apps/superman/"] then
-			menu.skin.border_color = {255,0,255}
+			menu.skin.border_color = {255,99,255}
 		else
 			menu.skin.border_color = {99,99,255}
 		end
@@ -52,7 +52,7 @@ local function parse(menu)
 		menu.banner = {text = menu.banner}
 	end
 	if not menu.banner.bitmap then
-		menu.banner.bitmap = dynawa.bitmap.text_line(menu.banner.text,nil,{0,0,0})
+		menu.banner.bitmap = dynawa.bitmap.text_lines{text=menu.banner.text,font = nil,color = {0,0,0}, width = dynawa.display.size.width - 2}
 	end
 	menu.banner.size = {}
 	menu.banner.size.w, menu.banner.size.h = dynawa.bitmap.info(menu.banner.bitmap)
@@ -70,7 +70,7 @@ local function parse(menu)
 				color = menu.skin.infotext_color
 			end
 			assert(item.text,"Menu item has no bitmap and no text")
-			item.bitmap = dynawa.bitmap.text_line(item.text,nil,color)
+			item.bitmap = dynawa.bitmap.text_lines{text = item.text,font = nil,color = color}
 		end
 		item.size = {}
 		item.size.w, item.size.h = dynawa.bitmap.info(item.bitmap)
@@ -106,7 +106,7 @@ local function inner_bitmap(menu)
 		item_n = item_n + 1
 	end
 	local items_drawn = 0
-	while menu.items[item_n] and menu.items[item_n].y_pos <= menu.viewport_y + menu.inner_size.h do --draw items
+	while menu.items[item_n] and menu.items[item_n].y_pos < menu.viewport_y + menu.inner_size.h do --draw items
 		local item = assert(menu.items[item_n])
 		local real_y = item.y_pos - menu.viewport_y
 		assert(real_y < menu.inner_size.h)

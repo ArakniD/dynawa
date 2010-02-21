@@ -13,7 +13,7 @@ local function open_popup(event)
 	if event.style == "error" then
 		bgcolor = {128,0,0}
 	end
-	local textbmp = dynawa.bitmap.text_line(event.text,nil)
+	local textbmp = dynawa.bitmap.text_lines{width = math.floor(dynawa.display.size.width * 0.8), autoshrink = true, center = true, text = event.text}
 	local txtw,txth = dynawa.bitmap.info(textbmp)
 	local w,h = txtw + 8, txth + 8
 	local bmp = dynawa.bitmap.new(w,h, unpack(bgcolor))

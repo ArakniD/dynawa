@@ -66,3 +66,7 @@ dynawa.file.save_data = function(data, fname)
 	return true
 end
 
+dynawa.file.save_settings = function(x)
+	assert(not x,"Dynawa.file.save_settings accepts NO arguments")
+	return dynawa.file.save_data(dynawa.settings, dynawa.dir.sys.."settings.data")
+end

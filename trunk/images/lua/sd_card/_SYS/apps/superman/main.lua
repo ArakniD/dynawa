@@ -60,12 +60,12 @@ local function menu_result(event)
 		dynawa.event.send(event)
 		return
 	end
-	assert (event.menu == my.globals.active_menu,"This is not SuperMan's active menu")
+	--assert (event.menu == my.globals.active_menu,"This is not SuperMan's active menu")
 	local value = event.value
 	if type(value)=="table" and value.result then
 		assert(type(value.result)=="string", "Result key is not string")
 		local call = my.globals.results[value.result]
-		assert(cell, "No call defined for SuperMan result '"..value.result.."'")
+		assert(call, "No call defined for SuperMan result '"..value.result.."'")
 		call(value)
 	end
 end
@@ -127,6 +127,9 @@ local function confirm_pressed()
 	end
 	if item.after_select.close_menu then
 		close_active_menu()
+	end
+	if item.after_select.popup then
+		dynawa.event.send{type="open_popup",text = item.after_select.popup}
 	end
 end
 

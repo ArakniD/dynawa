@@ -1,6 +1,5 @@
-dynawa.version = {wristOS="0.1"}
+dynawa.version = {wristOS="0.1", settings_revision = 1}
 package.loaded.dynawa = dynawa
-
 
 local uid_last, uid_chars = {}, {}
 string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.)", function(ch)
@@ -16,7 +15,7 @@ local busy_count = assert(dynawa.bitmap.from_png_file(dynawa.dir.sys.."busy_anim
 local busy_bitmaps = {}
 local busy_last = 0
 for i = 0,3 do
-	busy_bitmaps[i] = dynawa.bitmap.copy(busy_count,0,16*i,27,16)
+	busy_bitmaps[i] = dynawa.bitmap.copy(busy_count,0,32*i,54,32)
 end
 busy_count = 0
 dynawa.busy = function()
@@ -26,7 +25,7 @@ dynawa.busy = function()
 		busy_count = (busy_count + 1) % 4
 		busy_last = ticks
 	end
-	dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,67,56)
+	dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,53,48)
 end
 
 dynawa.unique_id = function(num)
@@ -90,6 +89,18 @@ tbl=nil
 -----------------------------------------------------------
 -----------------------------------------------------------
 
+--FILE + serialization + global settings init
+dynawa.dofile(dynawa.dir.sys.."file.lua")
+
+dynawa.settings = dynawa.file.load_data(dynawa.dir.sys.."settings.data")
+if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_revision then
+	dynawa.settings = {
+		revision = dynawa.version.settings_revision,
+		default_font = "/_sys/fonts/default10.png",
+	}
+	dynawa.file.save_settings()
+end
+
 --DISPLAY + BITMAP init
 dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 
@@ -97,9 +108,6 @@ dynawa.dofile(dynawa.dir.sys.."menu.lua")
 
 --SCHEDULER (apps + tasks + events) init
 dynawa.dofile(dynawa.dir.sys.."scheduler.lua")
-
---FILE + serializing init
-dynawa.dofile(dynawa.dir.sys.."file.lua")
 
 --This table maps the 5 buttons from integers to strings, according to watch rotation
 local buttons_flip = {
