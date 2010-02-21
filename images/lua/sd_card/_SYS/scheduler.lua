@@ -92,7 +92,7 @@ dynawa.event.receive = function(args) --expects event OR events, callback
 			list[ev_type]={}
 		end
 		list[ev_type][task]={callback=callback}
-		log("Task "..task.id.." wants events: "..ev_type)
+		--log("Task "..task.id.." wants events: "..ev_type)
 	end
 end
 
@@ -111,7 +111,7 @@ dynawa.event.stop_receiving = function(args) --expects event OR events, callback
 		if callbacks and callbacks[my] then
 			callbacks[task]=nil
 		end
-		log("Task "..task.id.." doesn't want events: "..ev_type)
+		--log("Task "..task.id.." doesn't want events: "..ev_type)
 	end
 end
 

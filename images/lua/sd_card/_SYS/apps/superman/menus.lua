@@ -82,7 +82,6 @@ end
 my.globals.results.default_font_changed = function(value)
 	local font_id = assert(value.font_id)
 	dynawa.settings.default_font = font_id
-	dynawa.fonts = {}
 	dynawa.file.save_settings()
 end
 

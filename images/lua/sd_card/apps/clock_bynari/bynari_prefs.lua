@@ -1,7 +1,7 @@
 --Bynari Clock settings
 require ("dynawa")
 
-local after_select = {close_menu = true, popup = "Color scheme changed"}
+local after_select = {popup = "Color scheme changed"}
 
 local menu_result = function(event)
 	assert(event.value)
