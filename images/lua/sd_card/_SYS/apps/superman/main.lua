@@ -1,14 +1,25 @@
 ----SuperMan
+--#todo: go_back after select!
 local function open_my_menu(event)
 	local app = assert(event.app or event.sender.app)
 	local menu = event.menu
 	if not menu then
 		menu = assert((app.menu_stack or {})[1],"Open_menu_for_app didn't specify the menu and "..app.name.."'s menu stack is empty")
 	end
+	local refreshed = false
 	if type(menu) == "string" then
 		menu = my.globals.get_menu_by_url(menu)
+		refreshed = true
 		if not menu then
 			return
+		end
+	end
+	if menu.always_refresh and not refreshed then
+		assert(menu.url, "Menu with 'always_refresh' must have URL")
+		menu = my.globals.get_menu_by_url(menu.url)
+		if app.menu_stack then
+			assert(app.menu_stack[1])
+			app.menu_stack[1] = menu
 		end
 	end
 	if not menu.app then
@@ -114,6 +125,18 @@ local function cancel_pressed()
 	end
 end
 
+local function confirm_pressed2(event) --Continues here after the optional popup is dismissed
+	local menu = assert(my.globals.active_menu)
+	local app = assert(menu.app)
+	local item = assert(menu.items[menu.active_item])	
+	if item.after_select.go_to then
+		dynawa.event.send{type = "open_my_menu", menu = item.after_select.go_to}
+	end
+	if item.after_select.close_menu then
+		dynawa.event.send("close_active_menu")
+	end	
+end
+
 local function confirm_pressed()
 	local menu = my.globals.active_menu
 	assert (menu, "Menu confirm received but there is no active menu")
@@ -123,16 +146,11 @@ local function confirm_pressed()
 		return --Non-clickable (yellow text)
 	end
 	dynawa.event.send{type = "menu_result", receiver = app, value = item.value, menu = menu}
-	if item.after_select.go_to then
-		dynawa.event.send{type = "open_my_menu", menu = item.after_select.go_to}
-	end
-	if item.after_select.close_menu then
-		dynawa.event.send("close_active_menu")
-	end
 	if item.after_select.popup then
-		dynawa.event.send{type="open_popup",text = item.after_select.popup}
+		dynawa.event.send{type="open_popup",text = item.after_select.popup, callback = confirm_pressed2}
+	else
+		confirm_pressed2()
 	end
-
 end
 
 local function button(event)
