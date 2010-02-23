@@ -7,6 +7,7 @@ my.globals.menus.root = function()
 	menu.items = {
 		{text = "Bluetooth", after_select = {go_to="app_menu:/_sys/apps/bluetooth/"}},
 		{text = "File Browser", after_select = {go_to="file_browser"}},
+		{text = "Adjust time and date", after_select = {go_to = "adjust_time_date"}},
 		{text = "Default font size", after_select = {go_to = "default_font_size"}},
 		{text = "Bynari Clock app menu", after_select = {go_to = "app_menu:/apps/clock_bynari/"}},
 		{text = "Core app menu (test)", after_select = {go_to = "app_menu:/_sys/apps/core/"}},
@@ -83,5 +84,49 @@ my.globals.results.default_font_changed = function(value)
 	local font_id = assert(value.font_id)
 	dynawa.settings.default_font = font_id
 	dynawa.file.save_settings()
+end
+
+my.globals.menus.adjust_time_date = function(what)
+	local date = assert(os.date("*t"))
+	--log("what = "..tostring(what))
+	if not what then
+		local menu = {banner = "Adjust time & date", always_refresh = true}
+		menu.items = {
+			{text = "Day of month: "..date.day, after_select = {go_to="adjust_time_date:day"}},
+			{text = "Month: "..date.month, after_select = {go_to="adjust_time_date:month"}},
+			{text = "Year: "..date.year, after_select = {go_to="adjust_time_date:year"}},			
+			{text = "Hours: "..date.hour, after_select = {go_to="adjust_time_date:hour"}},
+			{text = "Minutes: "..date.min, after_select = {go_to="adjust_time_date:min"}},			
+		}
+		return menu
+	end
+	local limit = {from=2001, to=2060, name = "year"} --year
+	if what=="month" then
+		limit = {from = 1, to = 12, name = "month"}
+	elseif what=="day" then
+		limit = {from = 1, to = 31, name = "day of month"}
+	elseif what == "hour" then
+		limit = {from = 0, to = 23, name = "hours"}
+	elseif what == "min" then
+		limit = {from = 0, to = 59, name = "minutes"}
+	end
+	local menu = {banner = "Please adjust the "..limit.name.." value", items = {}}
+	for i = limit.from, limit.to do
+		local item = {text = tostring(i), value = {what = what, number = i, result = "adjusted_time_date"}, 
+			after_select = {popup = "Value adjusted", go_back = true}}
+		table.insert(menu.items,item)
+		if i == date[what] then
+			menu.active_value = item.value
+		end
+	end
+	return menu
+end
+
+my.globals.results.adjusted_time_date = function(event)
+	local date = assert(os.date("*t"))
+	date[event.what] = event.number
+	date.sec = 0
+	local secs = assert(os.time(date))
+	dynawa.time.set(secs)
 end
 

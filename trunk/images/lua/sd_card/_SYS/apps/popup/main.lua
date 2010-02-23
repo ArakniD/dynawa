@@ -2,6 +2,7 @@
 require("dynawa")
 
 local function open_popup(event)
+	my.globals.sender_event = event
 	local bgbmp = event.background
 	if type(bgbmp) == "table" then
 		bgbmp = dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, unpack(bgbmp))
@@ -45,6 +46,9 @@ local function button(event)
 			dynawa.event.send{type = "default_app_to_front"}
 		end
 		dynawa.event.send {type = "popup_done"}
+		if my.globals.sender_event.callback then
+			dynawa.event.send {task = assert(my.globals.sender_event.sender), callback = my.globals.sender_event.callback}
+		end
 		dynawa.event.send {type = "display_bitmap", bitmap = nil}
 	end
 end
