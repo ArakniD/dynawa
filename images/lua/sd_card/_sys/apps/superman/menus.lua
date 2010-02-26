@@ -110,7 +110,7 @@ my.globals.menus.adjust_time_date = function(what)
 	elseif what == "min" then
 		limit = {from = 0, to = 59, name = "minutes"}
 	end
-	local menu = {banner = "Please adjust the "..limit.name.." value", items = {}}
+	local menu = {banner = "Please adjust the "..limit.name.." value (pressing SELECT also automatically sets seconds to 00)", items = {}}
 	for i = limit.from, limit.to do
 		local item = {text = tostring(i), value = {what = what, number = i, result = "adjusted_time_date"}, 
 			after_select = {popup = "Value adjusted", go_back = true}}
