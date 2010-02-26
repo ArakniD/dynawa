@@ -170,7 +170,6 @@ end
 my.app.name = "Bynari Clock"
 my.app.priority = "B"
 gfx_init()
-dynawa.time.set(1234569580)
 dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
 dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
 my.globals.prefs = dynawa.file.load_data() or {style = "default"}
