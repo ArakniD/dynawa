@@ -69,10 +69,10 @@ my.globals.get_menu_by_url = function(url)
 		local item
 		if not scuts[url] then
 			item = {text = "+ Add shortcut", value = {result="shortcut_add",url = url, text = text},
-					after_select = {popup = 'Created shortcut "'..text..'"', delete_item = true}}
+					after_select = {popup = 'Created shortcut "'..text..'"', refresh_menu = true}}
 		else
 			item = {text = "+ Delete shortcut pointing here", value = {result = "shortcut_delete", url = url},
-					after_select = {popup = 'Deleted shortcut "'..scuts[url].text..'"', delete_item = true}} 
+					after_select = {popup = 'Deleted shortcut "'..scuts[url].text..'"', refresh_menu = true}} 
 		end
 		table.insert(menu.items,item)
 	end
@@ -177,6 +177,15 @@ local function confirm_pressed2(message) --Continues here after the optional pop
 			menu.active_item = act - 1
 		end
 		table.remove(menu.items, act)
+		my.globals.render(menu)
+	elseif item.after_select.refresh_menu then
+		local act = menu.active_item
+		assert (menu == my.app.menu_stack[1])
+		local menu = my.globals.get_menu_by_url(menu.url)
+		menu.active_item = act
+		my.app.menu_stack[1] = menu
+		my.globals.active_menu = menu
+		menu.app = my.app
 		my.globals.render(menu)
 	end
 end

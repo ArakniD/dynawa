@@ -206,7 +206,9 @@ function dynawa.bitmap.text_lines(args)
 end
 
 local screen = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,0,0,99)
-dynawa.bitmap.combine(screen,dynawa.bitmap.text_line("WristOS "..dynawa.version.wristOS),1,1)
+dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines{text=
+		"WristOS "..dynawa.version.wristOS.."; settings rev. "..dynawa.version.settings_revision
+		},2,2)
 dynawa.bitmap.show(screen)
 dynawa.busy()
 
