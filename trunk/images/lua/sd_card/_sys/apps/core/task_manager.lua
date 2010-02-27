@@ -12,9 +12,9 @@ local function _app_to_front(new_app)
 	new_app.in_front = true
 	if previous_app then
 		previous_app.in_front = nil
-		dynawa.event.send{type="you_are_now_in_back",receiver=previous_app}
+		dynawa.message.send{type="you_are_now_in_back",receiver=previous_app}
 	end
-	dynawa.event.send{type="you_are_now_in_front",receiver=new_app}
+	dynawa.message.send{type="you_are_now_in_front",receiver=new_app}
 	new_app.screen_updates = {full=true} --This app MUST do full screen update
 end
 
@@ -76,19 +76,19 @@ local function app_switch(args)
 	
 	if new_app.menu_stack then
 		_app_to_front(superman)
-		dynawa.event.send{type = "open_my_menu", app=new_app}
+		dynawa.message.send{type = "open_my_menu", app=new_app}
 	else
 		_app_to_front(new_app)
 	end
 end
 
-local function menu_received(event)
-	local menu = event.reply
+local function menu_received(message)
+	local menu = message.reply
 	if not menu then
 		return
 	end
-	assert(event.sender.app == event.original_event.receiver)
-	dynawa.event.send{type="open_my_menu", app = event.sender.app, menu = menu}
+	assert(message.sender.app == message.original_message.receiver)
+	dynawa.message.send{type="open_my_menu", app = message.sender.app, menu = menu}
 end
 
 local function open_app_menu() --CANCEL button held
@@ -101,48 +101,48 @@ local function open_app_menu() --CANCEL button held
 		return
 	end
 	assert(app.screen, app.name.." has no screen")
-	dynawa.event.send{type="your_menu", receiver = app, reply_callback = menu_received}
+	dynawa.message.send{type="your_menu", receiver = app, reply_callback = menu_received}
 	--[[if app then
-		dynawa.event.send{type="show_menu", receiver=app}
+		dynawa.message.send{type="show_menu", receiver=app}
 	end]]
 end
 
-local function button_down(event)
-	if event.button == "SWITCH" then
+local function button_down(message)
+	if message.button == "SWITCH" then
 		app_switch()
 	end
 end
 	
-local function button_hold(event)
-	if event.button == "CANCEL" then --application menu
+local function button_hold(message)
+	if message.button == "CANCEL" then --application menu
 		open_app_menu()
 		return
-	elseif event.button == "SWITCH" then --SuperMan
-		dynawa.event.send{type="launch_superman"}
+	elseif message.button == "SWITCH" then --SuperMan
+		dynawa.message.send{type="launch_superman"}
 	end
 end
 
-local function app_to_front(event)
-	local app = assert(event.app)
+local function app_to_front(message)
+	local app = assert(message.app)
 	assert(app.tasks,"This is not an app - it has no tasks")
 	_app_to_front(app)
 end
 
-local function default_app_to_front(event) --Puts the app with the lowest priority to front
+local function default_app_to_front(message) --Puts the app with the lowest priority to front
 	app_switch{default_to_front = true}
 end
 
-local function sender_to_front(event)
-	local task = assert(event.sender,"No sender found in app_to_front event")
+local function sender_to_front(message)
+	local task = assert(message.sender,"No sender found in app_to_front message")
 	local app = assert(task.app)
 	_app_to_front(app)
 end
 
-local function app_flags(event)
-	local flags = event.flags
+local function app_flags(message)
+	local flags = message.flags
 	assert (flags, "No flags specified")
 	assert (type(flags)=="table", "Flags collection is not a table")
-	local task = assert(event.sender,"No sender found in my_flags event")
+	local task = assert(message.sender,"No sender found in my_flags message")
 	local app = assert(task.app)
 	for k,v in pairs(flags) do
 		assert(type(k) == "string", "The id of flag '"..tostring(k).."' is not a string")
@@ -151,12 +151,12 @@ local function app_flags(event)
 end
 
 local function init()
-	dynawa.event.receive{event="button_down", callback=button_down}
-	dynawa.event.receive{event="button_hold", callback=button_hold}
-	dynawa.event.receive{event="me_to_front", callback=sender_to_front}
-	dynawa.event.receive{event="app_to_front", callback=app_to_front}
-	dynawa.event.receive{event="default_app_to_front", callback=default_app_to_front}
-	dynawa.event.receive{event="set_flags", callback=app_flags}
+	dynawa.message.receive{message="button_down", callback=button_down}
+	dynawa.message.receive{message="button_hold", callback=button_hold}
+	dynawa.message.receive{message="me_to_front", callback=sender_to_front}
+	dynawa.message.receive{message="app_to_front", callback=app_to_front}
+	dynawa.message.receive{message="default_app_to_front", callback=default_app_to_front}
+	dynawa.message.receive{message="set_flags", callback=app_flags}
 	--dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
 	dynawa.app.start(dynawa.dir.sys.."apps/bluetooth/")
@@ -164,7 +164,7 @@ local function init()
 	dynawa.app.start(dynawa.dir.sys.."apps/superman/")
 	dynawa.app.start(dynawa.dir.apps.."clock_bynari/")
 	dynawa.app.start(dynawa.dir.apps.."button_test/")
-	dynawa.event.send{type = "default_app_to_front"}
+	dynawa.message.send{type = "default_app_to_front"}
 end
 
 dynawa.delayed_callback{time = 0, callback=init}

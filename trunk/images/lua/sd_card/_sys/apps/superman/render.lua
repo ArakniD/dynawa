@@ -126,8 +126,8 @@ my.globals.render = function(menu)
 		parse(menu)
 		assert(menu.bitmap)
 	end
-	dynawa.event.send{type="display_bitmap", bitmap = menu.bitmap}
-	dynawa.event.send{type="display_bitmap", bitmap = inner_bitmap(menu), at={menu.inner_corner.x, menu.inner_corner.y}}
+	dynawa.message.send{type="display_bitmap", bitmap = menu.bitmap}
+	dynawa.message.send{type="display_bitmap", bitmap = inner_bitmap(menu), at={menu.inner_corner.x, menu.inner_corner.y}}
 end
 
 my.globals.move_cursor = function(dir)
@@ -148,5 +148,5 @@ my.globals.move_cursor = function(dir)
 	end
 	menu.active_item = new_n
 	adjust_viewport(menu)
-	dynawa.event.send{type="display_bitmap", bitmap = inner_bitmap(menu), at={menu.inner_corner.x, menu.inner_corner.y}}
+	dynawa.message.send{type="display_bitmap", bitmap = inner_bitmap(menu), at={menu.inner_corner.x, menu.inner_corner.y}}
 end

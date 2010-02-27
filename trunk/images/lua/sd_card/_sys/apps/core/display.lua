@@ -4,7 +4,7 @@ local display_size = dynawa.display.size
 local pixel_limit = display_size.width * display_size.height * 0.95
 
 local function receive_bitmap(args)
-	local task = assert(args.sender,"Unknown event sender")
+	local task = assert(args.sender,"Unknown message sender")
 	local app = assert(task.app)
 	local bitmap = args.bitmap
 	local at = args.at
@@ -53,5 +53,5 @@ local function receive_bitmap(args)
 	end
 end
 
-dynawa.event.receive{event = "display_bitmap", callback = receive_bitmap}
+dynawa.message.receive{message = "display_bitmap", callback = receive_bitmap}
 

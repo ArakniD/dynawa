@@ -21,7 +21,7 @@ local function display(bitmap, x, y)
 	assert(bitmap)
 	assert(x)
 	assert(y)
-	dynawa.event.send{type="display_bitmap", bitmap = bitmap, at={x,y}}
+	dynawa.message.send{type="display_bitmap", bitmap = bitmap, at={x,y}}
 end
 
 local function change_dot(x, y, gf, color)
@@ -108,24 +108,24 @@ local function update_dots(time, status)
 	end
 end
 
-local function tick(event)
-	if not my.app.in_front or event.run_id ~= clock.run_id then
+local function tick(message)
+	if not my.app.in_front or message.run_id ~= clock.run_id then
 		return
 	end
 	local time_raw, msec = dynawa.time.get()
 	local time = os.date("*t", time_raw)
 	time.raw = time_raw
-	update_dots(time,event.status)
+	update_dots(time,message.status)
 	text(time)
 	local sec, msec = dynawa.time.get()
 	local when = 1100 - msec
-	dynawa.delayed_callback{time = when, callback = tick, run_id = event.run_id}
+	dynawa.delayed_callback{time = when, callback = tick, run_id = message.run_id}
 end
 
 local function start()
 	local style = my.globals.prefs.style
 	clock = {state={}}
-	dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.new(160,128,0,0,0)}
+	dynawa.message.send{type="display_bitmap", bitmap = dynawa.bitmap.new(160,128,0,0,0)}
 	for i = 0, 5 do
 		clock.state[i] = {}
 		for j = 0, 5 do
@@ -170,9 +170,9 @@ end
 my.app.name = "Bynari Clock"
 my.app.priority = "B"
 gfx_init()
-dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
-dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
+dynawa.message.receive {message="you_are_now_in_front", callback=to_front}
+dynawa.message.receive {message="you_are_now_in_back", callback=to_back}
 my.globals.prefs = dynawa.file.load_data() or {style = "default"}
-dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
+dynawa.message.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
 dofile(my.dir.."bynari_prefs.lua")
 

@@ -146,10 +146,10 @@ function dynawa.debug.update_files() --Asks for updated files and installs them 
 	dynawa.debug.send_raw("FILES_UPDATED")
 end
 
-function dynawa.debug.main_handler(event)
+function dynawa.debug.main_handler(msg)
 	--dynawa.debug.send_raw("DEBUG.MAIN_HANDLER")
 	
-	if event.button == 1 and event.type == "button_hold" then --update files and restart WristOS]
+	if msg.button == 1 and msg.type == "button_hold" then --update files and restart WristOS]
 		dynawa.debug.update_files()
 		dynawa.debug.send_raw("RESTARTING")
 		boot_init()
@@ -160,11 +160,10 @@ function dynawa.debug.main_handler(event)
 		if not dynawa.version then
 			dofile(dynawa.dir.sys.."wristos.lua")
 		end
-		--dynawa.debug.send{event_received=event}
-		return _G.private_main_handler(event)
+		return _G.private_main_handler(msg)
 	end
 
-	local status,result=xpcall(protected,errfunc,event)
+	local status,result=xpcall(protected,errfunc,msg)
 	if not status then --runtime error caught
 		dynawa.debug.send{runtime_error=result}
 	end
