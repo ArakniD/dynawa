@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.1", settings_revision = 1}
+dynawa.version = {wristOS="0.1", settings_revision = 2}
 package.loaded.dynawa = dynawa
 
 local uid_last, uid_chars = {}, {}
@@ -97,14 +97,15 @@ if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_rev
 	dynawa.settings = {
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
+		superman={
+			shortcuts = {},
+		},
 	}
 	dynawa.file.save_settings()
 end
 
 --DISPLAY + BITMAP init
 dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
-
-dynawa.dofile(dynawa.dir.sys.."menu.lua")
 
 --SCHEDULER (apps + tasks + messages) init
 dynawa.dofile(dynawa.dir.sys.."scheduler.lua")

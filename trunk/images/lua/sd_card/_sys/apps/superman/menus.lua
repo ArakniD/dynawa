@@ -1,10 +1,9 @@
 --menus for SuperMan
-my.globals.menus = {}
-my.globals.results = {}
 
 my.globals.menus.root = function()
 	local menu = {banner = "SuperMan root"}
 	menu.items = {
+		{text = "Shortcuts", after_select = {go_to="shortcuts:"}},
 		{text = "Bluetooth", after_select = {go_to="app_menu:/_sys/apps/bluetooth/"}},
 		{text = "File Browser", after_select = {go_to="file_browser"}},
 		{text = "Adjust time and date", after_select = {go_to = "adjust_time_date"}},
@@ -12,8 +11,23 @@ my.globals.menus.root = function()
 		{text = "Bynari Clock app menu", after_select = {go_to = "app_menu:/apps/clock_bynari/"}},
 		{text = "Core app menu (test)", after_select = {go_to = "app_menu:/_sys/apps/core/"}},
 		{text = "Apps (not yet)"},
-		{text = "Shortcuts (not yet)"},
 	}
+	return menu
+end
+
+my.globals.menus.shortcuts = function(arg)
+	local scuts = assert(dynawa.settings.superman.shortcuts)
+	local menu = {banner = "SuperMan shortcuts", items={}, always_refresh = true}
+	if not next(scuts) then
+		table.insert(menu.items,{text = 'No shortcuts defined. Add them using "Add shortcut" command in other menus.'})
+		return menu
+	end
+	for k,v in pairs(scuts) do
+		table.insert(menu.items,{text=v.text, timestamp = v.timestamp, after_select = {go_to = k}})
+	end
+	table.sort(menu.items, function(a,b)
+		return (a.timestamp > b.timestamp)
+	end)
 	return menu
 end
 
@@ -38,27 +52,47 @@ my.globals.menus.file_browser = function(dir)
 	end
 	log("opening dir "..dir)
 	local dirstat = dynawa.file.dir_stat(dir)
-	local menu = {banner = "File browser: "..dir, items={}}
+	local menu = {banner = "File browser: "..dir, items={}, always_refresh = true, allow_shortcut = "Dir: "..dir}
 	if not dirstat then
 		table.insert(menu.items,{text="[Invalid directory]"})
 	else
 		if next(dirstat) then
 			for k,v in pairs(dirstat) do
-				local txt = k.." ["..v.."]"
+				local txt = k.." ["..v.." bytes]"
+				local sort = "2"..txt
+				if v == "dir" then 
+					txt = "= "..k
+					sort = "1"..txt
+				end
 				--log("Adding dirstat item: "..txt)
-				local location = nil
+				local location = "file:"..dir..k
 				if v == "dir" then
 					location = "file_browser:"..dir..k.."/"
 				end
-				table.insert(menu.items,{text=txt,after_select={go_to = location}})
+				table.insert(menu.items,{text = txt, sort = sort, after_select={go_to = location}})
 			end
 		else
-			table.insert(menu,items,{text="[Empty directory]"})
+			table.insert(menu.items,{text="[Empty directory]"})
 		end
 		table.sort(menu.items,function(it1,it2)
-			return it1.text < it2.text
+			return it1.sort < it2.sort
 		end)
 	end
+	return menu
+end
+
+my.globals.menus.file = function(fullname)
+	assert(fullname)
+	assert(#fullname > 0)
+	local dir, fname = fullname:match("(.*/)(.*)")
+	assert(fname)
+	log("DIR:"..dir)
+	log("FNAME:"..fname)
+	local size = assert(dynawa.file.dir_stat(dir))[fname]
+	assert(type(size) == "number")
+	local menu = {banner = "File: "..fname, allow_shortcut = "File: "..fullname, items = {}}
+	table.insert(menu.items,{text="Size: "..size.." bytes"})
+	table.insert(menu.items,{text="File operations #TBD"})
 	return menu
 end
 

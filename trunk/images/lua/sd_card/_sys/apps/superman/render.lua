@@ -86,6 +86,9 @@ local function parse(menu)
 	if not menu.active_item then
 		menu.active_item = 1
 	end
+	if menu.active_item > #menu.items then
+		menu.active_item = #menu.items
+	end
 	menu.inner_corner = {x = 2, y = 3 + menu.banner.size.h}
 	menu.inner_size = {w = display_w - 2*menu.inner_corner.x, h = display_h - menu.inner_corner.y - 2}
 	menu.bitmap = dynawa.bitmap.new(display_w, display_h, unpack(menu.skin.border_color))
