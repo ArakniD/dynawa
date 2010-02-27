@@ -66,15 +66,13 @@ my.globals.get_menu_by_url = function(url)
 		local url = menu.url
 		assert(menu.url, "Menu allows shortcuts but has no URL")
 		local scuts = assert(dynawa.settings.superman.shortcuts)
-		local add = {text = "+ Add shortcut", value = {result="shortcut_add",url = url, text = text},
-					after_select = {popup = 'Created shortcut "'..text..'"', delete_item = true}}
-		local del = {text = "+ Delete shortcut pointing here", value = {result = "shortcut_delete", url = url},
-					after_select = {popup = 'Deleted shortcut "'..scuts[url].text..'"', delete_item = true}} 
 		local item
 		if not scuts[url] then
-			item = add
+			item = {text = "+ Add shortcut", value = {result="shortcut_add",url = url, text = text},
+					after_select = {popup = 'Created shortcut "'..text..'"', delete_item = true}}
 		else
-			item = del
+			item = {text = "+ Delete shortcut pointing here", value = {result = "shortcut_delete", url = url},
+					after_select = {popup = 'Deleted shortcut "'..scuts[url].text..'"', delete_item = true}} 
 		end
 		table.insert(menu.items,item)
 	end
