@@ -17,19 +17,19 @@ my.globals.menus.root = function()
 	return menu
 end
 
-local function app_menu2(event)
-	if event.reply then
-		local menu = event.reply
-		menu.proxy = assert(event.sender.app)
-		dynawa.event.send{type = "open_my_menu", menu = menu}
+local function app_menu2(message)
+	if message.reply then
+		local menu = message.reply
+		menu.proxy = assert(message.sender.app)
+		dynawa.message.send{type = "open_my_menu", menu = menu}
 	else
-		dynawa.event.send{type="open_popup", text="This app has no menu", style = "error"}
+		dynawa.message.send{type="open_popup", text="This app has no menu", style = "error"}
 	end
 end
 
 my.globals.menus.app_menu = function(app_id)
 	local app = assert(dynawa.apps[app_id],"There is no active app with id '"..app_id.."'")
-	dynawa.event.send{type = "your_menu", receiver = app, reply_callback = app_menu2}
+	dynawa.message.send{type = "your_menu", receiver = app, reply_callback = app_menu2}
 end
 
 my.globals.menus.file_browser = function(dir)
@@ -110,10 +110,14 @@ my.globals.menus.adjust_time_date = function(what)
 	elseif what == "min" then
 		limit = {from = 0, to = 59, name = "minutes"}
 	end
-	local menu = {banner = "Please adjust the "..limit.name.." value (this also automatically sets seconds to 00)", items = {}}
+	local menu = {banner = "Please adjust the "..limit.name.." value", items = {}}
 	for i = limit.from, limit.to do
+		local popup = "Value adjusted"
+		if what == "min" then
+			popup = "Value adjusted and seconds set to 00"
+		end
 		local item = {text = tostring(i), value = {what = what, number = i, result = "adjusted_time_date"}, 
-			after_select = {popup = "Value adjusted", go_back = true}}
+			after_select = {popup = popup, go_back = true}}
 		table.insert(menu.items,item)
 		if i == date[what] then
 			menu.active_value = item.value
@@ -122,10 +126,12 @@ my.globals.menus.adjust_time_date = function(what)
 	return menu
 end
 
-my.globals.results.adjusted_time_date = function(event)
+my.globals.results.adjusted_time_date = function(message)
 	local date = assert(os.date("*t"))
-	date[event.what] = event.number
-	date.sec = 0
+	date[message.what] = message.number
+	if message.what == "min" then
+		date.sec = 0
+	end
 	local secs = assert(os.time(date))
 	dynawa.time.set(secs)
 end

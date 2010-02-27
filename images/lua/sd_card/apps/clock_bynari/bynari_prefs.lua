@@ -3,16 +3,15 @@ require ("dynawa")
 
 local after_select = {popup = "Color scheme changed", close_menu = true}
 
-local menu_result = function(event)
-	assert(event.value)
-	if my.globals.prefs.style ~= event.value then
-		my.globals.prefs.style = event.value
+local menu_result = function(message)
+	assert(message.value)
+	if my.globals.prefs.style ~= message.value then
+		my.globals.prefs.style = message.value
 		dynawa.file.save_data(my.globals.prefs)
 	end
---	dynawa.event.send{type="open_popup", text="Color scheme changed"}
 end
 
-local your_menu = function(event)
+local your_menu = function(message)
 	local menu = {
 		banner = "Bynari color schemes",
 		active_value = assert(my.globals.prefs.style),
@@ -82,9 +81,8 @@ local your_menu = function(event)
 		},
 	}
 	return menu
-	--dynawa.event.send{type="open_my_menu", menu=menu}
 end
 
-dynawa.event.receive{event = "your_menu", callback = your_menu}
-dynawa.event.receive{event = "menu_result", callback = menu_result}
+dynawa.message.receive{message = "your_menu", callback = your_menu}
+dynawa.message.receive{message = "menu_result", callback = menu_result}
 

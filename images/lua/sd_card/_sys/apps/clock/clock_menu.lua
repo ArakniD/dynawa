@@ -1,7 +1,7 @@
 --Clock settings
 require ("dynawa")
 
-local function show_menu(event)
+local function show_menu(message)
 	local menu = {
 		banner = "Clock settings",
 		items = {
@@ -20,8 +20,8 @@ local function show_menu(event)
 	for i = 1, 20 do
 		table.insert(menu.items,{text="Dummy item #"..i,value="no"})
 	end
-	dynawa.event.send{type="new_widget", menu = menu}
+	dynawa.message.send{type="new_widget", menu = menu}
 end
 
-dynawa.event.receive{event = "show_menu", callback = show_menu}
+dynawa.message.receive{message = "show_menu", callback = show_menu}
 

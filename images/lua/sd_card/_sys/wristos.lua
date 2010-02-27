@@ -48,41 +48,41 @@ dynawa.unique_id = function(num)
 	return table.concat(result)
 end
 
---create the table for handling the lowest level incoming hardware events
+--create the table for handling the lowest level incoming hardware messages
 -----------------------------------------------------------
 -----------------------------------------------------------
 local tbl={}
-dynawa.event_vectors = tbl
-tbl.button_down = function (event)
-	dynawa.button_event(event)
+dynawa.message_vectors = tbl
+tbl.button_down = function (message)
+	dynawa.button_message(message)
 end
 
 tbl.button_up = tbl.button_down
 
 tbl.button_hold = tbl.button_down
 
-tbl.timer_fired = function (event)
-	local handle = assert(event.handle,"HW event of type timer_fired has no handle")
-	local event = dynawa.hardware_vectors[handle]
-	if not event then
+tbl.timer_fired = function (message)
+	local handle = assert(message.handle,"HW message of type timer_fired has no handle")
+	local message = dynawa.hardware_vectors[handle]
+	if not message then
 		log("Timer "..tostring(handle).." should fire but its vector is unknown")
 		--[[log("known vectors:")
 		for k,v in pairs(dynawa.hardware_vectors) do
 			log("id:"..tostring(k))
 		end]]
 	else
-		assert(event.hardware == "timer")
-		if not event.autorepeat then
+		assert(message.hardware == "timer")
+		if not message.autorepeat then
 			dynawa.hardware_vectors[handle] = nil
 		end
-		event.sender = nil
-		dynawa.event.send(event)
+		message.sender = nil
+		dynawa.message.send(message)
 	end
 end
 
-tbl.bluetooth = function (event)
-	event.receiver = dynawa.apps["/_sys/apps/bluetooth/"]
-	dynawa.event.send(event)
+tbl.bluetooth = function (message)
+	message.receiver = dynawa.apps["/_sys/apps/bluetooth/"]
+	dynawa.message.send(message)
 end
 
 tbl=nil
@@ -106,7 +106,7 @@ dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 
 dynawa.dofile(dynawa.dir.sys.."menu.lua")
 
---SCHEDULER (apps + tasks + events) init
+--SCHEDULER (apps + tasks + messages) init
 dynawa.dofile(dynawa.dir.sys.."scheduler.lua")
 
 --This table maps the 5 buttons from integers to strings, according to watch rotation
@@ -115,42 +115,42 @@ local buttons_flip = {
 	[true]={[0]="BOTTOM","CONFIRM","TOP","CANCEL","SWITCH"}
 }
 
---Called immediately after any button event is received from system
-function dynawa.button_event(event)
-	local button=buttons_flip[dynawa.display.flipped][assert(event.button)]
+--Called immediately after any button message is received from system
+function dynawa.button_message(message)
+	local button=buttons_flip[dynawa.display.flipped][assert(message.button)]
 	assert(button)
 	local receiver = dynawa.app.in_front
-	dynawa.event.send {type=event.type, button = button, receiver=receiver} --Send to app in front
-	dynawa.event.send {type=event.type, button = button, receiver=assert(dynawa.apps["/_sys/apps/core/"])} --Send to core app
+	dynawa.message.send {type=message.type, button = button, receiver=receiver} --Send to app in front
+	dynawa.message.send {type=message.type, button = button, receiver=assert(dynawa.apps["/_sys/apps/core/"])} --Send to core app
 end
 
--- Handle all events in queue, including those new events that are generated during the handling of the original events!
+-- Handle all messages in queue, including those new messages that are generated during the handling of the original messages!
 local function dispatch_queue()
 	--[[if _G.my then
 		log("_G.my is ".._G.my.id)
 	else
 		log("_G.my is nil")
 	end]]
-	local queue = assert(dynawa.event.queue)
+	local queue = assert(dynawa.message.queue)
 	local sanity = 999
 	assert(not _G.my,"There should be no active task at the start of dispatch_queue()")
 	while #queue > 0 do
 		sanity = sanity - 1
-		assert(sanity>0,"Unable to purge event queue - probably infinite loop")
-		local event=table.remove(queue,1)
-		dynawa.event.dispatch(event)
+		assert(sanity>0,"Unable to purge message queue - probably infinite loop")
+		local message=table.remove(queue,1)
+		dynawa.message.dispatch(message)
 	end
 end
 
---This is the "real" main handler for incoming hardware events
-_G.private_main_handler = function(event)
+--This is the "real" main handler for incoming hardware messages
+_G.private_main_handler = function(message)
 	--rawset(_G,"my",nil) --At this time it already should be nil in ANY non-error state
-	local typ = assert(event.type, "Event has no type")
-	local vector = assert(dynawa.event_vectors[typ],"Unknown hardware event type: "..tostring(typ))
+	local typ = assert(message.type, "Message has no type")
+	local vector = assert(dynawa.message_vectors[typ],"Unknown hardware message type: "..tostring(typ))
 	if vector then
-		local result = vector(event) --handle the conversion of incoming raw event to Lua event
+		local result = vector(message) --handle the conversion of incoming raw message to Lua message
 	else
-		log("Unknown event type: "..typ)
+		log("Unknown message type: "..typ)
 	end
 	dispatch_queue()
 	local app = dynawa.app.in_front

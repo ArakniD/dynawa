@@ -71,7 +71,7 @@ function _G.boot_init()
 end
 
 --The following dummy definition should be overridden by either override.lua or wristos.lua, if all compiles well
-function _G.private_main_handler(event)
+function _G.private_main_handler(message)
 	print("DUMMY_PRIVATE_MAIN_HANDLER")
 	return nil
 end

@@ -3,14 +3,14 @@ require ("dynawa")
 
 local jump = {}
 
-local menu_result = function(event)
-	local val = assert(event.value)
+local menu_result = function(message)
+	local val = assert(message.value)
 	assert(val.jump,"Menu item value has no 'jump'")
 	--log("Jump: "..val.jump)
 	jump[val.jump](val)
 end
 
-local your_menu = function(event)
+local your_menu = function(message)
 	local menu = {
 		banner = "Bluetooth debug menu",
 		items = {
@@ -45,14 +45,14 @@ jump.something_else = function(args)
 	log("NOT doing something else")
 end
 
-local function got_event(event)
-	log("Got BT event:")
-	for k,v in pairs(event) do
+local function got_message(message)
+	log("Got BT message:")
+	for k,v in pairs(message) do
 		log(tostring(k).."="..tostring(v))
 	end
 end
 
-dynawa.event.receive {event = "bluetooth", callback = got_event}
-dynawa.event.receive{event = "your_menu", callback = your_menu}
-dynawa.event.receive{event = "menu_result", callback = menu_result}
+dynawa.message.receive {message = "bluetooth", callback = got_message}
+dynawa.message.receive{message = "your_menu", callback = your_menu}
+dynawa.message.receive{message = "menu_result", callback = menu_result}
 

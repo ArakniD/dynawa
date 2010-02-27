@@ -1,9 +1,9 @@
 require("dynawa")
 local buttons = {}
 
-local function receive(event)
-	local button = assert(event.button)
-	local typ = assert(event.type)
+local function receive(message)
+	local button = assert(message.button)
+	local typ = assert(message.type)
 	if typ == "button_up" then
 		buttons[button] = nil
 	elseif typ == "button_down" then
@@ -13,10 +13,10 @@ local function receive(event)
 	end
 end
 
-local function button_matrix(event)
+local function button_matrix(message)
 	return buttons
 end
 
-dynawa.event.receive{events={"button_up","button_down","button_hold"}, callback=receive}
-dynawa.event.receive{event="button_matrix", callback = button_matrix}
+dynawa.message.receive{messages={"button_up","button_down","button_hold"}, callback=receive}
+dynawa.message.receive{message="button_matrix", callback = button_matrix}
 

@@ -4,20 +4,20 @@ dynawa.apps={}
 dynawa.task={}
 dynawa.tasks={}
 dynawa.hardware_vectors={}
-dynawa.event={queue = {},listeners = {}}
+dynawa.message={queue = {},listeners = {}}
 
 --helper function to call task functions after correctly setting the "my" global
-dynawa.call_task_function = function(task, fn, event)
+dynawa.call_task_function = function(task, fn, message)
 	assert(task.app,"Not a valid task")
-	local sender, reply_callback = event.sender, event.reply_callback
+	local sender, reply_callback = message.sender, message.reply_callback
 	assert(type(fn)=="function","Not a function")
 	local my0 = _G.my
 	rawset(_G,"my",task)
-	local result = fn(event)
+	local result = fn(message)
 	if reply_callback then
-		assert(sender,"Event with 'reply_callback' has no sender task. I don't know where to send the reply")
-		assert(result,"Task "..task.id.." did not provide reply to 'reply_callback' event. You must return something other than nil!")
-		dynawa.event.send{task = sender, callback = reply_callback, reply = result, original_event = event}
+		assert(sender,"Message with 'reply_callback' has no sender task. I don't know where to send the reply")
+		assert(result,"Task "..task.id.." did not provide reply to 'reply_callback' message. You must return something other than nil!")
+		dynawa.message.send{task = sender, callback = reply_callback, reply = result, original_message = message}
 	end
 	rawset(_G,"my",my0)
 	return result
@@ -74,56 +74,56 @@ dynawa.app.start = function(args)
 	return app
 end
 
-dynawa.event.receive = function(args) --expects event OR events, callback
+dynawa.message.receive = function(args) --expects message OR messages, callback
 	local task = assert(_G.my, "Must be called from running task")
-	if args.event then
-		assert(not args.events, "You cannot register both 'event' and 'events' at the same time")
-		args.events={args.event}
-		args.event=nil
+	if args.message then
+		assert(not args.messages, "You cannot register both 'message' and 'messages' at the same time")
+		args.messages={args.message}
+		args.message=nil
 	end
-	local events = assert(args.events,"Event type(s) not specified")
-	assert(#events > 0,"Zero event types specified")
+	local messages = assert(args.messages,"Message type(s) not specified")
+	assert(#messages > 0,"Zero message types specified")
 	local callback = assert(args.callback,"Callback not specified")
 	assert(type(callback)=="function","Callback is not a function but '"..type(callback).."'")
-	local list=dynawa.event.listeners
-	for i,ev_type in ipairs(events) do
-		assert(type(ev_type)=="string" and #ev_type > 0, "Event type identifier is not non-empty string but '"..tostring(ev_type).."'")
+	local list=dynawa.message.listeners
+	for i,ev_type in ipairs(messages) do
+		assert(type(ev_type)=="string" and #ev_type > 0, "Message type identifier is not non-empty string but '"..tostring(ev_type).."'")
 		if not list[ev_type] then
 			list[ev_type]={}
 		end
 		list[ev_type][task]={callback=callback}
-		--log("Task "..task.id.." wants events: "..ev_type)
+		--log("Task "..task.id.." wants messages: "..ev_type)
 	end
 end
 
-dynawa.event.stop_receiving = function(args) --expects event OR events, callback
+dynawa.message.stop_receiving = function(args) --expects message OR messages, callback
 	local task = assert(_G.my, "Must be called from running task")
-	if args.event then
-		assert(not args.events, "You cannot deregister both 'event' and 'events' at the same time")
-		args.events={args.event}
-		args.event=nil
+	if args.message then
+		assert(not args.messages, "You cannot deregister both 'message' and 'messages' at the same time")
+		args.messages={args.message}
+		args.message=nil
 	end
-	local events = assert(args.events,"Event(s) not specified")
-	assert(#events > 0,"Zero event types specified")
-	for i,ev_type in ipairs(events) do
-		assert(type(ev_type)=="string" and #ev_type > 0, "Event type identifier is not non-empty string but '"..tostring(ev_type).."'")
-		local callbacks = dynawa.event.listeners[ev_type]
+	local messages = assert(args.messages,"Message(s) not specified")
+	assert(#messages > 0,"Zero message types specified")
+	for i,ev_type in ipairs(messages) do
+		assert(type(ev_type)=="string" and #ev_type > 0, "Message type identifier is not non-empty string but '"..tostring(ev_type).."'")
+		local callbacks = dynawa.message.listeners[ev_type]
 		if callbacks and callbacks[my] then
 			callbacks[task]=nil
 		end
-		--log("Task "..task.id.." doesn't want events: "..ev_type)
+		--log("Task "..task.id.." doesn't want messages: "..ev_type)
 	end
 end
 
-dynawa.event.send = function(event)
-	--local typ=assert(event.type,"Event has no type")
-	assert(not event.sender,"You must not specify event sender manually")
-	if type(event) == "string" then
-		event = {type=event}
+dynawa.message.send = function(message)
+	--local typ=assert(message.type,"Message has no type")
+	assert(not message.sender,"You must not specify message sender manually")
+	if type(message) == "string" then
+		message = {type=message}
 	end
-	assert(type(event)=="table", "Event is not a table nor a string")
-	event.sender = _G.my		--This MAY BE NIL (event is sent from outside of any task)!
-	table.insert(dynawa.event.queue,event)
+	assert(type(message)=="table", "Message is not a table nor a string")
+	message.sender = _G.my		--This MAY BE NIL (message is sent from outside of any task)!
+	table.insert(dynawa.message.queue,message)
 end
 
 dynawa.delayed_callback = function(args) --expects time, callback, [autorepeat:bool]
@@ -150,42 +150,42 @@ dynawa.cancel_callback = function(handle) --expects time, callback, [autorepeat:
 	dynawa.timer.cancel(handle)
 end
 
---Dispatches single event IMMEDIATELY (bypasses event queue)
+--Dispatches single message IMMEDIATELY (bypasses message queue)
 --This should never be called directly from apps!
-dynawa.event.dispatch = function (event)
+dynawa.message.dispatch = function (message)
 	local call_task_function = dynawa.call_task_function
-	--log("QUEUE: Dispatching event of type "..tostring(event.type).." from "..tostring((event.sender or {}).id).." to "..tostring((event.receiver or {}).id))
-	local listeners = assert(dynawa.event.listeners)
-	local typ=event.type
+	--log("QUEUE: Dispatching message of type "..tostring(message.type).." from "..tostring((message.sender or {}).id).." to "..tostring((message.receiver or {}).id))
+	local listeners = assert(dynawa.message.listeners)
+	local typ=message.type
 	local handled = false
 	if typ then
 		if listeners[typ] then
-			if event.receiver then --Send it only to tasks belonging to this app
-				local receiver = event.receiver
+			if message.receiver then --Send it only to tasks belonging to this app
+				local receiver = message.receiver
 				for task, params in pairs(listeners[typ]) do
 					if task.app == receiver then
-						call_task_function(task,params.callback,event)
+						call_task_function(task,params.callback,message)
 						handled = true
 					end
 				end
 			else
 				for task, params in pairs(listeners[typ]) do
-					call_task_function(task,params.callback,event)
+					call_task_function(task,params.callback,message)
 					handled = true
 				end
 			end
 		end
 		if not handled then
-			if event.reply_callback then
-				--Event with reply_callback was not handled. Report it to caller.
-				dynawa.event.send{task = assert(event.sender,"No sender in original event"), callback = event.reply_callback, original_event = event}
+			if message.reply_callback then
+				--message with reply_callback was not handled. Report it to caller.
+				dynawa.message.send{task = assert(message.sender,"No sender in original message"), callback = message.reply_callback, original_message = message}
 			end
-			log("Unhandled event of type '"..typ.."' from "..tostring((event.sender or {}).id).." to "..tostring((event.receiver or {}).id))
+			log("Unhandled message of type '"..typ.."' from "..tostring((message.sender or {}).id).." to "..tostring((message.receiver or {}).id))
 		end
-	else --event doesn't have type, must have "callback" and "task"
-		assert (event.callback,"Event doesn't have callback specified")
-		assert (event.task,"Event doesn't have task specified")
-		call_task_function(event.task,event.callback,event)
+	else --message doesn't have type, must have "callback" and "task"
+		assert (message.callback,"Message doesn't have callback specified")
+		assert (message.task,"Message doesn't have task specified")
+		call_task_function(message.task,message.callback,message)
 	end
 end
 

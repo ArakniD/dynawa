@@ -10,22 +10,22 @@ local function scroll_line(text)
 	screen = dynawa.bitmap.copy(screen,0,height,160,128)
 	local line2 = dynawa.bitmap.combine(dynawa.bitmap.new(160,height,math.random(200),math.random(200),math.random(200)),line,0,0)
 	dynawa.bitmap.combine(screen,line2,0,128-height)
-	dynawa.event.send{type="display_bitmap",bitmap=screen}
+	dynawa.message.send{type="display_bitmap",bitmap=screen}
 end
 
-local function receive(event)
+local function receive(msg)
 	count = count + 1
-	scroll_line(count..": "..event.button.." "..event.type)
-	if event.button=="CONFIRM" and event.type=="button_hold" then
+	scroll_line(count..": "..msg.button.." "..msg.type)
+	if msg.button=="CONFIRM" and msg.type=="button_hold" then
 		switch = not switch
 		if switch then
-			dynawa.event.stop_receiving{event="button_down"}
+			dynawa.message.stop_receiving{message="button_down"}
 		else
-			dynawa.event.receive{event="button_down", callback=receive}
+			dynawa.message.receive{message="button_down", callback=receive}
 		end
 	end
 end
 
 scroll_line("BUTTONS+SCROLLING TEST APP :)")
-dynawa.event.receive{events={"button_up","button_down","button_hold"}, callback=receive}
+dynawa.message.receive{messages={"button_up","button_down","button_hold"}, callback=receive}
 

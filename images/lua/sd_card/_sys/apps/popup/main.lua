@@ -1,24 +1,24 @@
 --Popup
 require("dynawa")
 
-local function open_popup(event)
-	my.globals.sender_event = event
-	local bgbmp = event.background
+local function open_popup(message)
+	my.globals.sender_message = message
+	local bgbmp = message.background
 	if type(bgbmp) == "table" then
 		bgbmp = dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, unpack(bgbmp))
 	end
 	if not bgbmp then
-		bgbmp = event.sender.app.screen
-		--log("Sender screen = "..tostring(event.sender.screen))
+		bgbmp = message.sender.app.screen
+		--log("Sender screen = "..tostring(message.sender.screen))
 	end
-	my.globals.sender = event.sender.app
+	my.globals.sender = message.sender.app
 	log("Popup sender = "..my.globals.sender.name)
 	
 	local bgcolor = {0,40,0}
-	if event.style == "error" then
+	if message.style == "error" then
 		bgcolor = {128,0,0}
 	end
-	local textbmp = dynawa.bitmap.text_lines{width = math.floor(dynawa.display.size.width * 0.8), autoshrink = true, center = true, text = event.text}
+	local textbmp = dynawa.bitmap.text_lines{width = math.floor(dynawa.display.size.width * 0.8), autoshrink = true, center = true, text = message.text}
 	local txtw,txth = dynawa.bitmap.info(textbmp)
 	local w,h = txtw + 8, txth + 8
 	local bmp = dynawa.bitmap.new(w,h, unpack(bgcolor))
@@ -32,29 +32,29 @@ local function open_popup(event)
 	else --We don't have active screen, fall back to black background
 		screen = dynawa.bitmap.combine(dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, 0,0,0), bmp, start[1], start[2])
 	end
-	dynawa.event.send {type = "display_bitmap", bitmap = screen}
-	dynawa.event.send {type = "me_to_front"}
+	dynawa.message.send {type = "display_bitmap", bitmap = screen}
+	dynawa.message.send {type = "me_to_front"}
 end
 
-local function button(event)
-	if event.type == "button_down" then
+local function button(message)
+	if message.type == "button_down" then
 		local sender = my.globals.sender
 		assert (sender ~= my.app)
 		if sender.screen then
-			dynawa.event.send{type = "app_to_front", app=sender}
+			dynawa.message.send{type = "app_to_front", app=sender}
 		else
-			dynawa.event.send{type = "default_app_to_front"}
+			dynawa.message.send{type = "default_app_to_front"}
 		end
-		dynawa.event.send {type = "popup_done"}
-		if my.globals.sender_event.callback then
-			dynawa.event.send {task = assert(my.globals.sender_event.sender), callback = my.globals.sender_event.callback}
+		dynawa.message.send {type = "popup_done"}
+		if my.globals.sender_message.callback then
+			dynawa.message.send {task = assert(my.globals.sender_message.sender), callback = my.globals.sender_message.callback}
 		end
-		dynawa.event.send {type = "display_bitmap", bitmap = nil}
+		dynawa.message.send {type = "display_bitmap", bitmap = nil}
 	end
 end
 
 my.app.name = "Popup"
-dynawa.event.send{type = "set_flags", flags = {ignore_app_switch = true, ignore_menu_open = true}}
-dynawa.event.receive{event="open_popup",callback=open_popup}
-dynawa.event.receive{events={"button_down","button_up","button_hold"}, callback = button}
+dynawa.message.send{type = "set_flags", flags = {ignore_app_switch = true, ignore_menu_open = true}}
+dynawa.message.receive{message="open_popup",callback=open_popup}
+dynawa.message.receive{messages={"button_down","button_up","button_hold"}, callback = button}
 

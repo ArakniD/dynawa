@@ -7,7 +7,7 @@ local function display(bitmap, x, y)
 	assert(bitmap)
 	assert(x)
 	assert(y)
-	dynawa.event.send{type="display_bitmap", bitmap = bitmap, at={x,y}}
+	dynawa.message.send{type="display_bitmap", bitmap = bitmap, at={x,y}}
 end
 
 local function small_print(chars, x)
@@ -84,21 +84,21 @@ local function render(time, full)
 	
 end
 
-local function remove_dots(event)
+local function remove_dots(message)
 	if not my.app.in_front then
 		return
 	end
 	local black = dynawa.bitmap.new(5,5,0,0,0)
-	dynawa.event.send{type="display_bitmap", bitmap = black, at={58,40+11}}
-	dynawa.event.send{type="display_bitmap", bitmap = black, at={58,40+31}}
+	dynawa.message.send{type="display_bitmap", bitmap = black, at={58,40+11}}
+	dynawa.message.send{type="display_bitmap", bitmap = black, at={58,40+31}}
 end
 
-local function tick(event)
-	if (run_id ~= event.run_id) or (not my.app.in_front) then
+local function tick(message)
+	if (run_id ~= message.run_id) or (not my.app.in_front) then
 		return
 	end
 	local sec,msec = dynawa.time.get()
-	render(os.date("*t",sec), event.full_render)
+	render(os.date("*t",sec), message.full_render)
 
 --[[
 	my.globals.count_t = ((my.globals.count_t or 0) + 1) % 60
@@ -114,12 +114,12 @@ local function tick(event)
 	
 	local sec2,msec2 = dynawa.time.get()
 	local when = 1000 - msec2
-	if event.full_render == "no_time" then
-		event.full_render = true
-	elseif event.full_render then
-		event.full_render = nil
+	if message.full_render == "no_time" then
+		message.full_render = true
+	elseif message.full_render then
+		message.full_render = nil
 	end
-	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id, full_render = event.full_render}
+	dynawa.delayed_callback{time=when, callback=tick, run_id = run_id, full_render = message.full_render}
 	if when > 700 then
 		dynawa.delayed_callback{time=666, callback=remove_dots}
 	end
@@ -156,7 +156,7 @@ my.app.name = "Default Clock"
 my.app.priority = "A"
 dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
-dynawa.event.receive {event="you_are_now_in_front", callback=to_front}
-dynawa.event.receive {event="you_are_now_in_back", callback=to_back}
-dynawa.event.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
+dynawa.message.receive {message="you_are_now_in_front", callback=to_front}
+dynawa.message.receive {message="you_are_now_in_back", callback=to_back}
+dynawa.message.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
 
