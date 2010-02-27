@@ -1,5 +1,8 @@
 ----SuperMan
 --#todo: go_back after select!
+my.globals.menus = {}
+my.globals.results = {}
+
 local function open_my_menu(message)
 	local app = assert(message.app or message.sender.app)
 	local menu = message.menu
@@ -52,7 +55,42 @@ my.globals.get_menu_by_url = function(url)
 		return nil
 	end
 	menu.url = url
+	if menu.allow_shortcut then
+		local text = menu.allow_shortcut
+		if type(text)~="string" then
+			text = menu.banner
+			if type(text) ~= "string" then
+				error("Cannot determine shortcut text")
+			end
+		end
+		local url = menu.url
+		assert(menu.url, "Menu allows shortcuts but has no URL")
+		local scuts = assert(dynawa.settings.superman.shortcuts)
+		local add = {text = "+ Add shortcut", value = {result="shortcut_add",url = url, text = text},
+					after_select = {popup = 'Created shortcut "'..text..'"', delete_item = true}}
+		local del = {text = "+ Delete shortcut pointing here", value = {result = "shortcut_delete", url = url},
+					after_select = {popup = 'Deleted shortcut "'..scuts[url].text..'"', delete_item = true}} 
+		local item
+		if not scuts[url] then
+			item = add
+		else
+			item = del
+		end
+		table.insert(menu.items,item)
+	end
 	return menu
+end
+
+my.globals.results.shortcut_add = function(msg)
+	local scut = {text = assert(msg.text)}
+	scut.timestamp = os.time()
+	dynawa.settings.superman.shortcuts[msg.url] = scut
+	dynawa.file.save_settings()
+end
+
+my.globals.results.shortcut_delete = function(msg)
+	dynawa.settings.superman.shortcuts[msg.url] = nil
+	dynawa.file.save_settings()
 end
 
 local function launch_superman(message)
@@ -135,7 +173,14 @@ local function confirm_pressed2(message) --Continues here after the optional pop
 		dynawa.message.send("close_active_menu")
 	elseif item.after_select.go_back then
 		cancel_pressed()
-	end	
+	elseif item.after_select.delete_item then
+		local act = menu.active_item
+		if act > 1 then
+			menu.active_item = act - 1
+		end
+		table.remove(menu.items, act)
+		my.globals.render(menu)
+	end
 end
 
 local function confirm_pressed()
