@@ -14,6 +14,8 @@
 #include <firmware_conf.h>
 #include <peripherals/pmc/pmc.h>
 #include <debug/trace.h>
+#include "FreeRTOS.h"
+#include "semphr.h"
 #include "i2c.h"
 
 //temporary test:
@@ -143,23 +145,39 @@ uint8_t i2cMultipleReadByteEnd(void)
 
 // TODO: add mutex
 static unsigned int i2c_open_count = 0;
+static xSemaphoreHandle i2c_mutex;
+
+int i2c_init() {
+    i2c_mutex = xSemaphoreCreateMutex();
+    if(i2c_mutex == NULL)
+        panic();
+}
 
 int i2c_open() {
+    xSemaphoreTake(i2c_mutex, -1); 
     if(!i2c_open_count++)
         pPMC->PMC_PCER = ( (uint32_t) 1 << AT91C_ID_TWI );
+    xSemaphoreGive(i2c_mutex); 
 }
 
 int i2c_close() {
+    xSemaphoreTake(i2c_mutex, -1); 
     if(i2c_open_count && --i2c_open_count == 0)
         pPMC->PMC_PCDR = ( (uint32_t) 1 << AT91C_ID_TWI );
+    xSemaphoreGive(i2c_mutex); 
 }
 
 void i2cMasterWrite(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t data) {
+    xSemaphoreTake(i2c_mutex, -1); 
     i2cMasterConf(i2c_addr, intaddr_size, int_addr, I2CMASTER_WRITE);
     i2cWriteByte(data);
+    xSemaphoreGive(i2c_mutex); 
 }
 
 uint8_t i2cMasterRead(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr) {
+    xSemaphoreTake(i2c_mutex, -1); 
     i2cMasterConf(i2c_addr, intaddr_size, int_addr, I2CMASTER_READ);
-    return i2cReadByte();
+    uint8_t data = i2cReadByte();
+    xSemaphoreGive(i2c_mutex); 
+    return data;
 }

@@ -24,6 +24,7 @@ extern uint16 bc_state;
 static unsigned char cmdCompleteCount = 0;
 
 void buf2pbuf(u8_t *b, struct pbuf *p, int hdr_len, int param_len) {
+    TRACE_BT("buf2pbuf %x %x\r\n", p->payload, b);
     memcpy(p->payload, b, hdr_len);
     b += hdr_len;
     pbuf_header(p, -hdr_len);
@@ -81,6 +82,33 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
                         TRACE_INFO("BC_STATE_BAUDRATE_SET\r\n");
                     } else {
                         TRACE_ERROR("BC_STATE_BAUDRATE_SET failed\r\n");
+                    }
+                }
+            } else if (bc_state == BC_STATE_BAUDRATE_SET) {
+                if (cmd[3] == BCCMDVARID_PS) {
+                    if (cmd[4] == BCCMDPDU_STAT_OK) {
+                        bc_state = BC_STATE_LC_MAX_TX_POWER;
+                        TRACE_INFO("BC_STATE_LC_MAX_TX_POWER\r\n");
+                    } else {
+                        TRACE_ERROR("BC_STATE_LC_MAX_TX_POWER failed\r\n");
+                    }
+                }
+            } else if (bc_state == BC_STATE_LC_MAX_TX_POWER) {
+                if (cmd[3] == BCCMDVARID_PS) {
+                    if (cmd[4] == BCCMDPDU_STAT_OK) {
+                        bc_state = BC_STATE_LC_DEFAULT_TX_POWER;
+                        TRACE_INFO("BC_STATE_LC_DEFAULT_TX_POWER\r\n");
+                    } else {
+                        TRACE_ERROR("BC_STATE_LC_DEFAULT_TX_POWER failed\r\n");
+                    }
+                }
+            } else if (bc_state == BC_STATE_LC_DEFAULT_TX_POWER) {
+                if (cmd[3] == BCCMDVARID_PS) {
+                    if (cmd[4] == BCCMDPDU_STAT_OK) {
+                        bc_state = BC_STATE_LC_MAX_TX_POWER_NO_RSSI;
+                        TRACE_INFO("BC_STATE_LC_MAX_TX_POWER_NO_RSSI\r\n");
+                    } else {
+                        TRACE_ERROR("BC_STATE_LC_MAX_TX_POWER_NO_RSSI failed\r\n");
                     }
                 }
             }

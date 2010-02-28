@@ -13,12 +13,17 @@
 #include <ff.h>
 #include "event.h"
 
+#define TEST  0    
+
 static FATFS fatfs;
 static FILINFO fileInfo;
 
 int lua_event_loop (void) {
 
     Io led;
+
+    TRACE_INFO("lua_event_loop %x\r\n", xTaskGetCurrentTaskHandle());
+
     Led_init(&led);
     Led_setState(&led, 0);
 
@@ -65,11 +70,12 @@ int lua_event_loop (void) {
     //fflush(stdout);
     while(1) {
         event ev;
-        event_get(&ev, EVENT_WAIT_FOREVER);
-/*
+#if TEST
         ev.type = EVENT_BUTTON_DOWN;
         ev.data.button.id = 1;
-*/
+#else
+        event_get(&ev, EVENT_WAIT_FOREVER);
+#endif
 
 /*
         int i;
@@ -124,6 +130,14 @@ rtc_close();
             break;
         case EVENT_TIMER:
             TRACE_LUA("timer %x expired\r\n", ev.data.timer.handle);
+
+            {
+                Timer *timer = (Timer*)ev.data.timer.handle;
+                if (timer->freeOnStop) {
+                    TRACE_LUA("timer freed\r\n");
+                    free(timer);
+                }
+            }
             lua_newtable(L);
 
             lua_pushstring(L, "type");

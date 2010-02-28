@@ -55,7 +55,7 @@ void button_timer_handler(void* context) {
 
 #if defined(BUTTON_TASK)
 static void button_task( void* p ) {
-    TRACE_INFO("button task\r\n");
+    TRACE_INFO("button task %x\r\n", xTaskGetCurrentTaskHandle());
     while (true) {
         int button_id;
         event ev;

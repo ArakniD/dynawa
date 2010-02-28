@@ -41,6 +41,10 @@
  * server.
  */
 
+#define TEST    0
+#if TEST
+static int app_initialized = 0;
+#endif
 
 #include "lwip/mem.h"
 #include "lwip/memp.h"
@@ -71,6 +75,62 @@ struct bt_state {
 	u8_t cn;
 } bt_spp_state;
 
+/*
+ServiceDiscoveryServerServiceClassID_UUID: TGUID = '{00001000-0000-1000-8000-00805F9B34FB}';
+  BrowseGroupDescriptorServiceClassID_UUID: TGUID = '{00001001-0000-1000-8000-00805F9B34FB}';
+  PublicBrowseGroupServiceClass_UUID: TGUID = '{00001002-0000-1000-8000-00805F9B34FB}';
+  SerialPortServiceClass_UUID: TGUID = '{00001101-0000-1000-8000-00805F9B34FB}';
+  LANAccessUsingPPPServiceClass_UUID: TGUID = '{00001102-0000-1000-8000-00805F9B34FB}';
+  DialupNetworkingServiceClass_UUID: TGUID = '{00001103-0000-1000-8000-00805F9B34FB}';
+  IrMCSyncServiceClass_UUID: TGUID = '{00001104-0000-1000-8000-00805F9B34FB}';
+  OBEXObjectPushServiceClass_UUID: TGUID = '{00001105-0000-1000-8000-00805F9B34FB}';
+  OBEXFileTransferServiceClass_UUID: TGUID = '{00001106-0000-1000-8000-00805F9B34FB}';
+  IrMCSyncCommandServiceClass_UUID: TGUID = '{00001107-0000-1000-8000-00805F9B34FB}';
+  HeadsetServiceClass_UUID: TGUID = '{00001108-0000-1000-8000-00805F9B34FB}';
+  CordlessTelephonyServiceClass_UUID: TGUID = '{00001109-0000-1000-8000-00805F9B34FB}';
+  AudioSourceServiceClass_UUID: TGUID = '{0000110A-0000-1000-8000-00805F9B34FB}';
+  AudioSinkServiceClass_UUID: TGUID = '{0000110B-0000-1000-8000-00805F9B34FB}';
+  AVRemoteControlTargetServiceClass_UUID: TGUID = '{0000110C-0000-1000-8000-00805F9B34FB}';
+  AdvancedAudioDistributionServiceClass_UUID: TGUID = '{0000110D-0000-1000-8000-00805F9B34FB}';
+  AVRemoteControlServiceClass_UUID: TGUID = '{0000110E-0000-1000-8000-00805F9B34FB}';
+  VideoConferencingServiceClass_UUID: TGUID = '{0000110F-0000-1000-8000-00805F9B34FB}';
+  IntercomServiceClass_UUID: TGUID = '{00001110-0000-1000-8000-00805F9B34FB}';
+  FaxServiceClass_UUID: TGUID = '{00001111-0000-1000-8000-00805F9B34FB}';
+  HeadsetAudioGatewayServiceClass_UUID: TGUID = '{00001112-0000-1000-8000-00805F9B34FB}';
+  WAPServiceClass_UUID: TGUID = '{00001113-0000-1000-8000-00805F9B34FB}';
+  WAPClientServiceClass_UUID: TGUID = '{00001114-0000-1000-8000-00805F9B34FB}';
+  PANUServiceClass_UUID: TGUID = '{00001115-0000-1000-8000-00805F9B34FB}';
+  NAPServiceClass_UUID: TGUID = '{00001116-0000-1000-8000-00805F9B34FB}';
+  GNServiceClass_UUID: TGUID = '{00001117-0000-1000-8000-00805F9B34FB}';
+  DirectPrintingServiceClass_UUID: TGUID = '{00001118-0000-1000-8000-00805F9B34FB}';
+  ReferencePrintingServiceClass_UUID: TGUID = '{00001119-0000-1000-8000-00805F9B34FB}';
+  ImagingServiceClass_UUID: TGUID = '{0000111A-0000-1000-8000-00805F9B34FB}';
+  ImagingResponderServiceClass_UUID: TGUID = '{0000111B-0000-1000-8000-00805F9B34FB}';
+  ImagingAutomaticArchiveServiceClass_UUID: TGUID = '{0000111C-0000-1000-8000-00805F9B34FB}';
+  ImagingReferenceObjectsServiceClass_UUID: TGUID = '{0000111D-0000-1000-8000-00805F9B34FB}';
+  HandsfreeServiceClass_UUID: TGUID = '{0000111E-0000-1000-8000-00805F9B34FB}';
+  HandsfreeAudioGatewayServiceClass_UUID: TGUID = '{0000111F-0000-1000-8000-00805F9B34FB}';
+  DirectPrintingReferenceObjectsServiceClass_UUID: TGUID = '{00001120-0000-1000-8000-00805F9B34FB}';
+  ReflectedUIServiceClass_UUID: TGUID = '{00001121-0000-1000-8000-00805F9B34FB}';
+  BasicPringingServiceClass_UUID: TGUID = '{00001122-0000-1000-8000-00805F9B34FB}';
+  PrintingStatusServiceClass_UUID: TGUID = '{00001123-0000-1000-8000-00805F9B34FB}';
+  HumanInterfaceDeviceServiceClass_UUID: TGUID = '{00001124-0000-1000-8000-00805F9B34FB}';
+  HardcopyCableReplacementServiceClass_UUID: TGUID = '{00001125-0000-1000-8000-00805F9B34FB}';
+  HCRPrintServiceClass_UUID: TGUID = '{00001126-0000-1000-8000-00805F9B34FB}';
+  HCRScanServiceClass_UUID: TGUID = '{00001127-0000-1000-8000-00805F9B34FB}';
+  CommonISDNAccessServiceClass_UUID: TGUID = '{00001128-0000-1000-8000-00805F9B34FB}';
+  VideoConferencingGWServiceClass_UUID: TGUID = '{00001129-0000-1000-8000-00805F9B34FB}';
+  UDIMTServiceClass_UUID: TGUID = '{0000112A-0000-1000-8000-00805F9B34FB}';
+  UDITAServiceClass_UUID: TGUID = '{0000112B-0000-1000-8000-00805F9B34FB}';
+  AudioVideoServiceClass_UUID: TGUID = '{0000112C-0000-1000-8000-00805F9B34FB}';
+  SIMAccessServiceClass_UUID: TGUID = '{0000112D-0000-1000-8000-00805F9B34FB}';
+  PnPInformationServiceClass_UUID: TGUID = '{00001200-0000-1000-8000-00805F9B34FB}';
+  GenericNetworkingServiceClass_UUID: TGUID = '{00001201-0000-1000-8000-00805F9B34FB}';
+  GenericFileTransferServiceClass_UUID: TGUID = '{00001202-0000-1000-8000-00805F9B34FB}';
+  GenericAudioServiceClass_UUID: TGUID = '{00001203-0000-1000-8000-00805F9B34FB}';
+  GenericTelephonyServiceClass_UUID: TGUID = '{00001204-0000-1000-8000-00805F9B34FB}';
+*/
+
 static const u8_t spp_service_record[] =
 {
 		SDP_DES_SIZE8, 0x8, 
@@ -86,15 +146,38 @@ static const u8_t spp_service_record[] =
 					0xde, 0xca,
 					0xde, 0xaf, 0xde, 0xca, 0xca, 0xff,
 */
-// SPP 00001101-0000-1000-8000-00805f9b34fb
-		SDP_DES_SIZE8, 0x16, 
+// SPP 00001101-0000-1000-8000-00805F9B34FB
+// HSP 00001108-0000-1000-8000-00805F9B34FB
+// HFS 0000111E-0000-1000-8000-00805F9B34FB
+		SDP_DES_SIZE8, 8, 
 			SDP_UINT16, 0x0, 0x1, // Service class ID list attribute
+			SDP_DES_SIZE8, 3, 
+				SDP_UUID16, 0x11, 0x1E, /*Handsfree*/
+				//SDP_UUID16, 0x11, 0x08, /*Headset*/
+/*
 			SDP_DES_SIZE8, 17, 
                 SDP_UUID128, 0x00, 0x00, 0x11, 0x01,
                     0x00, 0x00,
                     0x10, 0x00,
                     0x80, 0x00,
                     0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB,
+*/
+/*
+			SDP_DES_SIZE8, 17, 
+                SDP_UUID128, 0x00, 0x00, 0x11, 0x1E,
+                    0x00, 0x00,
+                    0x10, 0x00,
+                    0x80, 0x00,
+                    0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB,
+*/
+/*
+			SDP_DES_SIZE8, 17, 
+                SDP_UUID128, 0x00, 0x00, 0x11, 0x08,
+                    0x00, 0x00,
+                    0x10, 0x00,
+                    0x80, 0x00,
+                    0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB,
+*/
 		SDP_DES_SIZE8, 0x11,
 			SDP_UINT16, 0x0, 0x4, /* Protocol descriptor list attribute */
 			SDP_DES_SIZE8, 0xc, 
@@ -107,6 +190,12 @@ static const u8_t spp_service_record[] =
 			SDP_UINT16, 0x0, 0x5, /*Browse group list */
 			SDP_DES_SIZE8, 0x3,
 				SDP_UUID16, 0x10, 0x02, /*PublicBrowseGroup*/
+		SDP_DES_SIZE8, 11,
+			SDP_UINT16, 0x0, 0x9, /* BluetoothProfileDescriptorList */
+			SDP_DES_SIZE8, 6,
+				SDP_UUID16, 0x11, 0x1E, /*Handsfree*/
+                SDP_UINT16, 0x01, 0x05,
+				//SDP_UUID16, 0x11, 0x1F, /*Handsfree AG*/
 };
 
 /* 
@@ -1013,6 +1102,11 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 				case HCI_READ_BD_ADDR:
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_READ_BD_ADDR.\n"));
+#if TEST
+                        if (app_initialized) 
+						    hci_read_bd_addr(read_bdaddr_complete);
+                        else
+#endif
 						/* Make discoverable */
 						hci_set_event_filter(HCI_SET_EV_FILTER_CONNECTION,
 								HCI_SET_EV_FILTER_ALLDEV, &flag);
@@ -1089,6 +1183,10 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_WRITE_PAGE_TIMEOUT.\n"));
 						//hci_cmd_complete(NULL); /* Initialization done, don't come back */
+#if TEST
+                        app_initialized = 1;
+                        hci_read_bd_addr(read_bdaddr_complete);
+#endif
 						hci_connection_complete(acl_conn_complete);
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Initialization done.\n"));
 /*

@@ -169,13 +169,16 @@ u8_t sdp_pattern_search(struct sdp_record *record, u8_t size, struct pbuf *p)
 TRACE_BT(">>>sdp_pattern_search\r\n");
 	//TODO actually parse the request instead of going over each byte
 	for(i = 0; i < size; ++i) {
+        TRACE_BT("pattern %x\r\n", payload[i]);
 		if(SDP_DE_TYPE(payload[i]) == SDP_DE_TYPE_UUID)  {
 			switch(SDP_DE_SIZE(payload[i])) {
 				case SDP_DE_SIZE_16:
+                    TRACE_BT("SDP_DE_SIZE_16\r\n");
 					for(j = 0; j < record->len; ++j) {
 						if(SDP_DE_TYPE(record->record_de_list[j]) == SDP_DE_TYPE_UUID) {
 							//if(*((u16_t *)(payload + i + 1)) == *((u16_t *)(record->record_de_list + j + 1))) {
 							if(U16LE2CPU(payload + i + 1) == U16LE2CPU(record->record_de_list + j + 1)) {
+                                TRACE_BT("<<<sdp_pattern_search 1\r\n");
 								return 1; /* Found a matching UUID in record */
 							}
 							++j;
@@ -184,9 +187,11 @@ TRACE_BT(">>>sdp_pattern_search\r\n");
 					i += 2;
 					break;
 				case SDP_DE_SIZE_32:
+                    TRACE_BT("SDP_DE_SIZE_32\r\n");
 					i += 4;
 					break;
 				case SDP_DE_SIZE_128:
+                    TRACE_BT("SDP_DE_SIZE_128\r\n");
 					LWIP_DEBUGF(SDP_DEBUG, ("TODO: add support for 128-bit UUID\n"));
 					i+= 16;
 					break;
@@ -195,8 +200,9 @@ TRACE_BT(">>>sdp_pattern_search\r\n");
 			}
 		}
 	}
-TRACE_BT("<<<sdp_pattern_search\r\n");
-	return 1; //TODO change back to 0
+    TRACE_BT("<<<sdp_pattern_search 0\r\n");
+	//MV return 1; //TODO change back to 0
+	return 0; //TODO change back to 0
 }
 
 /*
@@ -587,8 +593,11 @@ err_t sdp_service_search_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 		max_src = ntohs(U16LE2CPU((u8_t *)p->payload+(2+size)));
 
 		pbuf_header(p, -2);
+        TRACE_BT("size %d max_src %d\r\n", size, max_src);
+
 	} else {
 		//TODO: INVALID SYNTAX ERROR
+		TRACE_BT("INVALID SYNTAX ERROR\r\n");
 	}
 
 	/* Allocate header + Total service rec count + Current service rec count  */
@@ -603,10 +612,11 @@ err_t sdp_service_search_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 		/* Check if service search pattern matches record */
 		if(sdp_pattern_search(record, size, p)) {
 			if(max_src > 0) {
+                TRACE_BT("service found %x %x\r\n", record->hdl, htonl(record->hdl));
 				/* Add service record handle to packet */
 				r = pbuf_alloc(PBUF_RAW, 4, PBUF_RAM);
 				//*((u32_t *)r->payload) = htonl(record->hdl);
-				CPU2U32LE((u8_t*)&r->payload, htonl(record->hdl));
+				CPU2U32LE((u8_t*)r->payload, htonl(record->hdl));
 				pbuf_chain(q, r);
 				pbuf_free(r);
 				--max_src;
@@ -668,7 +678,13 @@ err_t sdp_service_attrib_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 
 	err_t ret;
 
-    TRACE_BT("sdp_service_attrib_rsp\r\n");
+    TRACE_BT("sdp_service_attrib_rsp %x\r\n", ntohl(U32LE2CPU((u8_t *)p->payload)));
+    { 
+        int i;
+        for(i=0;i<4;i++) {
+            TRACE_BT("[%d] = %x\r\n", i, ((u8_t *)p->payload)[i]);
+        }
+    }
 	/* Find record */
 	for(record = sdp_server_records; record != NULL; record = record->next) {
 		//if(record->hdl == ntohl(*((u32_t *)p->payload))) {
@@ -726,8 +742,10 @@ err_t sdp_service_attrib_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 		pbuf_free(q);
 
 		return ret;
-	}
-	//TODO: ERROR NO SERVICE RECORD MATCHING HANDLE FOUND
+	} else {
+	    //TODO: ERROR NO SERVICE RECORD MATCHING HANDLE FOUND
+        LWIP_DEBUGF(SDP_DEBUG, ("ERROR NO SERVICE RECORD MATCHING HANDLE FOUND\n"));
+    }
 	return ERR_OK;
 }
 
@@ -765,6 +783,7 @@ err_t sdp_service_search_attrib_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struc
 		max_attribl_bc = ntohs(U16LE2CPU(((u8_t *)p->payload)+(2+size)));
 
 		pbuf_header(p, -2);
+        TRACE_BT("size %d max_attribl_bc %d\r\n", size, max_attribl_bc);
 	} else {
 		LWIP_DEBUGF(SDP_DEBUG, ("sdp_service_search_attrib_rsp: invalid syntax error\n"));
 		//TODO: INVALID SYNTAX ERROR

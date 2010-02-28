@@ -93,7 +93,7 @@ void Timer_Isr( void )
                         // MV. right place here?
                         TRACE_TMR("timer %x freed (1)\r\n", timer);
                         Timer_closeStopped(timer);
-                        free(timer);
+                        //free(timer);
 
                         //timer = NULL;
                     }

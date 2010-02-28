@@ -68,34 +68,34 @@ void register_bg_int(int bgIntNumber, void (* bgIntFunction)(void))
 
 void bg_int1(void)
 {
-    TRACE_BT(">>>bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
+    //TRACE_BT(">>>bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
     //EnterCriticalSection(&SchedulerMutex);
     xSemaphoreTake(SchedulerMutex, portMAX_DELAY);
 	bgIntFlags |= BG_INT_1_FLAG_MASK;
 	//LeaveCriticalSection(&SchedulerMutex);
     xSemaphoreGive(SchedulerMutex);
-    TRACE_BT("bg_int1 Queue %x\r\n", xTaskGetCurrentTaskHandle());
+    //TRACE_BT("bg_int1 Queue %x\r\n", xTaskGetCurrentTaskHandle());
 	//SetEvent(WakeUpEvent);
     uint16_t event = 1;
     //xQueueSend(WakeUpEvent, &event, portMAX_DELAY);
     xQueueSend(WakeUpEvent, &event, 0);
-    TRACE_BT("<<<bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
+    //TRACE_BT("<<<bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
 }
 
 void bg_int2(void)
 {
-    TRACE_BT(">>>bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
+    //TRACE_BT(">>>bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
     //EnterCriticalSection(&SchedulerMutex);
     xSemaphoreTake(SchedulerMutex, portMAX_DELAY);
 	bgIntFlags |= BG_INT_2_FLAG_MASK;
 	//LeaveCriticalSection(&SchedulerMutex);
     xSemaphoreGive(SchedulerMutex);
-    TRACE_BT("bg_int2 Queue %x\r\n", xTaskGetCurrentTaskHandle());
+    //TRACE_BT("bg_int2 Queue %x\r\n", xTaskGetCurrentTaskHandle());
 	//SetEvent(WakeUpEvent);
     uint16_t event = 1;
     //xQueueSend(WakeUpEvent, &event, portMAX_DELAY);
     xQueueSend(WakeUpEvent, &event, 0);
-    TRACE_BT("<<<bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
+    //TRACE_BT("<<<bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
 }
 
 void scheduler_wakeup(void)

@@ -2,12 +2,21 @@
 #include "i2c.h"
 
 #include "FreeRTOS.h"
+#include "semphr.h"
 #include "hardware_conf.h"
 #include "debug/trace.h"
 #include <time.h>
 
 #define BCD2BIN(b) ((((b) & 0xf0) >> 4) * 10 + ((b) & 0x0f))
 #define BIN2BCD(b) ((((b) / 10) << 4) | ((b) % 10))
+
+static xSemaphoreHandle rtc_mutex;
+
+int rtc_init() {
+    rtc_mutex = xSemaphoreCreateMutex();
+    if(rtc_mutex == NULL)
+        panic();
+}
 
 int rtc_open() {
     i2c_open();
@@ -22,7 +31,8 @@ int rtc_write(struct tm *new_time) {
 
     TRACE_RTC("rtc: %d.%02d.%02d %02d:%02d:%02d\r\n", new_time->tm_year + 1900, new_time->tm_mon + 1, new_time->tm_mday, new_time->tm_hour, new_time->tm_min, new_time->tm_sec);
     // rtc_wake();
-    portENTER_CRITICAL ();
+    //portENTER_CRITICAL ();
+    xSemaphoreTake(rtc_mutex, -1);
 
 // TODO: sequential write to RTC
     i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, I2CRTC_STOPBIT);
@@ -39,7 +49,8 @@ int rtc_write(struct tm *new_time) {
     i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGMIN, BIN2BCD(new_time->tm_min));
     i2cMasterWrite(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, BIN2BCD(new_time->tm_sec));
 
-    portEXIT_CRITICAL ();
+    //portEXIT_CRITICAL ();
+    xSemaphoreGive(rtc_mutex);
     // rtc_sleep();
 }
 
@@ -47,7 +58,8 @@ int rtc_read(struct tm *curr_time, unsigned int *milliseconds) {
     TRACE_RTC("rtc_read()\r\n");
 
     // rtc_wake();
-    portENTER_CRITICAL ();
+    //portENTER_CRITICAL ();
+    xSemaphoreTake(rtc_mutex, -1);
 
 // TODO: sequential read from RTC
     if (milliseconds) {
@@ -77,7 +89,8 @@ century:
     b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGYEAR);
     curr_time->tm_year = 2000 + century * 100 + BCD2BIN(b) - 1900;
 
-    portEXIT_CRITICAL ();
+    //portEXIT_CRITICAL ();
+    xSemaphoreGive(rtc_mutex);
 
     // rtc_sleep();
 

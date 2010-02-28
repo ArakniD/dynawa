@@ -42,6 +42,8 @@ void StarterTask( void* parameters );
 void StarterTask( void* parameters )
 {
     (void)parameters;
+
+    TRACE_INFO("StarterTask %x\r\n", xTaskGetCurrentTaskHandle());
     Run( );
     vTaskDelete( NULL );
 }
@@ -51,6 +53,9 @@ int main( void )
     TRACE_INIT();
     TRACE_INFO("Image Boot.\n\r");
 
+    malloc_lock_init();
+    i2c_init();
+    rtc_init();
     prvSetupHardware();
 
     //screen
@@ -62,8 +67,7 @@ int main( void )
 
     event_init(100);
     //button_init();
-    void* taskHandle;
-    xTaskCreate( StarterTask, "starter", TASK_STACK_SIZE(TASK_STARTER_STACK), NULL, TASK_STARTER_PRI, &taskHandle );
+    xTaskCreate( StarterTask, "starter", TASK_STACK_SIZE(TASK_STARTER_STACK), NULL, TASK_STARTER_PRI, NULL );
     // new Task( MakeStarterTask, "Make", 1200, NULL, 4 );
 
     /*NOTE : Tasks run in system mode and the scheduler runs in Supervisor mode.
@@ -219,6 +223,7 @@ static void prvSetupHardware( void )
 int toggle;
 void vApplicationIdleHook( void )
 {
+    TRACE_INFO("vApplicationIdleHook\r\n");
     toggle = !toggle; // prevent the function from being optimized away?
 }
 

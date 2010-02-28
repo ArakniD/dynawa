@@ -35,6 +35,10 @@ void bcsp( void* parameters );
 
 bool in_panic_handler = false;
 void panic(void) {
+
+    ledrgb_open();
+    ledrgb_set(0x7, 0xe0, 0, 0);
+
     in_panic_handler = true;
     TRACE_ERROR("!!!PANIC!!! %x\r\n", xTaskGetCurrentTaskHandle());
     uint32_t count;
@@ -71,8 +75,9 @@ void Run( ) // this task gets called as soon as we boot up.
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();
 
-    //ledrgb_open();
-    //ledrgb_set(0x4, 0, 0, 0x80);
+    ledrgb_open();
+    ledrgb_set(0x7, 0, 0, 0);
+    ledrgb_close();
 
     //test();
     scrWriteRect(0,126,40,127,0xffffff);
@@ -80,11 +85,14 @@ void Run( ) // this task gets called as soon as we boot up.
 
     button_init();
     bt_init();
+    //bt_open();
 
+/*
     rtc_open();
     rtc_set_epoch_seconds(1265399017); // 10/02/05 19:43
     TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
     rtc_close();
+*/
     
     UsbSerial_open();
     while( !UsbSerial_isActive() )

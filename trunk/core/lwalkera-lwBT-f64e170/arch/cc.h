@@ -88,7 +88,7 @@ struct sys_timeouts {
 #define U16LE2CPU(a) (*(a) | (*((a) + 1) << 8))
 #define CPU2U16LE(a, v) *(a) = (u8_t)((v) & 0xff);*(a+1) = (u8_t)((v) >> 8);
 
-#define U32LE2CPU(a) (*(a) | (*((a) + 1) << 8) | (*((a) + 1) << 16) | (*((a) + 1) << 24))
+#define U32LE2CPU(a) (*(a) | (*((a) + 1) << 8) | (*((a) + 2) << 16) | (*((a) + 3) << 24))
 #define CPU2U32LE(a, v) *(a) = (u8_t)((v) & 0xff);*(a+1) = (u8_t)(((v) >> 8) & 0xff ); *(a+2) = (u8_t)(((v) >> 16) & 0xff );*(a+3) = (u8_t)(((v) >> 24) & 0xff );
 
 #endif /* __CC_H__ */
