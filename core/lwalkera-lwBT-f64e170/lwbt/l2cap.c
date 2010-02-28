@@ -733,7 +733,8 @@ l2cap_process_sig(struct pbuf *q, struct l2cap_hdr *l2caphdr, struct bd_addr *bd
 					//((u16_t *)data->payload)[0] = pcb->scid;
                     CPU2U16LE((u8_t *)data->payload, pcb->scid);
 					//((u16_t *)data->payload)[2] = 0; 
-                    CPU2U16LE((u8_t *)data->payload + 4, 0);
+                    // MV ERROR: index above should be [1]!
+                    CPU2U16LE((u8_t *)data->payload + 2, 0);
 					l2cap_signal(pcb, L2CAP_CFG_REQ, 0, &(pcb->remote_bdaddr), data);
 				}
 				break;

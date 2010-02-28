@@ -10,6 +10,48 @@
 #include "sys/time.h"
 #include "sys/times.h"
 #include "ff.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+
+/*
+void *memcpy(void *dest, const void *src, size_t n) {
+    int i;
+    void *_dest = dest;
+    for(i = 0; i < n; i++) {
+        *(uint8_t*)dest++ = *(uint8_t*)src++;
+    }
+    return _dest;
+}
+*/
+
+static xSemaphoreHandle malloc_lock_mutex;
+static unsigned int malloc_lock_ref_count = 0;
+
+void malloc_lock_init() {
+    malloc_lock_mutex = xSemaphoreCreateRecursiveMutex();
+}
+
+void __malloc_lock (struct _reent *reent) {
+    xTaskHandle task = xTaskGetCurrentTaskHandle();
+    //TRACE_INFO(">>>malloc_lock %x %x %u\r\n", task, *((uint32_t*)malloc_lock_mutex + 1), malloc_lock_ref_count);
+    if(task) {
+        xSemaphoreTakeRecursive(malloc_lock_mutex, -1);
+        
+    }
+    malloc_lock_ref_count++;
+    //TRACE_INFO("<<<malloc_lock %x %u\r\n", task, malloc_lock_ref_count);
+}
+
+void __malloc_unlock (struct _reent *reent) {
+    xTaskHandle task = xTaskGetCurrentTaskHandle();
+    //TRACE_INFO(">>>malloc_unlock %x %x %u\r\n", task, *((uint32_t*)malloc_lock_mutex + 1), malloc_lock_ref_count);
+    malloc_lock_ref_count--;
+    if(task) {
+        xSemaphoreGiveRecursive(malloc_lock_mutex);
+    }
+    //TRACE_INFO("<<<malloc_unlock %x %u\r\n", task, malloc_lock_ref_count);
+}
 
 /************************** _sbrk_r *************************************
   Support function. Adjusts end of heap to provide more memory to

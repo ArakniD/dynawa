@@ -321,6 +321,49 @@ static void u_bt_task(bt_command *cmd)
             TRACE_INFO("SETTING BAUDRATE %d\r\n", USART_BAUDRATE);
             queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
         } else if (bc_state == BC_STATE_BAUDRATE_SET) {
+// PS_LC_MAX_TX_POWER
+            uint16 *cmd = malloc(sizeof(uint16) * 9);
+            cmd[0] = BCCMDPDU_SETREQ;
+            cmd[1] = 9;         // number of uint16s in PDU
+            cmd[2] = 2;    // value choosen by host
+            cmd[3] = BCCMDVARID_PS;
+            cmd[4] = BCCMDPDU_STAT_OK;
+            cmd[5] = PSKEY_LC_MAX_TX_POWER;
+            cmd[6] = 1;         // length
+            cmd[7] = 0;         // default store
+            cmd[8] = 2;
+            TRACE_INFO("SETTING LC_MAX_TX_POWER\r\n");
+            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
+        } else if (bc_state == BC_STATE_LC_MAX_TX_POWER) {
+// PS_LC_DEFAULT_TX_POWER
+            uint16 *cmd = malloc(sizeof(uint16) * 9);
+            cmd[0] = BCCMDPDU_SETREQ;
+            cmd[1] = 9;         // number of uint16s in PDU
+            cmd[2] = 2;    // value choosen by host
+            cmd[3] = BCCMDVARID_PS;
+            cmd[4] = BCCMDPDU_STAT_OK;
+            cmd[5] = PSKEY_LC_DEFAULT_TX_POWER;
+            cmd[6] = 1;         // length
+            cmd[7] = 0;         // default store
+            cmd[8] = 2;
+            TRACE_INFO("SETTING LC_DEFAULT_TX_POWER\r\n");
+            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
+        } else if (bc_state == BC_STATE_LC_DEFAULT_TX_POWER) {
+// PS_LC_MAX_TX_POWER_NO_RSSI
+            uint16 *cmd = malloc(sizeof(uint16) * 9);
+            cmd[0] = BCCMDPDU_SETREQ;
+            cmd[1] = 9;         // number of uint16s in PDU
+            cmd[2] = 2;    // value choosen by host
+            cmd[3] = BCCMDVARID_PS;
+            cmd[4] = BCCMDPDU_STAT_OK;
+            cmd[5] = PSKEY_LC_MAX_TX_POWER_NO_RSSI;
+            cmd[6] = 1;         // length
+            cmd[7] = 0;         // default store
+            cmd[8] = 2;
+            TRACE_INFO("SETTING LC_MAX_TX_POWER_NO_RSSI\r\n");
+            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
+        //} else if (bc_state == BC_STATE_BAUDRATE_SET) {
+        } else if (bc_state == BC_STATE_LC_MAX_TX_POWER_NO_RSSI) {
 // warm reset
             uint16 *cmd = malloc(sizeof(uint16) * 9);
             //cmd[0] = 0;         // BCCMDPDU_GETREQ

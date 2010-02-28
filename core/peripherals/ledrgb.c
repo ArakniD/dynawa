@@ -28,8 +28,8 @@ int ledrgb_open () {
         i2c_open();
 
         i2cMasterWrite(LEDRGB_PHY_ADDR, 1, LEDRGB_REG_ENABLE, LEDRGB_CHIPEN);
-        delay(500);
-        //Task_sleep(1);
+        //delay(500);
+        Task_sleep(1);
         i2cMasterWrite(LEDRGB_PHY_ADDR, 1, LEDRGB_REG_CONFIG, LEDRGB_CPMODE_AUTO|LEDRGB_PWM_HF|LEDRGB_INT_CLK_EN|LEDRGB_R_TO_BATT);
         //delay(20);
         i2cMasterWrite(LEDRGB_PHY_ADDR, 1, LEDRGB_REG_OPMODE, LEDRGB_RMODE_DC|LEDRGB_GMODE_DC|LEDRGB_BMODE_DC);

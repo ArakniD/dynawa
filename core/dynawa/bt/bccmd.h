@@ -16,5 +16,8 @@
 
 #define PSKEY_ANAFREQ               0x1fe
 #define PSKEY_BAUDRATE              0x1be
+#define PSKEY_LC_MAX_TX_POWER           0x17  
+#define PSKEY_LC_DEFAULT_TX_POWER       0x21
+#define PSKEY_LC_MAX_TX_POWER_NO_RSSI   0x2d
 
 #endif /* BCCMD_H__ */

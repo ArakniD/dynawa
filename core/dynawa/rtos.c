@@ -179,6 +179,7 @@ void Task_exitCritical( ) // static
   int stack = myTask->remainingStack();
   \endcode
   */
+/* MV
 int Task_remainingStack( Task task )
 {
     if( ! task )
@@ -186,6 +187,7 @@ int Task_remainingStack( Task task )
     else
         return usVoidTaskCheckFreeStackSpace( task );
 }
+*/
 
 /**
   Get a task's priority
@@ -247,10 +249,12 @@ void Task_setPriority( Task task, int priority )
   int some_id = myTask->id();
   \endcode
   */
+/* MV
 int Task_id( Task task )
 {
     return xTaskGetIDNumber( task );
 }
+*/
 
 /**
   Get a task's name.
@@ -296,6 +300,11 @@ highest = t->priority();
 
 \endcode
 */
+
+/////////////MV
+
+
+#if 0
 Task Task_nextTask( Task task )
 {
     void* tcb = NULL;
@@ -640,6 +649,7 @@ void* RTOS_iterateForNextTask( void** lowTask, int* lowID, void** highTask, int*
     // if we get down here, we didn't find it.
     return NULL;
 }
+#endif
 
 /**********************************************************************************
 

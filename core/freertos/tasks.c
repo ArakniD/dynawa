@@ -2077,6 +2077,7 @@ unsigned portBASE_TYPE xTaskGetPriority( void* task )
     return -1;
 }
 
+#if ( configUSE_TRACE_FACILITY == 1 )
 unsigned portBASE_TYPE xTaskGetIDNumber( void* task )
 {
   tskTCB* tcb = (tskTCB*)task;
@@ -2085,6 +2086,7 @@ unsigned portBASE_TYPE xTaskGetIDNumber( void* task )
   else
     return -1;
 }
+#endif
 
 signed portCHAR *xTaskGetName( void* task )
 {

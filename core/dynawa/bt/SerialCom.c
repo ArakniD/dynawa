@@ -107,7 +107,7 @@ bool_t	handleRxData(uint16_t len, uint8_t	*data)
 {
 	uint16_t	theRxSize;
 
-    TRACE_BT("handleRxData %d %x %d %d\r\n", len, rxBuf, rxIn, rxSize);
+    //TRACE_BT("handleRxData %d %x %d %d\r\n", len, rxBuf, rxIn, rxSize);
 	//EnterCriticalSection(&rxMutex);
     xSemaphoreTake(rxMutex, portMAX_DELAY);
 	theRxSize = rxSize;
@@ -123,7 +123,7 @@ bool_t	handleRxData(uint16_t len, uint8_t	*data)
 	{
 		rxIn = rxIn + (uint16_t) len;
 	}
-    TRACE_BT("handleRxData %d %d\r\n", rxIn, rxSize);
+    //TRACE_BT("handleRxData %d %d\r\n", rxIn, rxSize);
 
 	if (memchr(data, 0xC0, len) != NULL)  // BCSP delimiter character (0xC0) received
 	{
@@ -156,13 +156,13 @@ void txThreadFunc(void)
 
 	txBusy = FALSE;
 
-    TRACE_BT("txThreadFunc\r\n");
+    TRACE_INFO("txThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
 	while (TRUE)
 	{
 		//event = WaitForMultipleObjects(NO_OF_TX_EVENTS, txEvents, FALSE, INFINITE);
-        TRACE_BT("txevent wait\r\n");
+        //TRACE_BT("txevent wait\r\n");
         xQueueReceive(txEvents, &event, portMAX_DELAY); 
-        TRACE_BT("txevent\r\n");
+        //TRACE_BT("txevent\r\n");
         //event = NEW_TX_DATA_EVENT;
 		switch (event)
 		{
@@ -209,7 +209,7 @@ void txThreadFunc(void)
                         //if (WriteFile(comHandle, &(txBuf[txOut]), no2Send, &bytesWritten, &osWrote))
                         if (!Serial_write(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
                         {
-                            TRACE_BT("data written\r\n");
+                            //TRACE_BT("data written\r\n");
                             bytesWritten = no2Send;
                             if (bytesWritten > 0)
                             {
@@ -293,23 +293,23 @@ void rxThreadFunc(void)
 	rxData = rxBuf;
 	rxSize = 0;
 
-    TRACE_BT("rxThreadFunc\r\n");
+    TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
 	while (TRUE)
 	{
 		//EnterCriticalSection(&rxMutex);
-        TRACE_BT("RxMutex take\r\n");
+        //TRACE_BT("RxMutex take\r\n");
         xSemaphoreTake(rxMutex, portMAX_DELAY);
 		theRxSize = rxSize;
 		//LeaveCriticalSection(&rxMutex);
         xSemaphoreGive(rxMutex);
-        TRACE_BT("RxMutex given\r\n");
+        //TRACE_BT("RxMutex given\r\n");
 
 		/*	find next position for rx data in and if any space available in buffer	*/
 		if (theRxSize == RX_BUF_MAX_SIZE)
 		{
-            TRACE_BT("RXEVENT WAIT\r\n");
+            //TRACE_BT("RXEVENT WAIT\r\n");
             xQueueReceive(rxEvents, &event, portMAX_DELAY); 
-            TRACE_BT("RXEVENT\r\n");
+            //TRACE_BT("RXEVENT\r\n");
             switch (event)
             {
                 case CLOSE_DOWN_EVENT:
@@ -343,16 +343,16 @@ void rxThreadFunc(void)
 
 #if 0
         int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
-        TRACE_BT("AVAIL %d\r\n", bytesAvail);
+        //TRACE_BT("AVAIL %d\r\n", bytesAvail);
         numberToRead =  bytesAvail > 0 ? bytesAvail : 1;
         if (rxIn + numberToRead > RX_BUF_MAX_SIZE)
         {
             numberToRead = RX_BUF_MAX_SIZE - rxIn;
         }
 
-        TRACE_BT("READING\r\n");
+        //TRACE_BT("READING\r\n");
         bytesRead = Serial_read(SERIAL_CHANNEL, rxData, numberToRead, -1);
-        TRACE_BT("DATA READ %d\r\n", bytesRead);
+        //TRACE_BT("DATA READ %d\r\n", bytesRead);
         if (bytesRead < 0)
         {
             errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
@@ -371,7 +371,7 @@ void rxThreadFunc(void)
         while(1) {
 
             int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
-            TRACE_BT("AVAIL %d\r\n", bytesAvail);
+            //TRACE_BT("AVAIL %d\r\n", bytesAvail);
 
             if (bytesRead) {
                 if (!bytesAvail) 
@@ -387,9 +387,9 @@ void rxThreadFunc(void)
             if (!numberToRead)
                 break;
 
-            TRACE_BT("READING %x %d\r\n", rxData, numberToRead);
+            //TRACE_BT("READING %x %d\r\n", rxData, numberToRead);
             int n = Serial_read(SERIAL_CHANNEL, rxData + bytesRead, numberToRead, -1);
-            TRACE_BT("DATA READ %d\r\n", n);
+            //TRACE_BT("DATA READ %d\r\n", n);
             if (n < 0)
             {
                 errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
@@ -439,7 +439,7 @@ void rxThreadFunc_old(void)
 	rxData = rxBuf;
 	rxSize = 0;
 
-    TRACE_BT("rxThreadFunc\r\n");
+    //TRACE_BT("rxThreadFunc\r\n");
 	while (TRUE)
 	{
 		//EnterCriticalSection(&rxMutex);
@@ -474,7 +474,7 @@ void rxThreadFunc_old(void)
 			numberToRead = comStat.cbInQue > 0 ? comStat.cbInQue : 1;
 */
             int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
-            TRACE_BT("avail %d\r\n", bytesAvail);
+            //TRACE_BT("avail %d\r\n", bytesAvail);
 			numberToRead =  bytesAvail > 0 ? bytesAvail : 1;
 			if (rxIn + numberToRead > RX_BUF_MAX_SIZE)
 			{
@@ -482,12 +482,12 @@ void rxThreadFunc_old(void)
 			}
 
 			//readSuccess = ReadFile(comHandle, rxData, numberToRead, &bytesRead, &osRead);
-            TRACE_BT("Reading\r\n");
+            //TRACE_BT("Reading\r\n");
 			bytesRead = Serial_read(SERIAL_CHANNEL, rxData, numberToRead, -1);
 			//if (!readSuccess)
 			if (bytesRead < 0)
 			{
-                TRACE_BT("Data read\r\n");
+                //TRACE_BT("Data read\r\n");
 /*
 				if (GetLastError() != ERROR_IO_PENDING)
 				{
@@ -511,9 +511,9 @@ void rxThreadFunc_old(void)
 			do
 			{
 				//event = WaitForMultipleObjects(NO_OF_RX_EVENTS, rxEvents, FALSE, INFINITE);
-                TRACE_BT("rxEvent Wait\r\n");
+                //TRACE_BT("rxEvent Wait\r\n");
                 xQueueReceive(rxEvents, &event, portMAX_DELAY); 
-                TRACE_BT("rxEvent\r\n");
+                //TRACE_BT("rxEvent\r\n");
                 //event = DATA_READ_EVENT;
 				switch (event)
 				{
@@ -574,7 +574,7 @@ void rxThreadFunc_old(void)
 
 void clearBuffer(void)
 {
-    TRACE_BT("clearBuffer\r\n");
+    //TRACE_BT("clearBuffer\r\n");
 	/* flush the port for any operations waiting and any data	*/
 	//PurgeComm(comHandle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
 
@@ -591,7 +591,7 @@ static bool_t init(void)
 {
 	char configurationString[128];
 
-    TRACE_BT("init\r\n");
+    //TRACE_BT("init\r\n");
 	clearBuffer();
 
 	/*	mutex for sync of write and read	*/
@@ -663,7 +663,7 @@ static bool_t init(void)
 */
 void UartDrv_Configure(unsigned long theBaudRate)
 {
-    TRACE_BT("UartDrv_Configure %d\r\n", theBaudRate);
+    //TRACE_BT("UartDrv_Configure %d\r\n", theBaudRate);
 	baudRate = theBaudRate;
 }
 
@@ -684,7 +684,7 @@ bool_t UartDrv_Start(void)
 {
 	//uint16_t	threadId;
 
-    TRACE_BT("UartDrv_Start\r\n");
+    //TRACE_BT("UartDrv_Start\r\n");
 	if (!init())
 	{
 		return FALSE;
@@ -724,7 +724,7 @@ bool_t UartDrv_Start(void)
 */
 void UartDrv_Stop(void)
 {
-    TRACE_BT("UartDrv_Stop\r\n");
+    //TRACE_BT("UartDrv_Stop\r\n");
 
     vTaskDelete(txThread);
     vTaskDelete(rxThread);
@@ -816,7 +816,7 @@ bool_t UartDrv_Tx(uint8_t *theData, unsigned len, uint16_t *numSend)
 	uint16_t	size;
 
 	*numSend = 0;
-    TRACE_BT("UartDrv_Tx %d %x %d %d\r\n", len, txBuf, txIn, txSize);
+    //TRACE_BT("UartDrv_Tx %d %x %d %d\r\n", len, txBuf, txIn, txSize);
 	//EnterCriticalSection(&txMutex);
     xSemaphoreTake(txMutex, portMAX_DELAY);
 	size = txSize;
@@ -852,7 +852,7 @@ bool_t UartDrv_Tx(uint8_t *theData, unsigned len, uint16_t *numSend)
 		}
 	}
 	*numSend = len;
-    TRACE_BT("UartDrv_Tx %d %d %d\r\n", len, txIn, txSize);
+    //TRACE_BT("UartDrv_Tx %d %d %d\r\n", len, txIn, txSize);
 
 	//EnterCriticalSection(&txMutex);
     xSemaphoreTake(txMutex, portMAX_DELAY);
@@ -884,7 +884,7 @@ bool_t UartDrv_Tx(uint8_t *theData, unsigned len, uint16_t *numSend)
 uint16_t UartDrv_GetTxSpace(void)
 {
 	uint16_t	size;
-    TRACE_BT("UartDrv_GetTxSpace\r\n");
+    //TRACE_BT("UartDrv_GetTxSpace\r\n");
 
 	//EnterCriticalSection(&txMutex);
     xSemaphoreTake(txMutex, portMAX_DELAY);
@@ -914,7 +914,7 @@ uint16_t UartDrv_GetTxSpace(void)
 uint16_t UartDrv_GetRxAvailable(void)
 {
 	uint16_t	theSize;
-    TRACE_BT("UartDrv_GetRxAvailable\r\n");
+    //TRACE_BT("UartDrv_GetRxAvailable\r\n");
 
 	//EnterCriticalSection(&rxMutex);
     xSemaphoreTake(rxMutex, portMAX_DELAY);
@@ -943,7 +943,7 @@ uint16_t UartDrv_GetRxAvailable(void)
 */
 void UartDrv_Reset(void)
 {
-    TRACE_BT("UartDrv_Reset\r\n");
+    //TRACE_BT("UartDrv_Reset\r\n");
 	/*	clear any data in the in/out buffers	*/
 	clearBuffer();
 }
@@ -963,7 +963,7 @@ void UartDrv_Rx(void)
 	unsigned	bytesConsumed;
 	uint16_t	noOfBytes;
 
-    TRACE_BT("UartDrv_Rx\r\n");
+    //TRACE_BT("UartDrv_Rx\r\n");
 	//EnterCriticalSection(&rxMutex);
     xSemaphoreTake(rxMutex, portMAX_DELAY);
 	noOfBytes = rxSize;
@@ -982,7 +982,7 @@ void UartDrv_Rx(void)
 		noOfBytes = (RX_BUF_MAX_SIZE - rxOut);
 	}
 	bytesConsumed = abcsp_uart_deliverbytes(&AbcspInstanceData, &rxBuf[rxOut], noOfBytes);
-    TRACE_BT("abcsp_uart_deliverbytes %d\r\n", bytesConsumed);
+    //TRACE_BT("abcsp_uart_deliverbytes %d\r\n", bytesConsumed);
 	rxOut = rxOut + bytesConsumed;
 
 	if (rxOut >= RX_BUF_MAX_SIZE)
@@ -1027,7 +1027,7 @@ void UartDrv_Rx(void)
 */
 void UartDrv_RegisterHandlers(void)
 {
-    TRACE_BT("UartDrv_RegisterHandlers\r\n");
+    //TRACE_BT("UartDrv_RegisterHandlers\r\n");
 	register_bg_int(1, UartDrv_Rx);
 	register_bg_int(2, BgIntPump); /*The bg int needed for abcsp pumps*/
 }

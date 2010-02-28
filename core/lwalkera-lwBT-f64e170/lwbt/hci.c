@@ -718,6 +718,15 @@ TRACE_BT("hci_get_link\r\n");
 			HCI_EVENT_PIN_REQ(pcb, bdaddr, ret); /* Notify application. If event is not registered, 
 													send a negative reply */
 			break;
+		case HCI_LINK_KEY_REQUEST:
+			LWIP_DEBUGF(HCI_EV_DEBUG, ("hci_event_input: Link key request\n"));
+			bdaddr = (void *)((u8_t *)p->payload); /* Get the Bluetooth address */
+			LWIP_DEBUGF(HCI_EV_DEBUG, ("bdaddr: %02x:%02x:%02x:%02x:%02x:%02x\n",
+						((u8_t *)p->payload)[5], ((u8_t *)p->payload)[4], ((u8_t *)p->payload)[3],
+						((u8_t *)p->payload)[2],  ((u8_t *)p->payload)[1],  ((u8_t *)p->payload)[0]
+						));
+            // TODO?
+            break;
 		case HCI_LINK_KEY_NOTIFICATION:
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("hci_event_input: Link key notification\n"));
 			bdaddr = (void *)((u8_t *)p->payload); /* Get the Bluetooth address */
@@ -782,6 +791,7 @@ err_t hci_inquiry(u32_t lap, u8_t inq_len, u8_t num_resp, err_t (* inq_complete)
 
 	pcb->inq_complete = inq_complete;
 
+    // HCI_INQUIRY_PLEN = 9 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_INQUIRY_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_inquiry: Could not allocate memory for pbuf\n"));
 		return ERR_MEM; /* Could not allocate memory for pbuf */
@@ -816,6 +826,7 @@ err_t hci_disconnect(struct bd_addr *bdaddr, u8_t reason)
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_disconnect: Connection does not exist\n"));
 		return ERR_CONN; /* Connection does not exist */ 
 	}
+    // HCI_DISCONN_PLEN = 7 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_DISCONN_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_disconnect: Could not allocate memory for pbuf\n"));
 		return ERR_MEM; /* Could not allocate memory for pbuf */
@@ -843,6 +854,7 @@ err_t hci_reject_connection_request(struct bd_addr *bdaddr, u8_t reason)
 	LWIP_DEBUGF(HCI_DEBUG, ("hci_reject_connection_request: reject from %02x:%02x:%02x:%02x:%02x:%02x\n",
 		bdaddr->addr[5], bdaddr->addr[4], bdaddr->addr[3],
 		bdaddr->addr[2], bdaddr->addr[1], bdaddr->addr[0] ));
+    // HCI_REJECT_CONN_REQ_PLEN = 11 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_REJECT_CONN_REQ_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_reject_connection_request: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -867,6 +879,7 @@ err_t hci_pin_code_request_reply(struct bd_addr *bdaddr, u8_t pinlen, u8_t *pinc
 {
 	struct pbuf *p;
 
+    // HCI_PIN_CODE_REQ_REP_PLEN = 27 ?
 	if((p = pbuf_alloc(PBUF_RAW, HCI_PIN_CODE_REQ_REP_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_pin_code_request_reply: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -896,6 +909,7 @@ err_t hci_pin_code_request_reply(struct bd_addr *bdaddr, u8_t pinlen, u8_t *pinc
 err_t hci_pin_code_request_neg_reply(struct bd_addr *bdaddr)
 {
 	struct pbuf *p;
+    // HCI_PIN_CODE_REQ_NEG_REP_PLEN = 10 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_PIN_CODE_REQ_NEG_REP_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_pin_code_request_neg_reply: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -927,6 +941,7 @@ err_t hci_sniff_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_inter
 		return ERR_CONN;
 	}
 
+    // HCI_SNIFF_PLEN = 14 OK
 	if((p = pbuf_alloc(PBUF_TRANSPORT, HCI_SNIFF_PLEN, PBUF_RAM)) == NULL) { /* Alloc len of packet */
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_sniff_mode: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -969,6 +984,7 @@ err_t hci_write_link_policy_settings(struct bd_addr *bdaddr, u16_t link_policy)
 		return ERR_CONN;
 	}
 
+    // HCI_W_LINK_POLICY_PLEN = 8 OK
 	if( (p = pbuf_alloc(PBUF_TRANSPORT, HCI_W_LINK_POLICY_PLEN, PBUF_RAM)) == NULL) { /* Alloc len of packet */
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_write_link_policy_settings: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -993,6 +1009,7 @@ err_t hci_write_link_policy_settings(struct bd_addr *bdaddr, u16_t link_policy)
 err_t hci_reset(void)
 {
 	struct pbuf *p;
+    // HCI_RESET_PLEN = 4 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_RESET_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_reset: Could not allocate memory for pbuf\n")); 
 		return ERR_MEM;
@@ -1056,6 +1073,7 @@ err_t hci_set_event_filter(u8_t filter_type, u8_t filter_cond_type, u8_t* cond)
 			LWIP_DEBUGF(HCI_DEBUG, ("hci_set_event_filter: Entered an unspecified filter type!\n"));
 			break;
 	}
+    // HCI_SET_EV_FILTER_PLEN = 6 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_SET_EV_FILTER_PLEN+cond_len, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_set_event_filter: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1080,6 +1098,7 @@ err_t hci_set_event_filter(u8_t filter_type, u8_t filter_cond_type, u8_t* cond)
 err_t hci_write_stored_link_key(struct bd_addr *bdaddr, u8_t *link)
 {
 	struct pbuf *p;
+    // HCI_WRITE_STORED_LINK_KEY_PLEN = 27 ?
 	if((p = pbuf_alloc(PBUF_RAW, HCI_WRITE_STORED_LINK_KEY_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_write_stored_link_key: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1103,6 +1122,7 @@ err_t hci_write_stored_link_key(struct bd_addr *bdaddr, u8_t *link)
 err_t hci_change_local_name(u8_t *name, u8_t len)
 {
 	struct pbuf *p;
+    // HCI_CHANGE_LOCAL_NAME_PLEN = 4 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_CHANGE_LOCAL_NAME_PLEN + len, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_change_local_name: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1125,6 +1145,7 @@ err_t hci_change_local_name(u8_t *name, u8_t len)
 err_t hci_write_page_timeout(u16_t page_timeout)
 {
 	struct pbuf *p;
+    // HCI_W_PAGE_TIMEOUT_PLEN = 6 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_W_PAGE_TIMEOUT_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_write_page_timeout: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1148,6 +1169,7 @@ err_t hci_write_page_timeout(u16_t page_timeout)
 err_t hci_write_scan_enable(u8_t scan_enable)
 {
 	struct pbuf *p;
+    // HCI_W_SCAN_EN_PLEN = 5 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_W_SCAN_EN_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_write_scan_enable: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1170,6 +1192,7 @@ err_t hci_write_scan_enable(u8_t scan_enable)
 err_t hci_write_cod(u8_t *cod)
 {
 	struct pbuf *p;
+    // HCI_W_COD_PLEN = 7 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_W_COD_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_write_cod: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1192,6 +1215,7 @@ err_t hci_write_cod(u8_t *cod)
 err_t hci_set_hc_to_h_fc(void)
 {
 	struct pbuf *p;
+    // HCI_SET_HC_TO_H_FC_PLEN = 5 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_SET_HC_TO_H_FC_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_set_hc_to_h_fc: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1216,6 +1240,8 @@ err_t hci_set_hc_to_h_fc(void)
 err_t hci_host_buffer_size(void)
 {
 	struct pbuf *p;
+    // HCI_H_BUF_SIZE_PLEN = 11 OK
+    // ERROR: HCI_H_BUF_SIZE_PLEN (7) wrong!
 	if((p = pbuf_alloc(PBUF_RAW, HCI_H_BUF_SIZE_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_host_buffer_size: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1247,16 +1273,19 @@ err_t hci_host_buffer_size(void)
 err_t hci_host_num_comp_packets(u16_t conhdl, u16_t num_complete)
 {
 	struct pbuf *p;
+    // HCI_H_NUM_COMPL_PLEN = 9 OK
+    // ERROR: HCI_H_NUM_COMPL_PLEN (7) wrong!
 	if((p = pbuf_alloc(PBUF_RAW, HCI_H_NUM_COMPL_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_host_num_comp_packets: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
 	}
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_H_NUM_COMPL_OCF, HCI_HC_BB_OGF, HCI_H_NUM_COMPL_PLEN); 
+	((u8_t *)p->payload)[4] = 0x01; /* number of Connection Handles */
 	//((u16_t *)p->payload)[2] = conhdl;
-    CPU2U16LE((u8_t*)p->payload + 4, conhdl);
+    CPU2U16LE((u8_t*)p->payload + 5, conhdl);
 	//((u16_t *)p->payload)[3] = num_complete; /* Number of completed acl packets */
-    CPU2U16LE((u8_t*)p->payload + 6, num_complete);
+    CPU2U16LE((u8_t*)p->payload + 7, num_complete);
 
 	phybusif_output(p, p->tot_len);
 	pbuf_free(p);
@@ -1274,6 +1303,7 @@ err_t hci_host_num_comp_packets(u16_t conhdl, u16_t num_complete)
 err_t hci_read_buffer_size(void)
 {
 	struct pbuf *p;
+    // HCI_R_BUF_SIZE_PLEN = 4 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_R_BUF_SIZE_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_read_buffer_size: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1294,7 +1324,8 @@ err_t hci_read_buffer_size(void)
 err_t hci_read_local_features(void)
 {
 	struct pbuf *p;
-	if((p = pbuf_alloc(PBUF_RAW, HCI_R_BUF_SIZE_PLEN, PBUF_RAM)) == NULL) {
+    // HCI_R_SUPPORTED_LOCAL_FEATURES_PLEN = 4 OK
+	if((p = pbuf_alloc(PBUF_RAW, HCI_R_SUPPORTED_LOCAL_FEATURES_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_read_buffer_size: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
 	} 
@@ -1317,6 +1348,7 @@ err_t hci_read_bd_addr(err_t (* rbd_complete)(void *arg, struct bd_addr *bdaddr)
 
 	pcb->rbd_complete = rbd_complete;
 
+    // HCI_R_BD_ADDR_PLEN = 4 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_R_BD_ADDR_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("hci_read_buffer_size: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1347,6 +1379,8 @@ err_t lp_write_flush_timeout(struct bd_addr *bdaddr, u16_t flushto)
 		return ERR_CONN;
 	}
 
+    // HCI_W_FLUSHTO_PLEN = 8 OK
+    // ERROR: HCI_W_FLUSHTO_PLEN (7) wrong!
 	if((p = pbuf_alloc(PBUF_TRANSPORT, HCI_W_FLUSHTO_PLEN, PBUF_RAM)) == NULL) { /* Alloc len of packet */
 		LWIP_DEBUGF(HCI_DEBUG, ("lp_write_flush_timeout: Could not allocate memory for pbuf\n"));
 		return ERR_MEM;
@@ -1408,6 +1442,7 @@ err_t lp_connect_req(struct bd_addr *bdaddr, u8_t allow_role_switch)
 								this  information is irrelevant */
 	}    
 
+    // HCI_CREATE_CONN_PLEN = 17 OK
 	if((p = pbuf_alloc(PBUF_RAW, HCI_CREATE_CONN_PLEN, PBUF_RAM)) == NULL) {
 		LWIP_DEBUGF(HCI_DEBUG, ("lp_connect_req: Could not allocate memory for pbuf\n"));
 		return ERR_MEM; /* Could not allocate memory for pbuf */
