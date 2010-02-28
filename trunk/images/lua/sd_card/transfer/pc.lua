@@ -11,10 +11,10 @@ end
 local file_types = {".+%.lua$",".+%.pnnng$"}
 to_watch=from_watch
 
-local fd=io.open(local_dir.."_SYS")
+local fd=io.open(local_dir.."_sys")
 if not fd then
 	print ("****ERROR: bad local_dir value ("..tostring(local_dir)..")")
-	print ("It should point to SD card root dir (where _SYS is located)")
+	print ("It should point to SD card root dir (where _sys is located)")
 	os.exit()
 else
 	fd:close()
