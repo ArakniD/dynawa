@@ -52,6 +52,7 @@ local function got_message(message)
 	end
 end
 
+my.app.name = "Bluetooth"
 dynawa.message.receive {message = "bluetooth", callback = got_message}
 dynawa.message.receive{message = "your_menu", callback = your_menu}
 dynawa.message.receive{message = "menu_result", callback = menu_result}

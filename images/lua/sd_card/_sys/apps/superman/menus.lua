@@ -4,13 +4,10 @@ my.globals.menus.root = function()
 	local menu = {banner = "SuperMan root"}
 	menu.items = {
 		{text = "Shortcuts", after_select = {go_to="shortcuts:"}},
-		{text = "Bluetooth", after_select = {go_to="app_menu:/_sys/apps/bluetooth/"}},
+		{text = "Apps", after_select = {go_to = "apps"}},
 		{text = "File Browser", after_select = {go_to="file_browser"}},
 		{text = "Adjust time and date", after_select = {go_to = "adjust_time_date"}},
 		{text = "Default font size", after_select = {go_to = "default_font_size"}},
-		{text = "Bynari Clock app menu", after_select = {go_to = "app_menu:/apps/clock_bynari/"}},
-		{text = "Core app menu (test)", after_select = {go_to = "app_menu:/_sys/apps/core/"}},
-		{text = "Apps (not yet)"},
 	}
 	return menu
 end
@@ -169,4 +166,5 @@ my.globals.results.adjusted_time_date = function(message)
 	local secs = assert(os.time(date))
 	dynawa.time.set(secs)
 end
+
 

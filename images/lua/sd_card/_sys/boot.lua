@@ -22,7 +22,7 @@ function _G.boot_init()
 	
 	rawset(_G,"my",nil)
 	dynawa.dir = {root="/"}
-	dynawa.dir.sys=dynawa.dir.root .. "_SYS/"	
+	dynawa.dir.sys=dynawa.dir.root .. "_sys/"	
 	dynawa.dir.apps=dynawa.dir.root .. "apps/"
 	
 	_G.log = function() end

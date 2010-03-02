@@ -26,11 +26,8 @@ local function render_date(time)
 	small_print({time.wday * 2 + 10, time.wday * 2 + 11}, 1) --day of week
 	local day1 = math.floor(time.day / 10)
 	local day2 = time.day % 10
-	if day1 == 0 then
-		day1 = -1
-	end
 
-	local month1 = -1 --space
+	local month1 = 0 --space
 	local month2 = time.month % 10
 	if time.month >= 10 then
 		month1 = 1
@@ -40,7 +37,7 @@ local function render_date(time)
 	local year2 = time.year % 10
 
 	small_print({day1, day2, 10}, 42)
-	small_print({month1, month2, 10}, 76)
+	small_print({month1, month2, 10}, 78)
 	small_print({11, year1, year2}, 161 - (3*15))
 end
 
@@ -152,11 +149,42 @@ local function font_init()
 	fonts.black = b_copy(bmap,5,65,5,5)
 end
 
+local function overview()
+	local time = os.date("*t")
+	
+	local hour1 = math.floor(time.hour / 10)
+	local hour2 = time.hour % 10
+
+	local min1 = math.floor(time.min / 10)
+	local min2 = time.min % 10
+
+	local day1 = math.floor(time.day / 10)
+	local day2 = time.day % 10
+
+	local month1 = 0 --space
+	local month2 = time.month % 10
+	if time.month >= 10 then
+		month1 = 1
+	end
+	
+	local width, height = 13, 25
+	local chars = {hour1, hour2, -1, min1, min2, -1, day1, day2, 10, month1, month2}
+	local bg = dynawa.bitmap.new(156, height + 2, 0, 0, 0, 0)
+	local b_comb = dynawa.bitmap.combine
+	for i, char in ipairs(chars) do
+		if char >= 0 then
+			b_comb(bg, fonts.small[char], (i-1) * (width + 1) + 1, 1)
+		end
+	end
+	return bg
+end
+
 my.app.name = "Default Clock"
 my.app.priority = "A"
 dynawa.task.start(my.dir.."clock_menu.lua")
 font_init()
 dynawa.message.receive {message="you_are_now_in_front", callback=to_front}
 dynawa.message.receive {message="you_are_now_in_back", callback=to_back}
+dynawa.message.receive {message="your_overview", callback=overview}
 dynawa.message.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
 
