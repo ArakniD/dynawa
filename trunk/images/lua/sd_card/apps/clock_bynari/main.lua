@@ -158,6 +158,13 @@ local function to_back()
 	clock = {}
 end
 
+local function overview()
+	if not my.globals.logo then
+		my.globals.logo = assert(dynawa.bitmap.from_png_file(my.dir.."logo.png"))
+	end
+	return my.globals.logo
+end
+
 local function gfx_init()
 	local bmap = assert(dynawa.bitmap.from_png_file(my.dir.."gfx.png"))
 	local b_copy = dynawa.bitmap.copy
@@ -172,6 +179,7 @@ my.app.priority = "B"
 gfx_init()
 dynawa.message.receive {message="you_are_now_in_front", callback=to_front}
 dynawa.message.receive {message="you_are_now_in_back", callback=to_back}
+dynawa.message.receive {message="your_overview", callback=overview}
 my.globals.prefs = dynawa.file.load_data() or {style = "default"}
 dynawa.message.send{type="display_bitmap", bitmap = dynawa.bitmap.dummy_screen}
 dofile(my.dir.."bynari_prefs.lua")

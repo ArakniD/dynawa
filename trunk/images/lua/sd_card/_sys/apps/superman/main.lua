@@ -3,6 +3,12 @@
 my.globals.menus = {}
 my.globals.results = {}
 
+local function menu_ready(menu)
+	assert (menu == my.globals.active_menu)
+	my.globals.render(menu)
+	dynawa.message.send{type="me_to_front"}
+end
+
 local function open_my_menu(message)
 	local app = assert(message.app or message.sender.app)
 	local menu = message.menu
@@ -36,8 +42,26 @@ local function open_my_menu(message)
 	end
 	assert(type(menu)=="table", "Menu is not a table")
 	my.globals.active_menu = menu
-	my.globals.render(menu)
-	dynawa.message.send{type="me_to_front"}
+	if not (menu.hooks and next(menu.hooks)) then
+		menu_ready(menu)
+		return
+	end
+end
+
+local function superman_hook_done(msg)
+	local menu = assert(msg.menu)
+	local hook = assert(msg.hook)
+	assert(my.globals.active_menu == menu)
+	assert(menu.hooks, "Got menu_hook_done but menu.hooks is nil")
+	assert(menu.hooks[hook],"Got menu_hook_done for hook "..tostring(hook).." but menu is not waiting for this hook")
+	menu.hooks[hook] = nil
+	if not next(menu.hooks) then
+		menu.hooks = nil
+		menu_ready(menu)
+		return
+	else
+		dynawa.busy()
+	end
 end
 
 my.globals.get_menu_by_url = function(url)
@@ -237,8 +261,11 @@ my.app.priority = "z"
 dynawa.message.send{type = "set_flags", flags = {ignore_app_switch = true, ignore_menu_open = true}}
 dynawa.dofile(my.dir.."render.lua")
 dynawa.dofile(my.dir.."menus.lua")
+dynawa.dofile(my.dir.."apps.lua")
 dynawa.message.receive{message="launch_superman",callback=launch_superman}
 dynawa.message.receive{message="menu_result",callback=menu_result}
 dynawa.message.receive{message="open_my_menu",callback=open_my_menu}
 dynawa.message.receive{message="close_active_menu",callback=close_active_menu}
 dynawa.message.receive{messages={"button_down","button_up","button_hold"}, callback = button}
+dynawa.message.receive{message="superman_hook_done", callback = superman_hook_done}
+
