@@ -157,14 +157,25 @@ local function init()
 	dynawa.message.receive{message="app_to_front", callback=app_to_front}
 	dynawa.message.receive{message="default_app_to_front", callback=default_app_to_front}
 	dynawa.message.receive{message="set_flags", callback=app_flags}
-	--dynawa.app.start(dynawa.dir.sys.."apps/widgets/")
 	dynawa.app.start(dynawa.dir.sys.."apps/clock/")
 	dynawa.app.start(dynawa.dir.sys.."apps/bluetooth/")
 	dynawa.app.start(dynawa.dir.sys.."apps/popup/")
 	dynawa.app.start(dynawa.dir.sys.."apps/text_input/")
 	dynawa.app.start(dynawa.dir.sys.."apps/superman/")
-	dynawa.app.start(dynawa.dir.apps.."clock_bynari/")
-	dynawa.app.start(dynawa.dir.apps.."button_test/")
+	local start = {}
+	for key, val in pairs(dynawa.settings.autostart) do
+		table.insert(start, key)
+	end
+	table.sort(start)
+	for i, app_id in ipairs(start) do
+		local app = dynawa.app.start(app_id)
+		local pri = dynawa.settings.autostart[app_id].priority
+		if pri then
+			app.priority = pri
+		end
+	end
+	--dynawa.app.start(dynawa.dir.apps.."clock_bynari/")
+	--dynawa.app.start(dynawa.dir.apps.."button_test/")
 	dynawa.message.send{type = "default_app_to_front"}
 end
 

@@ -9,8 +9,16 @@ local function menu_ready(menu)
 	dynawa.message.send{type="me_to_front"}
 end
 
+my.globals.do_hooks_and_render = function(menu)
+	if not (menu.hooks and next(menu.hooks)) then
+		menu_ready(menu)
+		return
+	end
+end
+
 local function open_my_menu(message)
 	local app = assert(message.app or message.sender.app)
+	local task = message.task or assert(message.sender)
 	local menu = message.menu
 	if not menu then
 		menu = assert((app.menu_stack or {})[1],"Open_menu_for_app didn't specify the menu and "..app.name.."'s menu stack is empty")
@@ -34,6 +42,9 @@ local function open_my_menu(message)
 	if not menu.app then
 		menu.app = app
 	end
+	if not menu.task then
+		menu.task = task
+	end
 	if not app.menu_stack then
 		app.menu_stack = {menu}
 	end
@@ -42,10 +53,7 @@ local function open_my_menu(message)
 	end
 	assert(type(menu)=="table", "Menu is not a table")
 	my.globals.active_menu = menu
-	if not (menu.hooks and next(menu.hooks)) then
-		menu_ready(menu)
-		return
-	end
+	my.globals.do_hooks_and_render(menu)
 end
 
 local function superman_hook_done(msg)
@@ -119,7 +127,7 @@ local function launch_superman(message)
 	my.app.menu_stack = nil
 	local menu = my.globals.get_menu_by_url("root")
 	--dynawa.message.send{type = "me_to_front"}
-	dynawa.message.send{type = "open_my_menu", menu = menu}
+	dynawa.message.send{type = "open_my_menu", menu = menu, task = my}
 end
 
 local function menu_result(message)
@@ -201,8 +209,9 @@ local function confirm_pressed2(message) --Continues here after the optional pop
 			menu.active_item = act - 1
 		end
 		table.remove(menu.items, act)
-		my.globals.render(menu)
+		my.globals.do_hooks_and_render(menu)
 	elseif item.after_select.refresh_menu then
+		log("triggering refresh_menu")
 		local act = menu.active_item
 		assert (menu == my.app.menu_stack[1])
 		local menu = my.globals.get_menu_by_url(menu.url)
@@ -210,7 +219,7 @@ local function confirm_pressed2(message) --Continues here after the optional pop
 		my.app.menu_stack[1] = menu
 		my.globals.active_menu = menu
 		menu.app = my.app
-		my.globals.render(menu)
+		my.globals.do_hooks_and_render(menu)
 	end
 end
 
@@ -219,12 +228,12 @@ local function confirm_pressed()
 	assert (menu, "Menu confirm received but there is no active menu")
 	local app = assert(menu.app)
 	local item = menu.items[menu.active_item]
-	if not (next(item.after_select) or item.value) then
+	if not (next(item.after_select) or item.value or item.callback) then
 		return --Non-clickable (yellow text)
 	end
 	dynawa.message.send{type = "menu_result", receiver = app, value = item.value, menu = menu}
 	if item.callback then
-		item.callback()
+		dynawa.call_task_function(menu.task or my, item.callback,{})
 	end
 	if item.after_select.popup then
 		dynawa.message.send{type="open_popup",text = item.after_select.popup, callback = confirm_pressed2}

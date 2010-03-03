@@ -85,7 +85,7 @@ dynawa.bitmap.load_font = function (fname)
 	return font
 end
 
-dynawa.bitmap.text_line = function(line,font,color)
+dynawa.bitmap.text_line = function(line,font,color,size_only)
 	assert(type(line)=="string","First parameter is not string")
 	if not font then
 		font = assert(dynawa.settings.default_font)
@@ -105,6 +105,9 @@ dynawa.bitmap.text_line = function(line,font,color)
 	end
 	local width = x - 1
 	local height = assert(font.height)
+	if size_only then
+		return width, height
+	end
 	local result = dynawa.bitmap.new(width,height,255,255,0,0)
 	local combine = dynawa.bitmap.combine
 	for i = 1, #line do
@@ -175,8 +178,9 @@ function dynawa.bitmap.text_lines(args)
 					assert(left > 1)
 				end
 				flip = not flip
-				word.bitmap, word.w, word.h = dynawa.bitmap.text_line(word.text, args.font, args.color)
+				word.w, word.h = dynawa.bitmap.text_line(word.text, args.font, nil, true)
 			until word.w <= given_w
+			word.bitmap = dynawa.bitmap.text_line(word.text, args.font, args.color)
 			line.w = word.w
 		end
 		if line.w > maxwidth then
@@ -207,7 +211,7 @@ end
 
 local screen = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,0,0,99)
 dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines{text=
-		"WristOS "..dynawa.version.wristOS.."; settings rev. "..dynawa.version.settings_revision
+		"WristOS "..dynawa.version.wristOS.."; settings rev. "..dynawa.version.settings_revision.."; main.bin: ???"
 		},2,2)
 dynawa.bitmap.show(screen)
 dynawa.busy()
