@@ -223,6 +223,9 @@ local function confirm_pressed()
 		return --Non-clickable (yellow text)
 	end
 	dynawa.message.send{type = "menu_result", receiver = app, value = item.value, menu = menu}
+	if item.callback then
+		item.callback()
+	end
 	if item.after_select.popup then
 		dynawa.message.send{type="open_popup",text = item.after_select.popup, callback = confirm_pressed2}
 	else

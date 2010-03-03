@@ -10,7 +10,7 @@ my.globals.menus.apps = function(dir)
 	local menu = {banner = "Apps", allow_shortcut = true}
 	menu.items = {
 		{text = "Running apps", after_select = {go_to="apps_running:"}},
-		{text = "Stopped apps"},
+		{text = "Stopped apps", after_select = {go_to="apps_stopped:"}},
 		{text = "Configure app directories"},
 	}
 	return menu
@@ -71,18 +71,31 @@ my.globals.menus.apps_running = function(dir)
 	return menu
 end
 
-my.globals.menus.apps_stopped = function(dir)
-	local menu = {banner = "Stopped apps", items = {}, allow_shortcut = true}
-	local apps = {}
-	for key, val in pairs(dynawa.apps) do
-		table.insert(apps, val)
-		--log("app:"..val.id)
+local function dive_into_dir(dir, result)
+	dynawa.busy()
+	local dirstat = assert(dynawa.file.dir_stat(dir))
+	if dirstat["main.lua"] then
+		if not dynawa.apps[dir] then
+			table.insert(result,dir)
+		end
+		return result
 	end
+	for k,v in pairs(dirstat) do
+		if v=="dir" then
+			dive_into_dir(dir..k.."/", result)
+		end
+	end
+	return result
+end
+
+my.globals.menus.apps_stopped = function(dir)
+	local menu = {banner = "Stopped apps", items = {}, allow_shortcut = true, always_refresh = true}
+	local apps = dive_into_dir(dynawa.dir.apps,{})
 	table.sort(apps, function (a,b)
-		return (a.id < b.id)
+		return (a < b)
 	end)
 	for i, app in ipairs(apps) do
-		local item = {text = app.name, after_select = {go_to="app:"..app.id}}
+		local item = {text = app, after_select = {go_to="file_browser:"..app}}
 		table.insert(menu.items,item)
 	end
 	return menu

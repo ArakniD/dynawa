@@ -47,7 +47,7 @@ my.globals.menus.file_browser = function(dir)
 	if not dir then
 		dir = "/"
 	end
-	log("opening dir "..dir)
+	--log("opening dir "..dir)
 	local dirstat = dynawa.file.dir_stat(dir)
 	local menu = {banner = "File browser: "..dir, items={}, always_refresh = true, allow_shortcut = "Dir: "..dir}
 	if not dirstat then
@@ -68,12 +68,21 @@ my.globals.menus.file_browser = function(dir)
 				end
 				table.insert(menu.items,{text = txt, sort = sort, after_select={go_to = location}})
 			end
+			table.sort(menu.items,function(it1,it2)
+				return it1.sort < it2.sort
+			end)
+			if dirstat["main.lua"] then --This dir is an app
+				if dynawa.apps[dir] then
+					table.insert(menu.items,{text = "+ See details of this running app", after_select = {go_to = "app:"..dir}})
+				else
+					table.insert(menu.items,{text = "+ Start this app", after_select={popup = "App started.", refresh_menu = true}, callback = function()
+						dynawa.app.start(dir)
+					end})
+				end
+			end
 		else
 			table.insert(menu.items,{text="[Empty directory]"})
 		end
-		table.sort(menu.items,function(it1,it2)
-			return it1.sort < it2.sort
-		end)
 	end
 	return menu
 end
