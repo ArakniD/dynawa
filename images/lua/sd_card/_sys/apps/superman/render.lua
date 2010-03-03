@@ -105,6 +105,8 @@ local function inner_bitmap(menu)
 	assert(active_item.y_pos >= menu.viewport_y)
 	assert(active_item.y_pos + active_item.size.h <= menu.viewport_y + menu.inner_size.h)
 	local item_n = 1
+	--log("item 1: "..dynawa.file.serialize(menu.items[1]))
+	--log("item 2: "..dynawa.file.serialize(menu.items[2]))
 	while menu.items[item_n].y_pos + menu.items[item_n].size.h - 1 < menu.viewport_y do --find first item to draw
 		item_n = item_n + 1
 	end
@@ -125,8 +127,9 @@ local function inner_bitmap(menu)
 end
 
 my.globals.render = function(menu)
-	if not menu.bitmap then
+	if menu.needs_parsing or not menu.bitmap then
 		parse(menu)
+		menu.needs_parsing = nil
 		assert(menu.bitmap)
 	end
 	dynawa.message.send{type="display_bitmap", bitmap = menu.bitmap}

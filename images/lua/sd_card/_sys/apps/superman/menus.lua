@@ -54,6 +54,15 @@ my.globals.menus.file_browser = function(dir)
 		table.insert(menu.items,{text="[Invalid directory]"})
 	else
 		if next(dirstat) then
+			if dirstat["main.lua"] then --This dir is an app
+				if dynawa.apps[dir] then
+					table.insert(menu.items,{text = "+ See details of this running app", sort = "00", after_select = {go_to = "app:"..dir}})
+				else
+					table.insert(menu.items,{text = "+ Start this app", sort = "00", after_select={popup = "App started.", refresh_menu = true}, callback = function()
+						dynawa.app.start(dir)
+					end})
+				end
+			end
 			for k,v in pairs(dirstat) do
 				local txt = k.." ["..v.." bytes]"
 				local sort = "2"..txt
@@ -71,15 +80,6 @@ my.globals.menus.file_browser = function(dir)
 			table.sort(menu.items,function(it1,it2)
 				return it1.sort < it2.sort
 			end)
-			if dirstat["main.lua"] then --This dir is an app
-				if dynawa.apps[dir] then
-					table.insert(menu.items,{text = "+ See details of this running app", after_select = {go_to = "app:"..dir}})
-				else
-					table.insert(menu.items,{text = "+ Start this app", after_select={popup = "App started.", refresh_menu = true}, callback = function()
-						dynawa.app.start(dir)
-					end})
-				end
-			end
 		else
 			table.insert(menu.items,{text="[Empty directory]"})
 		end
@@ -92,13 +92,54 @@ my.globals.menus.file = function(fullname)
 	assert(#fullname > 0)
 	local dir, fname = fullname:match("(.*/)(.*)")
 	assert(fname)
-	log("DIR:"..dir)
-	log("FNAME:"..fname)
+	--log("DIR:"..dir)
+	--log("FNAME:"..fname)
 	local size = assert(dynawa.file.dir_stat(dir))[fname]
 	assert(type(size) == "number")
 	local menu = {banner = "File: "..fname, allow_shortcut = "File: "..fullname, items = {}}
 	table.insert(menu.items,{text="Size: "..size.." bytes"})
+	if fullname:match("%.data$") then
+		table.insert(menu.items,{text = "Browse data hierarchy", after_select = {go_to = "data_browser"}, callback = function()
+			local data = assert(dynawa.file.load_data(fullname))
+			my.globals.data_browser={data=data, location = "Data browser: "..fname}
+		end})
+	end
 	table.insert(menu.items,{text="File operations #TBD"})
+	my.globals.data_browser = nil
+	return menu
+end
+
+my.globals.menus.data_browser = function()
+	local data = assert(my.globals.data_browser.data, "Data browser invoked but no data stored")
+	local menu = {banner = my.globals.data_browser.location, items = {}}
+	assert(type(data) == "table", "Data is not a table")
+	if not next(data) then
+		table.insert(menu.items,{text = "[Empty]"})
+	else
+		local keys = {}
+		for k,v in pairs(data) do
+			table.insert(keys, k)
+		end
+		table.sort(keys, function(a,b)
+			if type(a) ~= type(b) then
+				return (type(a) < type(b))
+			end
+			return (a < b)
+		end)
+		for i, key in ipairs(keys) do
+			local value = data[key]
+			if type(value) == "table" then
+				table.insert(menu.items,{text = "= "..tostring(key), after_select = {go_to = "data_browser"}, callback = function()
+					my.globals.data_browser = {data = value, location = my.globals.data_browser.location .. "/"..key}
+				end})
+			else
+				if type(value) == "string" then
+					value = '"'..value..'"'
+				end
+				table.insert(menu.items,{text = key.." = "..tostring(value)})
+			end
+		end
+	end
 	return menu
 end
 

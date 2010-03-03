@@ -2,7 +2,7 @@
 
 local function system_app(app_id)
 	assert(type(app_id) == "string")
-	log("matching "..app_id.." with ^"..dynawa.dir.sys)
+	--log("matching "..app_id.." with ^"..dynawa.dir.sys)
 	return (app_id:match("^"..dynawa.dir.sys))
 end
 
@@ -103,7 +103,10 @@ end
 
 my.globals.menus.app = function (app_id)
 	assert(app_id)
-	local app = assert(dynawa.apps[app_id])
+	local app = dynawa.apps[app_id]
+	if not app then
+		return my.globals.menus.file_browser(app_id)
+	end
 	local menu = {banner = "App: "..app.name, allow_shortcut = true, always_refresh = true, items = {}}
 	local function additem (item)
 		table.insert(menu.items, item)
@@ -115,7 +118,19 @@ my.globals.menus.app = function (app_id)
 	if system_app(app.id) then
 		additem {text = "System app (unstoppable)"}
 	else
-		additem {text = "User app"}
+		local auto = dynawa.settings.autostart[app.id]
+		local appid = app.id
+		if auto then
+			additem {text = "Disable autostart", after_select = {refresh_menu = true, popup = "Autostart disabled. Restart the watch to stop the app."}, callback = function()
+				dynawa.settings.autostart[appid] = nil
+				dynawa.file.save_settings()
+			end}
+		else
+			additem {text = "Enable autostart", after_select = {refresh_menu = true, popup = "Autostart enabled for this app."}, callback = function()
+				dynawa.settings.autostart[appid] = {} --#todo priority etc
+				dynawa.file.save_settings()
+			end}
+		end
 	end
 	additem {text = "Try opening its menu", after_select = {go_to="app_menu:"..app.id}}
 	menu.hooks = {bitmap = true}
