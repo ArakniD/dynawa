@@ -275,11 +275,10 @@ static void u_bt_task(bt_command *cmd)
         case BT_COMMAND_SEND:
             {
                 TRACE_INFO("BT_COMMAND_SEND\r\n");
-                void *req = cmd->req;
-                struct rfcomm_pcb *pcb = cmd->data.send.handle;
-                struct pbuf *p = cmd->data.send.pbuf;
+                bt_socket *sock = cmd->sock;
+                struct pbuf *p = cmd->param.ptr;
 
-                _bt_rfcomm_send(req, pcb, p);
+                _bt_rfcomm_send(sock, p);
 
                 pbuf_free(p);
             }
@@ -287,7 +286,7 @@ static void u_bt_task(bt_command *cmd)
         case BT_COMMAND_SET_LINK_KEY:
             {
                 TRACE_INFO("BT_COMMAND_SET_LINK_KEY\r\n");
-                struct bt_bdaddr_link_key *bdaddr_link_key = cmd->data.ptr;
+                struct bt_bdaddr_link_key *bdaddr_link_key = cmd->param.ptr;
 
                 hci_write_stored_link_key(&bdaddr_link_key->bdaddr, &bdaddr_link_key->link_key);
 
@@ -297,21 +296,21 @@ static void u_bt_task(bt_command *cmd)
         case BT_COMMAND_RFCOMM_CONNECT:
             {
                 TRACE_INFO("BT_COMMAND_RFCOMM_CONNECT\r\n");
-                void *req = cmd->req;
-                struct bt_bdaddr_cn *bdaddr_cn = cmd->data.ptr;
+                bt_socket *sock = cmd->sock;
+                struct bt_bdaddr_cn *bdaddr_cn = cmd->param.ptr;
 
-                _bt_rfcomm_connect(req, &bdaddr_cn->bdaddr, bdaddr_cn->cn);
+                _bt_rfcomm_connect(sock, &bdaddr_cn->bdaddr, bdaddr_cn->cn);
 
                 free(bdaddr_cn);
             }
             break;
-        case BT_COMMAND_SDP_SEARCH:
+        case BT_COMMAND_FIND_SERVICE:
             {
-                TRACE_INFO("BT_COMMAND_SDP_SEARCH\r\n");
-                void *req = cmd->req;
-                struct bd_addr *bdaddr = cmd->data.ptr;
+                TRACE_INFO("BT_COMMAND_FIND_SERVICE\r\n");
+                bt_socket *sock = cmd->sock;
+                struct bd_addr *bdaddr = cmd->param.ptr;
 
-                _bt_sdp_search(req, bdaddr);
+                _bt_find_service(sock, bdaddr);
 
                 free(bdaddr);
             }
@@ -773,30 +772,6 @@ int bt_close() {
     return BT_OK;
 }
 
-int bt_rfcomm_send(void *req, void *handle, const char *data) {
-    bt_command cmd;
-    struct pbuf *p;
-
-    uint16_t len = strlen(data) + 1;
-    
-    TRACE_INFO("bt_rfcomm_send %s %d\r\n", data, len);
-    p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM);
-    if (p == NULL) {
-        return BT_ERR_MEM;
-    }
-    strcpy(p->payload, data);
-
-    cmd.id = BT_COMMAND_SEND;
-    cmd.req = req;
-    cmd.data.send.handle = handle;
-    cmd.data.send.pbuf = p;
-
-    xQueueSend(command_queue, &cmd, portMAX_DELAY);
-    scheduler_wakeup();
-    return BT_OK;
-}
-
-
 void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
     bt_command cmd;
 
@@ -813,52 +788,7 @@ void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
     trace_bytes("linkkey", link_key, BT_LINK_KEY_LEN);
 
     cmd.id = BT_COMMAND_SET_LINK_KEY;
-    cmd.data.ptr = bdaddr_link_key;
-
-    xQueueSend(command_queue, &cmd, portMAX_DELAY);
-    scheduler_wakeup();
-    return BT_OK;
-}
-
-void bt_rfcomm_connect(void *req, uint8_t *bdaddr, uint8_t channel) {
-    bt_command cmd;
-
-    TRACE_INFO("bt_rfcomm_connect %x %d\r\n", req, channel);
-
-    struct bt_bdaddr_cn *bdaddr_cn = malloc(sizeof(struct bt_bdaddr_cn)); 
-    if (bdaddr_cn == NULL) {
-        return BT_ERR_MEM;
-    }
-    memcpy(&bdaddr_cn->bdaddr, bdaddr, BT_BDADDR_LEN);
-    bdaddr_cn->cn = channel;
-
-    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
-
-    cmd.id = BT_COMMAND_RFCOMM_CONNECT;
-    cmd.req = req;
-    cmd.data.ptr = bdaddr_cn;
-
-    xQueueSend(command_queue, &cmd, portMAX_DELAY);
-    scheduler_wakeup();
-    return BT_OK;
-}
-
-void bt_sdp_search(void *req, uint8_t *bdaddr) {
-    bt_command cmd;
-
-    TRACE_INFO("bt_sdp_search %x\r\n", req);
-
-    struct bd_addr *cmd_bdaddr = malloc(sizeof(struct bd_addr)); 
-    if (cmd_bdaddr == NULL) {
-        return BT_ERR_MEM;
-    }
-    memcpy(cmd_bdaddr, bdaddr, BT_BDADDR_LEN);
-
-    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
-
-    cmd.id = BT_COMMAND_SDP_SEARCH;
-    cmd.req = req;
-    cmd.data.ptr = cmd_bdaddr;
+    cmd.param.ptr = bdaddr_link_key;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
@@ -871,6 +801,75 @@ void bt_inquiry() {
     TRACE_INFO("bt_inquiry\r\n");
 
     cmd.id = BT_COMMAND_INQUIRY;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+// socket commands
+
+void bt_rfcomm_connect(bt_socket *sock, uint8_t *bdaddr, uint8_t channel) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_rfcomm_connect %x %d\r\n", sock, channel);
+
+    struct bt_bdaddr_cn *bdaddr_cn = malloc(sizeof(struct bt_bdaddr_cn)); 
+    if (bdaddr_cn == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(&bdaddr_cn->bdaddr, bdaddr, BT_BDADDR_LEN);
+    bdaddr_cn->cn = channel;
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+
+    cmd.id = BT_COMMAND_RFCOMM_CONNECT;
+    cmd.sock = sock;
+    cmd.param.ptr = bdaddr_cn;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+void bt_find_service(bt_socket *sock, uint8_t *bdaddr) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_find_service %x\r\n", sock);
+
+    struct bd_addr *cmd_bdaddr = malloc(sizeof(struct bd_addr)); 
+    if (cmd_bdaddr == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(cmd_bdaddr, bdaddr, BT_BDADDR_LEN);
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+
+    cmd.id = BT_COMMAND_FIND_SERVICE;
+    cmd.sock = sock;
+    cmd.param.ptr = cmd_bdaddr;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+int bt_rfcomm_send(bt_socket *sock, const char *data) {
+    bt_command cmd;
+    struct pbuf *p;
+
+    uint16_t len = strlen(data) + 1;
+    
+    TRACE_INFO("bt_rfcomm_send %s %d\r\n", data, len);
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM);
+    if (p == NULL) {
+        return BT_ERR_MEM;
+    }
+    strcpy(p->payload, data);
+
+    cmd.id = BT_COMMAND_SEND;
+    cmd.sock = sock;
+    cmd.param.ptr = p;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
