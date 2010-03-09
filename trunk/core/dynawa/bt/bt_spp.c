@@ -68,7 +68,10 @@ static int app_initialized = 0;
 err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t result);
 err_t pin_req(void *arg, struct bd_addr *bdaddr);
 err_t link_key_not(void *arg, struct bd_addr *bdaddr, u8_t *key);
+err_t link_key_req(void *arg, struct bd_addr *bdaddr);
 err_t l2cap_connected(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_t status);
+err_t inquiry_complete(void *arg, struct hci_pcb *pcb, struct hci_inq_res *ires, u16_t result);
+err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err);
 err_t bt_spp_init();
 
 struct bt_state {
@@ -277,6 +280,10 @@ err_t rfcomm_disconnected(void *arg, struct rfcomm_pcb *pcb, err_t err)
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("rfcomm_disconnected: CN = %d\n", rfcomm_cn(pcb)));
 	if(rfcomm_cn(pcb) != 0) {
 		; //ppp_lp_disconnected(pcb);
+        event ev;
+        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.data.bt.data.handle = pcb;
+        event_post(&ev);
 	}
 	rfcomm_close(pcb);
 
@@ -298,16 +305,35 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_disconnected_ind: L2CAP disconnected\n"));
 
 	if(pcb->psm == SDP_PSM) { 
+	    LWIP_DEBUGF(BT_SPP_DEBUG, ("SDP_PSM %x\n", arg));
 		sdp_lp_disconnected(pcb);
 		l2cap_close(pcb);
+
+        event ev;
+        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.data.bt.data.handle = pcb;
+        event_post(&ev);
 	} else if(pcb->psm == RFCOMM_PSM) {
+	    LWIP_DEBUGF(BT_SPP_DEBUG, ("RFCOMM_PSM %x\n", arg));
 		ret = rfcomm_lp_disconnected(pcb);
 		/* We can do this since we know that we are the only channel on the ACL link.
 		 * If ACL link already is down we get an ERR_CONN returned */
 		hci_disconnect(&(pcb->remote_bdaddr), HCI_OTHER_END_TERMINATED_CONN_USER_ENDED);
 		l2cap_close(pcb);
-		bt_spp_start();
-	}
+		//MV bt_spp_start();
+        //MV hci_inquiry(0x009E8B33, 0x04, 0x01, inquiry_complete);
+
+/*
+        // TODO: EVENT_BT_RFCOMM_DISCONNECTED done in rfcomm_lp_disconnected() too
+        event ev;
+        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.data.bt.data.handle = pcb;
+        event_post(&ev);
+*/
+	} else {
+        //MV 
+		l2cap_close(pcb);
+    }
 
 	return ret;
 }
@@ -496,8 +522,8 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
     TRACE_INFO("spp_recv %d\r\n", p->len);
     event ev;
     ev.type = EVENT_BT_DATA;
-    ev.data.bt.handle = pcb;
-    ev.data.bt.pbuf = p;
+    ev.data.bt.data.handle = pcb;
+    ev.data.bt.data.pbuf = p;
     event_post(&ev);
 
 	return ERR_OK;
@@ -632,6 +658,8 @@ err_t bt_spp_init(void)
 
     // MV
     hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
+    hci_link_key_req(link_key_req); /* Set function to be called a link key is requested */
+
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("SPP initialized\n"));
 	return ERR_OK;
 }
@@ -782,7 +810,8 @@ err_t at_input(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
  */
 err_t pin_req(void *arg, struct bd_addr *bdaddr)
 {
-	u8_t pin[] = "1234";
+	//u8_t pin[] = "1234";
+	u8_t pin[] = "0000";
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("pin_req\n"));
 	TRACE_INFO("pin_req\r\n");
 	return hci_pin_code_request_reply(bdaddr, 4, pin);
@@ -800,8 +829,49 @@ err_t link_key_not(void *arg, struct bd_addr *bdaddr, u8_t *key)
 {
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("link_key_not\n"));
 	TRACE_INFO("link_key_not\r\n");
+
+    struct bt_bdaddr_link_key *ev_bdaddr_link_key = malloc(sizeof(struct bt_bdaddr_link_key));
+    if (ev_bdaddr_link_key == NULL) {
+        panic(); 
+    }
+    byte_memcpy(&ev_bdaddr_link_key->bdaddr, bdaddr, sizeof(struct bd_addr));
+    memcpy(&ev_bdaddr_link_key->link_key, key, sizeof(struct bt_link_key));
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+    trace_bytes("linkkey", key, BT_LINK_KEY_LEN);
+
+    event ev;
+    ev.type = EVENT_BT_LINK_KEY_NOT;
+    ev.data.bt.ptr = ev_bdaddr_link_key;
+    event_post(&ev);
+
 	return hci_write_stored_link_key(bdaddr, key); /* Write link key to be stored in the
 													  Bluetooth host controller */
+}
+
+/*
+ * link_key_req():
+ *
+ * Called by HCI when a link key is requested to create a new connection
+ *
+ */
+err_t link_key_req(void *arg, struct bd_addr *bdaddr)
+{
+	LWIP_DEBUGF(BT_SPP_DEBUG, ("link_key_req\n"));
+	TRACE_INFO("link_key_req\r\n");
+
+    struct bd_addr *ev_bdaddr = malloc(sizeof(struct bd_addr));
+    
+    if (ev_bdaddr == NULL) {
+        panic(); 
+    }
+
+    byte_memcpy(ev_bdaddr, bdaddr, sizeof(struct bd_addr));
+
+    event ev;
+    ev.type = EVENT_BT_LINK_KEY_REQ;
+    ev.data.bt.ptr = ev_bdaddr;
+    event_post(&ev);
 }
 
 /*
@@ -894,11 +964,22 @@ err_t rfcomm_connected(void *arg, struct rfcomm_pcb *pcb, err_t err)
 			return ERR_OK; //ppp_connect(ppppcb, ppp_connected);
 		}
 #endif
+        // MV
+	    if(rfcomm_cn(pcb) != 0) {
+            rfcomm_recv(pcb, spp_recv);
+
+            event ev;
+            ev.type = EVENT_BT_RFCOMM_CONNECTED;
+            ev.data.bt.data.handle = pcb;
+            event_post(&ev);
+
+            //bt_rfcomm_send(pcb, "AT*SEAM=\"MBW-150\",13\r");
+        }
 	} else {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("rfcomm_connected. Connection attempt failed CN = %d\n", rfcomm_cn(pcb)));
 		l2cap_close(pcb->l2cappcb);
 		rfcomm_close(pcb);
-		bt_spp_start();
+		//MV bt_spp_start();
 	}
 	return ERR_OK;
 }
@@ -948,7 +1029,7 @@ err_t l2cap_connected(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_t
 	struct sdp_pcb *sdppcb;
 	struct rfcomm_pcb *rfcommpcb;
 
-	u8_t ssp[] = {0x35, 0x03, 0x19, 0x11, 0x02}; /* Service search pattern with LAP UUID is default */ 
+	u8_t ssp[] = {0x35, 0x03, 0x19, 0x11, 0x01}; /* Service search pattern with LAP UUID is default */ 
 	err_t ret;
 
 	u8_t attrids[] = {0x35, 0x03, 0x09, 0x00, 0x04}; /* Attribute IDs to search for in data element 
@@ -981,7 +1062,10 @@ err_t l2cap_connected(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_t
 					return ERR_MEM;
 				}
 
-				hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
+				//MV hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
+
+                // MV
+	            rfcomm_disc(rfcommpcb, rfcomm_disconnected);
 
 				return rfcomm_connect(rfcommpcb, bt_spp_state.cn, rfcomm_connected); /* Connect with DLCI 0 */
 			default:
@@ -990,7 +1074,8 @@ err_t l2cap_connected(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_t
 	} else {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP not connected. Redo inquiry\n"));
 		l2cap_close(l2cappcb);
-		bt_spp_start();
+		//MV bt_spp_start();
+        // RESPONSE
 	}
 
 	return ERR_OK;
@@ -1209,6 +1294,16 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 #endif
 						hci_connection_complete(acl_conn_complete);
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Initialization done.\n"));
+                        
+                        event ev;
+                        ev.type = EVENT_BT_STARTED;
+                        event_post(&ev);
+
+                        //MV
+                        //struct bd_addr bdaddr = {0x00, 0x23, 0x76, 0x72, 0x2b, 0xa2}; // HD2
+                        //struct bd_addr bdaddr = {0x00, 0x1f, 0xe1, 0xe9, 0x60, 0x04}; // W500
+                        //struct bd_addr bdaddr = {0x00, 0x1f, 0xcc, 0x87, 0xb0, 0x37}; // SGH-I780
+                        //bt_rfcomm_connect(&bdaddr, 1);
 /*
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Discover other Bluetooth devices.\n"));
 						hci_inquiry(0x009E8B33, 0x04, 0x01, inquiry_complete); //FAILED????
@@ -1230,3 +1325,135 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 	return ERR_OK;
 }
 
+// MV
+
+
+/*
+ * sdp_attributes_recv():
+ *
+ * Can be used as a callback by SDP when a response to a service attribute request or 
+ * a service search attribute request was received.
+ * Disconnects the L2CAP SDP channel and connects to the RFCOMM one.
+ * If no RFCOMM channel was found it initializes a search for other devices.
+ */
+void sdp_attributes_recv2(void *arg, struct sdp_pcb *sdppcb, u16_t attribl_bc, struct pbuf *p)
+{
+	struct l2cap_pcb *l2cappcb;
+    uint8_t cn;
+
+	l2ca_disconnect_req(sdppcb->l2cappcb, l2cap_disconnected_cfm);
+	/* Get the RFCOMM channel identifier from the protocol descriptor list */
+
+	if((cn = get_rfcomm_cn(attribl_bc, p)) != 0) {
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("sdp_attributes_recv: RFCOMM channel: %d\n", cn));
+    }
+
+    event ev;
+    ev.type = EVENT_BT_SDP_RES;
+    ev.data.bt.sdp.cn = cn;
+    event_post(&ev);
+
+	sdp_free(sdppcb);
+}
+
+
+/*
+ * l2cap_connected():
+ *
+ * Called by L2CAP when a connection response was received.
+ * Sends a L2CAP configuration request.
+ * Initializes a search for other devices if the connection attempt failed.
+ */
+
+err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_t status)
+{
+	struct sdp_pcb *sdppcb;
+	struct rfcomm_pcb *rfcommpcb;
+
+	u8_t ssp[] = {0x35, 0x03, 0x19, 0x11, 0x01}; /* Service search pattern with LAP UUID is default */ 
+	err_t ret;
+
+	u8_t attrids[] = {0x35, 0x03, 0x09, 0x00, 0x04}; /* Attribute IDs to search for in data element 
+														sequence form */
+
+	if(result == L2CAP_CONN_SUCCESS) {
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP connected pcb->state = %d\n", l2cappcb->state));
+		/* Tell L2CAP that we wish to be informed of a disconnection request */
+		l2cap_disconnect_ind(l2cappcb, l2cap_disconnected_ind);
+		switch(l2cap_psm(l2cappcb)) {
+			case SDP_PSM:
+				LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: SDP L2CAP configured. Result = %d\n", result));
+				if((sdppcb = sdp_new(l2cappcb)) == NULL) {
+					LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: Failed to create a SDP PCB\n"));
+					return ERR_MEM;
+				}
+
+				l2cap_recv(l2cappcb, sdp_recv);
+
+				ret = sdp_service_search_attrib_req(sdppcb, 0xFFFF, ssp, sizeof(ssp),
+						attrids, sizeof(attrids), sdp_attributes_recv2);
+				return ret;
+
+			case RFCOMM_PSM:
+				LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: RFCOMM L2CAP configured. Result = %d CN = %d\n", result, bt_spp_state.cn));
+				l2cap_recv(l2cappcb, rfcomm_input);
+
+				if((rfcommpcb = rfcomm_new(l2cappcb)) == NULL) {
+					LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: Failed to create a RFCOMM PCB\n"));
+					return ERR_MEM;
+				}
+
+				//MV hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
+
+                // MV
+	            rfcomm_disc(rfcommpcb, rfcomm_disconnected);
+
+				return rfcomm_connect(rfcommpcb, bt_spp_state.cn, rfcomm_connected); /* Connect with DLCI 0 */
+			default:
+				return ERR_VAL;
+		}
+	} else {
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP not connected. Redo inquiry\n"));
+		l2cap_close(l2cappcb);
+		//MV bt_spp_start();
+        event ev;
+        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.data.bt.data.handle = l2cappcb;
+        event_post(&ev);
+	}
+
+	return ERR_OK;
+}
+
+void _bt_rfcomm_connect(struct bd_addr *bdaddr, u8_t cn) {
+	struct l2cap_pcb *l2cappcb;
+
+    if((l2cappcb = l2cap_new()) == NULL) {
+        LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: Could not alloc L2CAP pcb\n"));
+        return;
+    }
+    l2cap_arg(l2cappcb, 0x5678);
+    bt_spp_state.cn = cn;
+    LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", bt_spp_state.cn));
+
+    l2ca_connect_req(l2cappcb, bdaddr, RFCOMM_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
+}
+
+void _bt_sdp_search(struct bd_addr *bdaddr) {
+	struct l2cap_pcb *l2cappcb;
+
+    if((l2cappcb = l2cap_new()) == NULL) {
+        LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_sdp_search: Could not alloc L2CAP pcb\n"));
+        return ERR_MEM;
+    } 
+
+    // MV test
+    l2cap_arg(l2cappcb, 0x1234);
+    l2cap_disconnect_ind(l2cappcb, l2cap_disconnected_ind);
+
+    l2ca_connect_req(l2cappcb, bdaddr, SDP_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
+}
+
+void _bt_inquiry() {
+    hci_inquiry(0x009E8B33, 0x04, 0x01, inquiry_complete);
+}

@@ -172,6 +172,139 @@ rtc_close();
             lua_pushnumber(L, ev.type);
             lua_settable(L, -3);
             break;
+        case EVENT_BT_DATA:
+            TRACE_LUA("bt data\r\n");
+            {
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.type);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "handle");
+                lua_pushlightuserdata(L, (void*)ev.data.bt.data.handle);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "data");
+                uint16_t len = bt_buf_len(ev.data.bt.data.pbuf);
+
+                TRACE_INFO("EVENT_BT_DATA %d\r\n", len);
+                if (len) {
+                    lua_pushlstring(L, bt_buf_payload(ev.data.bt.data.pbuf), len); 
+                } else {
+                    lua_pushnil(L);
+                }
+                lua_settable(L, -3);
+
+                bt_buf_free(ev.data.bt.data.pbuf);
+
+                //bt_rfcomm_send(ev.data.bt.data.handle, "OK\r\n");
+            }
+            break;
+        case EVENT_BT_RFCOMM_CONNECTED:
+            TRACE_LUA("bt rfcomm connected\r\n");
+            {
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.type);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "handle");
+                lua_pushlightuserdata(L, (void*)ev.data.bt.data.handle);
+                lua_settable(L, -3);
+            }
+            break;
+        case EVENT_BT_RFCOMM_DISCONNECTED:
+            TRACE_LUA("bt rfcomm disconnected\r\n");
+            {
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.type);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "handle");
+                lua_pushlightuserdata(L, (void*)ev.data.bt.data.handle);
+                lua_settable(L, -3);
+            }
+            break;
+        case EVENT_BT_LINK_KEY_NOT:
+            TRACE_LUA("bt link key not\r\n");
+            {
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.type);
+                lua_settable(L, -3);
+
+                struct bt_bdaddr_link_key *ev_bdaddr_link_key = ev.data.bt.ptr;
+                lua_pushstring(L, "bdaddr");
+                lua_pushlstring(L, &ev_bdaddr_link_key->bdaddr, BT_BDADDR_LEN);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "link_key");
+                lua_pushlstring(L, &ev_bdaddr_link_key->link_key, BT_LINK_KEY_LEN); 
+                lua_settable(L, -3);
+
+                free(ev_bdaddr_link_key);
+            }
+            break;
+        case EVENT_BT_LINK_KEY_REQ:
+            TRACE_LUA("bt link key req\r\n");
+            {
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.type);
+                lua_settable(L, -3);
+
+                struct bd_addr *ev_bdaddr = ev.data.bt.ptr;
+                lua_pushstring(L, "bdaddr");
+                lua_pushlstring(L, ev_bdaddr, BT_BDADDR_LEN);
+                lua_settable(L, -3);
+
+                free(ev_bdaddr);
+            }
+            break;
+        case EVENT_BT_SDP_RES:
+            TRACE_LUA("bt sdp res\r\n");
+            {
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.type);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "channel");
+                lua_pushnumber(L, ev.data.bt.sdp.cn);
+                lua_settable(L, -3);
+            }
+            break;
         default:
             TRACE_ERROR("Uknown event %x\r\n", ev.type);
         }

@@ -28,17 +28,23 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "lwip/mem.h"
 #include "lwip/sys.h"
 #include "lwbt/hci.h"
+#include "lwbt/rfcomm.h"
 #include "bt.h"
 #include "event.h"
 
 #include "debug/trace.h"
 
 
+#define SET_TX_POWER        0
+#define TX_POWER            2
+
 #define BT_COMMAND_QUEUE_LEN 10
 
 uint32_t bc_hci_event_count;
 static Task bt_task_handle;
 static xQueueHandle command_queue;
+
+static unsigned int bt_open_count = 0;
 
 /* -------------------- Command line args processing -------------------- */
 
@@ -266,6 +272,56 @@ static void u_bt_task(bt_command *cmd)
             // TODO: stop all BT connections
             TerminateMicroSched();
             break;
+        case BT_COMMAND_SEND:
+            {
+                TRACE_INFO("BT_COMMAND_SEND\r\n");
+                struct pbuf *p = cmd->data.send.pbuf;
+                struct rfcomm_pcb *pcb = cmd->data.send.handle;
+
+                if(rfcomm_cl(pcb)) {
+                    rfcomm_uih_credits(pcb, PBUF_POOL_SIZE - rfcomm_remote_credits(pcb), p);
+                } else {
+                    rfcomm_uih(pcb, rfcomm_cn(pcb), p);
+                }
+                pbuf_free(p);
+            }
+            break;
+        case BT_COMMAND_SET_LINK_KEY:
+            {
+                TRACE_INFO("BT_COMMAND_SET_LINK_KEY\r\n");
+                struct bt_bdaddr_link_key *bdaddr_link_key = cmd->data.ptr;
+
+                hci_write_stored_link_key(&bdaddr_link_key->bdaddr, &bdaddr_link_key->link_key);
+
+                free(bdaddr_link_key);
+            }
+            break;
+        case BT_COMMAND_RFCOMM_CONNECT:
+            {
+                TRACE_INFO("BT_COMMAND_RFCOMM_CONNECT\r\n");
+                struct bt_bdaddr_cn *bdaddr_cn = cmd->data.ptr;
+
+                _bt_rfcomm_connect(&bdaddr_cn->bdaddr, bdaddr_cn->cn);
+
+                free(bdaddr_cn);
+            }
+            break;
+        case BT_COMMAND_SDP_SEARCH:
+            {
+                TRACE_INFO("BT_COMMAND_SDP_SEARCH\r\n");
+                struct bd_addr *bdaddr = cmd->data.ptr;
+
+                _bt_sdp_search(bdaddr);
+
+                free(bdaddr);
+            }
+            break;
+        case BT_COMMAND_INQUIRY:
+            {
+                TRACE_INFO("BT_COMMAND_INQUIRY\r\n");
+                _bt_inquiry();
+            }
+            break;
         }
     }
 
@@ -320,6 +376,7 @@ static void u_bt_task(bt_command *cmd)
             cmd[8] = USART_BAUDRATE_CD;    // value (divider);
             TRACE_INFO("SETTING BAUDRATE %d\r\n", USART_BAUDRATE);
             queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
+#if SET_TX_POWER
         } else if (bc_state == BC_STATE_BAUDRATE_SET) {
 // PS_LC_MAX_TX_POWER
             uint16 *cmd = malloc(sizeof(uint16) * 9);
@@ -331,7 +388,7 @@ static void u_bt_task(bt_command *cmd)
             cmd[5] = PSKEY_LC_MAX_TX_POWER;
             cmd[6] = 1;         // length
             cmd[7] = 0;         // default store
-            cmd[8] = 2;
+            cmd[8] = TX_POWER;
             TRACE_INFO("SETTING LC_MAX_TX_POWER\r\n");
             queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
         } else if (bc_state == BC_STATE_LC_MAX_TX_POWER) {
@@ -345,7 +402,7 @@ static void u_bt_task(bt_command *cmd)
             cmd[5] = PSKEY_LC_DEFAULT_TX_POWER;
             cmd[6] = 1;         // length
             cmd[7] = 0;         // default store
-            cmd[8] = 2;
+            cmd[8] = TX_POWER;
             TRACE_INFO("SETTING LC_DEFAULT_TX_POWER\r\n");
             queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
         } else if (bc_state == BC_STATE_LC_DEFAULT_TX_POWER) {
@@ -359,11 +416,13 @@ static void u_bt_task(bt_command *cmd)
             cmd[5] = PSKEY_LC_MAX_TX_POWER_NO_RSSI;
             cmd[6] = 1;         // length
             cmd[7] = 0;         // default store
-            cmd[8] = 2;
+            cmd[8] = TX_POWER;
             TRACE_INFO("SETTING LC_MAX_TX_POWER_NO_RSSI\r\n");
             queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-        //} else if (bc_state == BC_STATE_BAUDRATE_SET) {
         } else if (bc_state == BC_STATE_LC_MAX_TX_POWER_NO_RSSI) {
+#else
+        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
+#endif
 // warm reset
             uint16 *cmd = malloc(sizeof(uint16) * 9);
             //cmd[0] = 0;         // BCCMDPDU_GETREQ
@@ -450,6 +509,13 @@ static void restartHandler()
 #endif
     bt_spp_start();
     TRACE_INFO("Applications started.\r\n");
+
+/*
+    event ev;
+    ev.type = EVENT_BT_STARTED;
+    event_post(&ev);
+*/
+
 #if defined(TCPIP)
     StartTimer(TCP_INTERVAL, tcpHandler);
 #endif
@@ -638,8 +704,8 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
 
     event ev;
     ev.type = EVENT_BT_STOPPED;
-
     event_post(&ev);
+
     ledrgb_set(0x4, 0, 0, 0x0);
     ledrgb_close();
     vTaskDelete(NULL);
@@ -649,6 +715,25 @@ bool bt_get_command(bt_command *cmd) {
     return xQueueReceive(command_queue, cmd, 0);
 }
 
+
+void bt_stop_callback() {
+    vQueueDelete(command_queue);
+}
+
+uint16_t bt_buf_len(struct pbuf *p) {
+    return p->len;
+}
+
+void *bt_buf_payload(struct pbuf *p) {
+    return p->payload;
+}
+
+void bt_buf_free(struct pbuf *p) {
+    pbuf_free(p);
+}
+
+// commands 
+
 int bt_init() {
     bc_state = BC_STATE_STOPPED;
     return 0;
@@ -656,27 +741,134 @@ int bt_init() {
 
 int bt_open() {
 
-    command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
-    //bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
-    xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), TASK_BT_MAIN_PRI, NULL, &bt_task_handle);
-
-    return 0;
-}
-
-void bt_stop_callback() {
-    vQueueDelete(command_queue);
+    if(!bt_open_count++) {
+        command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
+        //bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
+        xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), TASK_BT_MAIN_PRI, NULL, &bt_task_handle);
+        return BT_OK;
+    }
+    return BT_ERR_ALREADY_STARTED;
 }
 
 int bt_close() {
 
-    bt_command cmd;
+    if(bt_open_count && --bt_open_count == 0) {
+        bt_command cmd;
 
-    if (bt_task_handle == NULL) {
-        return 0;
+        if (bt_task_handle == NULL) {
+            return BT_OK;
+        }
+        cmd.id = BT_COMMAND_STOP;
+
+        xQueueSend(command_queue, &cmd, portMAX_DELAY);
+        scheduler_wakeup();
     }
-    cmd.id = BT_COMMAND_STOP;
+    return BT_OK;
+}
+
+int bt_rfcomm_send(void *handle, const char *data) {
+    bt_command cmd;
+    struct pbuf *p;
+
+    uint16_t len = strlen(data) + 1;
+    
+    TRACE_INFO("bt_rfcomm_send %s %d\r\n", data, len);
+    p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM);
+    if (p == NULL) {
+        return BT_ERR_MEM;
+    }
+    strcpy(p->payload, data);
+
+    cmd.id = BT_COMMAND_SEND;
+    cmd.data.send.handle = handle;
+    cmd.data.send.pbuf = p;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
-    return 0;
+    return BT_OK;
+}
+
+void trace_bytes(char *text, uint8_t *bytes, int len) {
+    int i;
+    for (i = 0; i < len; i++) {
+        TRACE_INFO("%s[%d] = %02x\r\n", text, i, bytes[i]);
+    }
+}
+
+void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_set_link_key\r\n");
+
+    struct bt_bdaddr_link_key *bdaddr_link_key = malloc(sizeof(struct bt_bdaddr_link_key)); 
+    if (bdaddr_link_key == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(&bdaddr_link_key->bdaddr, bdaddr, BT_BDADDR_LEN);
+    memcpy(&bdaddr_link_key->link_key, link_key, BT_LINK_KEY_LEN);
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+    trace_bytes("linkkey", link_key, BT_LINK_KEY_LEN);
+
+    cmd.id = BT_COMMAND_SET_LINK_KEY;
+    cmd.data.ptr = bdaddr_link_key;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+void bt_rfcomm_connect(uint8_t *bdaddr, uint8_t channel) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_rfcomm_connect %d\r\n", channel);
+
+    struct bt_bdaddr_cn *bdaddr_cn = malloc(sizeof(struct bt_bdaddr_cn)); 
+    if (bdaddr_cn == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(&bdaddr_cn->bdaddr, bdaddr, BT_BDADDR_LEN);
+    bdaddr_cn->cn = channel;
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+
+    cmd.id = BT_COMMAND_RFCOMM_CONNECT;
+    cmd.data.ptr = bdaddr_cn;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+void bt_sdp_search(uint8_t *bdaddr) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_sdp_search\r\n");
+
+    struct bd_addr *cmd_bdaddr = malloc(sizeof(struct bd_addr)); 
+    if (cmd_bdaddr == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(cmd_bdaddr, bdaddr, BT_BDADDR_LEN);
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+
+    cmd.id = BT_COMMAND_SDP_SEARCH;
+    cmd.data.ptr = cmd_bdaddr;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+void bt_inquiry() {
+    bt_command cmd;
+
+    TRACE_INFO("bt_inquiry\r\n");
+
+    cmd.id = BT_COMMAND_INQUIRY;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
 }

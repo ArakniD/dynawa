@@ -14,8 +14,7 @@
 #include "task.h"
 #include "semphr.h"
 
-/*
-void *memcpy(void *dest, const void *src, size_t n) {
+void *byte_memcpy(void *dest, const void *src, size_t n) {
     int i;
     void *_dest = dest;
     for(i = 0; i < n; i++) {
@@ -23,7 +22,6 @@ void *memcpy(void *dest, const void *src, size_t n) {
     }
     return _dest;
 }
-*/
 
 static xSemaphoreHandle malloc_lock_mutex;
 static unsigned int malloc_lock_ref_count = 0;

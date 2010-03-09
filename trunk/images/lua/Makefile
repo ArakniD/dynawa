@@ -59,6 +59,7 @@ LIBPNG = ../../libraries/libpng-1.4.0
 #  $(LWBT)/lwbt/bcspif.c
 #  $(LWBT)/arch/sys_arch.c
 #  $(LWBT)/lwip/mem.c
+#  $(LWBT)/bt_spp.c
 LWBT_SRC = \
   $(LWBT)/lwbt/fcs.c \
   $(LWBT)/lwbt/hci.c \
@@ -69,8 +70,7 @@ LWBT_SRC = \
   $(LWBT)/lwip/inet.c \
   $(LWBT)/lwip/memp.c \
   $(LWBT)/lwip/pbuf.c \
-  $(LWBT)/lwip/stats.c \
-  $(LWBT)/bt_spp.c
+  $(LWBT)/lwip/stats.c
 
 LWBT_INC = \
   -I$(LWBT)
@@ -263,6 +263,7 @@ THUMB_SRC= \
   $(DYNAWA)/bt/abcsp_support_functions.c \
   $(DYNAWA)/bt/uSched.c \
   $(DYNAWA)/bt/SerialCom.c \
+  $(DYNAWA)/bt/bt_spp.c \
   $(PERIPHERALS)/serial.c \
   $(PERIPHERALS)/spi.c \
   $(PERIPHERALS)/pmc/pmc.c \

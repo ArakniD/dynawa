@@ -84,7 +84,7 @@ void rfcomm_tmr(void)
 	for(pcb = rfcomm_active_pcbs; pcb != NULL; pcb = pcb->next) {
 		if(pcb->to != 0) {
 			--pcb->to;
-			LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_tmr: %d\n", pcb->to));
+			LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_tmr: cn %d to %d\n", pcb->cn, pcb->to));
 			if(pcb->to == 0) {
 				/* Timeout */
 				if(pcb->cn == 0) {
@@ -857,12 +857,12 @@ void rfcomm_process_msg(struct rfcomm_pcb *pcb, struct rfcomm_hdr *rfcommhdr, st
 					tpcb->cl = 0xF; /* Credit based flow control */
 					tpcb->k = pnreq->k==0?7:pnreq->k; /* Inital credit value */
 					LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_process_msg: RFCOMM_PN_RSP. tpcb->k = %d\n", tpcb->k));
-					LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_process_msg: Credit based flow control is used for outgoing packets 0x%x %d %d\n", (pnreq->i_cl >> 4), pnreq->k, pnreq->n));
+					LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_process_msg: Credit based flow control is used for outgoing packets 0x%x %d %d\n", (pnreq->i_cl >> 4), pnreq->k, U16LE2CPU((u8_t*)&pnreq->n)));
 				} else {
 					LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_process_msg: No flow control used for outgoing packets 0x%x\n", (pnreq->i_cl >> 4)));
 					tpcb->cl = 0; /* Remote device conform to bluetooth version 1.0B. No flow control */
 				}
-				tpcb->n = pnreq->n; /* Maximum frame size */
+				tpcb->n = U16LE2CPU((u8_t*)&pnreq->n); /* Maximum frame size */
 
 				if(tpcb->state == W4_RFCOMM_MULTIPLEXER) {
 					rfcomm_connect(tpcb, tpcb->cn, tpcb->connected); /* Create a connection for a channel that 
@@ -1308,9 +1308,11 @@ err_t rfcomm_input(void *arg, struct l2cap_pcb *l2cappcb, struct pbuf *p, err_t 
 			//RFCOMM_RMV(&rfcomm_active_pcbs, pcb);
 			if(pcb->state ==  W4_RFCOMM_SABM_RSP) {
 				pcb->state = RFCOMM_CLOSED;
+			    LWIP_DEBUGF(RFCOMM_DEBUG, ("RFCOMM_EVENT_CONNECTED\n"));
 				RFCOMM_EVENT_CONNECTED(pcb,ERR_CONN,ret);
 			} else {
 				pcb->state = RFCOMM_CLOSED;
+			    LWIP_DEBUGF(RFCOMM_DEBUG, ("RFCOMM_EVENT_DISCONNECTED\n"));
 				RFCOMM_EVENT_DISCONNECTED(pcb,ERR_CONN,ret);
 			}
 			pbuf_free(p);
