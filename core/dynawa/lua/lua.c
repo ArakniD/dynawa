@@ -173,8 +173,10 @@ rtc_close();
             lua_settable(L, -3);
             break;
         case EVENT_BT_DATA:
-            TRACE_LUA("bt data\r\n");
+            TRACE_LUA("bt data %d\r\n", ev.data.bt.req);
             {
+                bt_event *btev = &ev.data.bt;
+
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -185,29 +187,35 @@ rtc_close();
                 lua_pushnumber(L, ev.type);
                 lua_settable(L, -3);
 
+                lua_pushstring(L, "request");
+                lua_rawgeti(L, LUA_REGISTRYINDEX, btev->req);
+                lua_settable(L, -3);
+
                 lua_pushstring(L, "handle");
-                lua_pushlightuserdata(L, (void*)ev.data.bt.data.handle);
+                lua_pushlightuserdata(L, (void*)btev->param.data.handle);
                 lua_settable(L, -3);
 
                 lua_pushstring(L, "data");
-                uint16_t len = bt_buf_len(ev.data.bt.data.pbuf);
+                uint16_t len = bt_buf_len(btev->param.data.pbuf);
 
                 TRACE_INFO("EVENT_BT_DATA %d\r\n", len);
                 if (len) {
-                    lua_pushlstring(L, bt_buf_payload(ev.data.bt.data.pbuf), len); 
+                    lua_pushlstring(L, bt_buf_payload(btev->param.data.pbuf), len); 
                 } else {
                     lua_pushnil(L);
                 }
                 lua_settable(L, -3);
 
-                bt_buf_free(ev.data.bt.data.pbuf);
+                bt_buf_free(btev->param.data.pbuf);
 
-                //bt_rfcomm_send(ev.data.bt.data.handle, "OK\r\n");
+                //bt_rfcomm_send(ev.data.bt.param.data.handle, "OK\r\n");
             }
             break;
         case EVENT_BT_RFCOMM_CONNECTED:
-            TRACE_LUA("bt rfcomm connected\r\n");
+            TRACE_LUA("bt rfcomm connected %d\r\n", ev.data.bt.req);
             {
+                bt_event *btev = &ev.data.bt;
+
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -218,14 +226,20 @@ rtc_close();
                 lua_pushnumber(L, ev.type);
                 lua_settable(L, -3);
 
+                lua_pushstring(L, "request");
+                lua_rawgeti(L, LUA_REGISTRYINDEX, btev->req);
+                lua_settable(L, -3);
+
                 lua_pushstring(L, "handle");
-                lua_pushlightuserdata(L, (void*)ev.data.bt.data.handle);
+                lua_pushlightuserdata(L, (void*)btev->param.data.handle);
                 lua_settable(L, -3);
             }
             break;
         case EVENT_BT_RFCOMM_DISCONNECTED:
-            TRACE_LUA("bt rfcomm disconnected\r\n");
+            TRACE_LUA("bt rfcomm disconnected %d\r\n", ev.data.bt.req);
             {
+                bt_event *btev = &ev.data.bt;
+
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -236,14 +250,20 @@ rtc_close();
                 lua_pushnumber(L, ev.type);
                 lua_settable(L, -3);
 
+                lua_pushstring(L, "request");
+                lua_rawgeti(L, LUA_REGISTRYINDEX, btev->req);
+                lua_settable(L, -3);
+
                 lua_pushstring(L, "handle");
-                lua_pushlightuserdata(L, (void*)ev.data.bt.data.handle);
+                lua_pushlightuserdata(L, (void*)btev->param.data.handle);
                 lua_settable(L, -3);
             }
             break;
         case EVENT_BT_LINK_KEY_NOT:
             TRACE_LUA("bt link key not\r\n");
             {
+                bt_event *btev = &ev.data.bt;
+
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -254,7 +274,7 @@ rtc_close();
                 lua_pushnumber(L, ev.type);
                 lua_settable(L, -3);
 
-                struct bt_bdaddr_link_key *ev_bdaddr_link_key = ev.data.bt.ptr;
+                struct bt_bdaddr_link_key *ev_bdaddr_link_key = btev->param.ptr;
                 lua_pushstring(L, "bdaddr");
                 lua_pushlstring(L, &ev_bdaddr_link_key->bdaddr, BT_BDADDR_LEN);
                 lua_settable(L, -3);
@@ -269,6 +289,8 @@ rtc_close();
         case EVENT_BT_LINK_KEY_REQ:
             TRACE_LUA("bt link key req\r\n");
             {
+                bt_event *btev = &ev.data.bt;
+
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -279,7 +301,7 @@ rtc_close();
                 lua_pushnumber(L, ev.type);
                 lua_settable(L, -3);
 
-                struct bd_addr *ev_bdaddr = ev.data.bt.ptr;
+                struct bd_addr *ev_bdaddr = btev->param.ptr;
                 lua_pushstring(L, "bdaddr");
                 lua_pushlstring(L, ev_bdaddr, BT_BDADDR_LEN);
                 lua_settable(L, -3);
@@ -288,8 +310,10 @@ rtc_close();
             }
             break;
         case EVENT_BT_SDP_RES:
-            TRACE_LUA("bt sdp res\r\n");
+            TRACE_LUA("bt sdp res %d\r\n", ev.data.bt.req);
             {
+                bt_event *btev = &ev.data.bt;
+
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -300,8 +324,12 @@ rtc_close();
                 lua_pushnumber(L, ev.type);
                 lua_settable(L, -3);
 
+                lua_pushstring(L, "request");
+                lua_rawgeti(L, LUA_REGISTRYINDEX, btev->req);
+                lua_settable(L, -3);
+
                 lua_pushstring(L, "channel");
-                lua_pushnumber(L, ev.data.bt.sdp.cn);
+                lua_pushnumber(L, btev->param.sdp.cn);
                 lua_settable(L, -3);
             }
             break;

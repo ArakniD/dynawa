@@ -275,14 +275,12 @@ static void u_bt_task(bt_command *cmd)
         case BT_COMMAND_SEND:
             {
                 TRACE_INFO("BT_COMMAND_SEND\r\n");
-                struct pbuf *p = cmd->data.send.pbuf;
+                void *req = cmd->req;
                 struct rfcomm_pcb *pcb = cmd->data.send.handle;
+                struct pbuf *p = cmd->data.send.pbuf;
 
-                if(rfcomm_cl(pcb)) {
-                    rfcomm_uih_credits(pcb, PBUF_POOL_SIZE - rfcomm_remote_credits(pcb), p);
-                } else {
-                    rfcomm_uih(pcb, rfcomm_cn(pcb), p);
-                }
+                _bt_rfcomm_send(req, pcb, p);
+
                 pbuf_free(p);
             }
             break;
@@ -299,9 +297,10 @@ static void u_bt_task(bt_command *cmd)
         case BT_COMMAND_RFCOMM_CONNECT:
             {
                 TRACE_INFO("BT_COMMAND_RFCOMM_CONNECT\r\n");
+                void *req = cmd->req;
                 struct bt_bdaddr_cn *bdaddr_cn = cmd->data.ptr;
 
-                _bt_rfcomm_connect(&bdaddr_cn->bdaddr, bdaddr_cn->cn);
+                _bt_rfcomm_connect(req, &bdaddr_cn->bdaddr, bdaddr_cn->cn);
 
                 free(bdaddr_cn);
             }
@@ -309,9 +308,10 @@ static void u_bt_task(bt_command *cmd)
         case BT_COMMAND_SDP_SEARCH:
             {
                 TRACE_INFO("BT_COMMAND_SDP_SEARCH\r\n");
+                void *req = cmd->req;
                 struct bd_addr *bdaddr = cmd->data.ptr;
 
-                _bt_sdp_search(bdaddr);
+                _bt_sdp_search(req, bdaddr);
 
                 free(bdaddr);
             }
@@ -732,6 +732,13 @@ void bt_buf_free(struct pbuf *p) {
     pbuf_free(p);
 }
 
+void trace_bytes(char *text, uint8_t *bytes, int len) {
+    int i;
+    for (i = 0; i < len; i++) {
+        TRACE_INFO("%s[%d] = %02x\r\n", text, i, bytes[i]);
+    }
+}
+
 // commands 
 
 int bt_init() {
@@ -766,7 +773,7 @@ int bt_close() {
     return BT_OK;
 }
 
-int bt_rfcomm_send(void *handle, const char *data) {
+int bt_rfcomm_send(void *req, void *handle, const char *data) {
     bt_command cmd;
     struct pbuf *p;
 
@@ -780,6 +787,7 @@ int bt_rfcomm_send(void *handle, const char *data) {
     strcpy(p->payload, data);
 
     cmd.id = BT_COMMAND_SEND;
+    cmd.req = req;
     cmd.data.send.handle = handle;
     cmd.data.send.pbuf = p;
 
@@ -788,12 +796,6 @@ int bt_rfcomm_send(void *handle, const char *data) {
     return BT_OK;
 }
 
-void trace_bytes(char *text, uint8_t *bytes, int len) {
-    int i;
-    for (i = 0; i < len; i++) {
-        TRACE_INFO("%s[%d] = %02x\r\n", text, i, bytes[i]);
-    }
-}
 
 void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
     bt_command cmd;
@@ -818,10 +820,10 @@ void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
     return BT_OK;
 }
 
-void bt_rfcomm_connect(uint8_t *bdaddr, uint8_t channel) {
+void bt_rfcomm_connect(void *req, uint8_t *bdaddr, uint8_t channel) {
     bt_command cmd;
 
-    TRACE_INFO("bt_rfcomm_connect %d\r\n", channel);
+    TRACE_INFO("bt_rfcomm_connect %x %d\r\n", req, channel);
 
     struct bt_bdaddr_cn *bdaddr_cn = malloc(sizeof(struct bt_bdaddr_cn)); 
     if (bdaddr_cn == NULL) {
@@ -833,6 +835,7 @@ void bt_rfcomm_connect(uint8_t *bdaddr, uint8_t channel) {
     trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
 
     cmd.id = BT_COMMAND_RFCOMM_CONNECT;
+    cmd.req = req;
     cmd.data.ptr = bdaddr_cn;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
@@ -840,10 +843,10 @@ void bt_rfcomm_connect(uint8_t *bdaddr, uint8_t channel) {
     return BT_OK;
 }
 
-void bt_sdp_search(uint8_t *bdaddr) {
+void bt_sdp_search(void *req, uint8_t *bdaddr) {
     bt_command cmd;
 
-    TRACE_INFO("bt_sdp_search\r\n");
+    TRACE_INFO("bt_sdp_search %x\r\n", req);
 
     struct bd_addr *cmd_bdaddr = malloc(sizeof(struct bd_addr)); 
     if (cmd_bdaddr == NULL) {
@@ -854,6 +857,7 @@ void bt_sdp_search(uint8_t *bdaddr) {
     trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
 
     cmd.id = BT_COMMAND_SDP_SEARCH;
+    cmd.req = req;
     cmd.data.ptr = cmd_bdaddr;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
