@@ -280,10 +280,13 @@ err_t rfcomm_disconnected(void *arg, struct rfcomm_pcb *pcb, err_t err)
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("rfcomm_disconnected: CN = %d\n", rfcomm_cn(pcb)));
 	if(rfcomm_cn(pcb) != 0) {
 		; //ppp_lp_disconnected(pcb);
+
+        bt_socket *sock = (bt_socket*)arg;
+        sock->pcb = NULL;
+
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.req = arg;
-        ev.data.bt.param.data.handle = pcb;
+        ev.data.bt.sock = sock;
         event_post(&ev);
 	}
 	rfcomm_close(pcb);
@@ -310,10 +313,12 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
 		sdp_lp_disconnected(pcb);
 		l2cap_close(pcb);
 
+        bt_socket *sock = (bt_socket*)arg;
+        sock->pcb = NULL;
+
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.req = arg;
-        ev.data.bt.param.data.handle = pcb;
+        ev.data.bt.sock = sock;
         event_post(&ev);
 	} else if(pcb->psm == RFCOMM_PSM) {
 	    LWIP_DEBUGF(BT_SPP_DEBUG, ("RFCOMM_PSM %x\n", arg));
@@ -327,10 +332,12 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
 
 /*
         // TODO: EVENT_BT_RFCOMM_DISCONNECTED done in rfcomm_lp_disconnected() too
+        bt_socket *sock = (bt_socket*)arg;
+        sock->pcb = NULL;
+
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.req = arg;
-        ev.data.bt.data.handle = pcb;
+        ev.data.bt.sock = sock;
         event_post(&ev);
 */
 	} else {
@@ -527,9 +534,8 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
     TRACE_INFO("spp_recv %d\r\n", p->len);
     event ev;
     ev.type = EVENT_BT_DATA;
-    ev.data.bt.req = arg;
-    ev.data.bt.param.data.handle = pcb;
-    ev.data.bt.param.data.pbuf = p;
+    ev.data.bt.sock = arg;
+    ev.data.bt.param.ptr = p;
     event_post(&ev);
 
 	return ERR_OK;
@@ -848,7 +854,7 @@ err_t link_key_not(void *arg, struct bd_addr *bdaddr, u8_t *key)
 
     event ev;
     ev.type = EVENT_BT_LINK_KEY_NOT;
-    ev.data.bt.req = arg;
+    ev.data.bt.sock = arg;
     ev.data.bt.param.ptr = ev_bdaddr_link_key;
     event_post(&ev);
 
@@ -877,7 +883,7 @@ err_t link_key_req(void *arg, struct bd_addr *bdaddr)
 
     event ev;
     ev.type = EVENT_BT_LINK_KEY_REQ;
-    ev.data.bt.req = arg;
+    ev.data.bt.sock = arg;
     ev.data.bt.param.ptr = ev_bdaddr;
     event_post(&ev);
 }
@@ -976,10 +982,12 @@ err_t rfcomm_connected(void *arg, struct rfcomm_pcb *pcb, err_t err)
 	    if(rfcomm_cn(pcb) != 0) {
             rfcomm_recv(pcb, spp_recv);
 
+            bt_socket *sock = (bt_socket*)arg;
+            sock->pcb = pcb;
+
             event ev;
             ev.type = EVENT_BT_RFCOMM_CONNECTED;
-            ev.data.bt.req = arg;
-            ev.data.bt.param.data.handle = pcb;
+            ev.data.bt.sock = sock;
             event_post(&ev);
 
             //bt_rfcomm_send(pcb, "AT*SEAM=\"MBW-150\",13\r");
@@ -1361,9 +1369,9 @@ void sdp_attributes_recv2(void *arg, struct sdp_pcb *sdppcb, u16_t attribl_bc, s
     }
 
     event ev;
-    ev.type = EVENT_BT_SDP_RES;
-    ev.data.bt.req = arg;
-    ev.data.bt.param.sdp.cn = cn;
+    ev.type = EVENT_BT_FIND_SERVICE_RES;
+    ev.data.bt.sock = (bt_socket*)arg;
+    ev.data.bt.param.service.cn = cn;
     event_post(&ev);
 
 	sdp_free(sdppcb);
@@ -1424,7 +1432,8 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
                 // MV
 	            rfcomm_disc(rfcommpcb, rfcomm_disconnected);
 
-				return rfcomm_connect(rfcommpcb, bt_spp_state.cn, rfcomm_connected); /* Connect with DLCI 0 */
+                bt_socket *sock = (bt_socket*)arg;
+				return rfcomm_connect(rfcommpcb, sock->cn, rfcomm_connected); /* Connect with DLCI 0 */
 			default:
 				return ERR_VAL;
 		}
@@ -1432,32 +1441,34 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP not connected. Redo inquiry\n"));
 		l2cap_close(l2cappcb);
 		//MV bt_spp_start();
+
+        bt_socket *sock = (bt_socket*)arg;
+        sock->pcb = NULL;
+
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.req = arg;
-        ev.data.bt.param.data.handle = l2cappcb;
+        ev.data.bt.sock = sock;
         event_post(&ev);
 	}
 
 	return ERR_OK;
 }
 
-void _bt_rfcomm_connect(void *req, struct bd_addr *bdaddr, u8_t cn) {
+void _bt_rfcomm_connect(bt_socket *sock, struct bd_addr *bdaddr, u8_t cn) {
 	struct l2cap_pcb *l2cappcb;
 
     if((l2cappcb = l2cap_new()) == NULL) {
         LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: Could not alloc L2CAP pcb\n"));
         return;
     }
-    l2cap_arg(l2cappcb, req);
-    // TODO: cn!!!!
-    bt_spp_state.cn = cn;
-    LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", bt_spp_state.cn));
+    sock->cn = cn;
+    l2cap_arg(l2cappcb, sock);
+    LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", sock->cn));
 
     l2ca_connect_req(l2cappcb, bdaddr, RFCOMM_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
 }
 
-void _bt_sdp_search(void *req, struct bd_addr *bdaddr) {
+void _bt_find_service(bt_socket *sock, struct bd_addr *bdaddr) {
 	struct l2cap_pcb *l2cappcb;
 
     if((l2cappcb = l2cap_new()) == NULL) {
@@ -1466,7 +1477,7 @@ void _bt_sdp_search(void *req, struct bd_addr *bdaddr) {
     } 
 
     // MV test
-    l2cap_arg(l2cappcb, req);
+    l2cap_arg(l2cappcb, sock);
     l2cap_disconnect_ind(l2cappcb, l2cap_disconnected_ind);
 
     l2ca_connect_req(l2cappcb, bdaddr, SDP_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
@@ -1476,8 +1487,15 @@ void _bt_inquiry() {
     hci_inquiry(0x009E8B33, 0x04, 0x01, inquiry_complete);
 }
 
-void _bt_rfcomm_send(void *req, struct rfcomm_pcb *pcb, struct pbuf *p) {
-    rfcomm_arg(pcb, req);
+void _bt_rfcomm_send(bt_socket *sock, struct pbuf *p) {
+    struct rfcomm_pcb *pcb = sock->pcb;
+
+    if (pcb == NULL) {
+        panic();
+    }
+
+    // TODO: check if pcb valid
+    rfcomm_arg(pcb, sock);
     if(rfcomm_cl(pcb)) {
         rfcomm_uih_credits(pcb, PBUF_POOL_SIZE - rfcomm_remote_credits(pcb), p);
     } else {

@@ -19,7 +19,7 @@
 #define EVENT_BT_RFCOMM_CONNECTED 115
 #define EVENT_BT_RFCOMM_DISCONNECTED 116
 #define EVENT_BT_DATA           120
-#define EVENT_BT_SDP_RES     130
+#define EVENT_BT_FIND_SERVICE_RES     130
 
 typedef struct {
     uint8_t id;

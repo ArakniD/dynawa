@@ -19,7 +19,7 @@
 #define BT_COMMAND_SEND     2
 #define BT_COMMAND_SET_LINK_KEY 3
 #define BT_COMMAND_INQUIRY 4
-#define BT_COMMAND_SDP_SEARCH 5
+#define BT_COMMAND_FIND_SERVICE 5
 #define BT_COMMAND_RFCOMM_CONNECT 6
 
 #define BT_LED_LOW          0x40
@@ -30,32 +30,29 @@
 #define BT_ERR_ALREADY_STARTED    10
 
 typedef struct {
-    void *handle;
-    struct pbuf *pbuf;
-} bt_cmd_send;
+    uint8_t proto;
+    uint16_t state;
+    void *pcb;
+    uint8_t cn;
+} bt_socket;
 
 typedef struct {
     uint8_t id;
-    void *req;
+    bt_socket *sock;
     union {
-        bt_cmd_send send;
         void *ptr;
-    } data; 
+    } param; 
 } bt_command;
 
 typedef union {
-    struct {
-        void *handle;
-        void *pbuf;
-    } data;
     void *ptr;
     struct {
         uint8_t cn;
-    } sdp;
+    } service;
 } bt_param;
 
 typedef struct {
-    void *req;
+    bt_socket *sock;
     bt_param param;
 } bt_event;
 

@@ -11,13 +11,13 @@ static int l_cmd (lua_State *L) {
     TRACE_INFO("dynawa.bt.cmd(%d)\r\n", cmd);
 
     switch(cmd) {
-    case 1:
+    case 1:         // OPEN
         bt_open();
         break;
-    case 2:
+    case 2:         // CLOSE
         bt_close();
         break;
-    case 3:
+    case 3:         // SET_LINK_KEY
         {
             const uint8_t *bdaddr = luaL_checkstring(L, 2);
             const uint8_t *link_key = luaL_checkstring(L, 3);
@@ -33,52 +33,67 @@ static int l_cmd (lua_State *L) {
             lua_pushvalue(L, 2);
             uint32_t ref_lua_socket = luaL_ref(L, LUA_REGISTRYINDEX);
 
-            bt_lua_socket *sock = malloc(sizeof(bt_lua_socket));
+            bt_lua_socket *sock = (bt_lua_socket*)malloc(sizeof(bt_lua_socket));
             if (sock == NULL) {
                 panic();
             }
+            memset(sock, 0, sizeof(bt_lua_socket));
+
             sock->ref_lua_socket = ref_lua_socket;
+            TRACE_INFO("ref_sock %x\r\n", sock->ref_lua_socket);
             lua_pushlightuserdata(L, (void *)sock);
             return 1;
         }
         break;
+    case 101:       // SOCKET_CLOSE
+        {
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = lua_touserdata(L, 2);
+
+            luaL_unref(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+
+            free(sock);
+        }
+        break;
     case 200:       // FIND_SERVICE
         {
-            lua_pushvalue(L, 2);
-            uint32_t req = luaL_ref(L, LUA_REGISTRYINDEX);
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
 
             const uint8_t *bdaddr = luaL_checkstring(L, 3);
 
-            bt_sdp_search(req, bdaddr);
+            bt_find_service((bt_socket*)sock, bdaddr);
         }
         break;
     case 300:       // LISTEN
         break;
     case 301:       // CONNECT
         {
-            lua_pushvalue(L, 2);
-            uint32_t req = luaL_ref(L, LUA_REGISTRYINDEX);
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
 
             const uint8_t *bdaddr = luaL_checkstring(L, 3);
 
             uint8_t channel = luaL_checkint(L, 4);
 
-            bt_rfcomm_connect(req, bdaddr, channel);
+            bt_rfcomm_connect((bt_socket*)sock, bdaddr, channel);
         }
         break;
     case 400:       // SEND
         {
-            lua_pushvalue(L, 2);
-            uint32_t req = luaL_ref(L, LUA_REGISTRYINDEX);
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
 
+            /*
             luaL_checktype(L, 3, LUA_TLIGHTUSERDATA); 
             void *handle = lua_touserdata(L, 3);
+            */
 
-            const char *data = luaL_checkstring(L, 4);
+            const char *data = luaL_checkstring(L, 3);
 
             TRACE_INFO("data %s\r\n", data);
 
-            bt_rfcomm_send(req, handle, data);
+            bt_rfcomm_send((bt_socket*)sock, data);
         }
         break;
     }
