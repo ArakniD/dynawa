@@ -182,6 +182,17 @@ void hci_link_key_not(err_t (* link_key_not)(void *arg, struct bd_addr *bdaddr, 
 }
 
 /* 
+ * hci_link_key_req():
+ *
+ * Used to specify the function that should be called when HCI has received a 
+ * link key request event.
+ */
+void hci_link_key_req(err_t (* link_key_req)(void *arg, struct bd_addr *bdaddr))
+{
+	pcb->link_key_req = link_key_req;
+}
+
+/* 
  * hci_connection_complete():
  *
  * Used to specify the function that should be called when HCI has received a 
@@ -720,15 +731,17 @@ TRACE_BT("hci_get_link\r\n");
 			break;
 		case HCI_LINK_KEY_REQUEST:
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("hci_event_input: Link key request\n"));
+			TRACE_INFO("hci_event_input: Link key request\r\n");
 			bdaddr = (void *)((u8_t *)p->payload); /* Get the Bluetooth address */
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("bdaddr: %02x:%02x:%02x:%02x:%02x:%02x\n",
 						((u8_t *)p->payload)[5], ((u8_t *)p->payload)[4], ((u8_t *)p->payload)[3],
 						((u8_t *)p->payload)[2],  ((u8_t *)p->payload)[1],  ((u8_t *)p->payload)[0]
 						));
-            // TODO?
+			HCI_EVENT_LINK_KEY_REQ(pcb, bdaddr, ret); /* Notify application */
             break;
 		case HCI_LINK_KEY_NOTIFICATION:
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("hci_event_input: Link key notification\n"));
+			TRACE_INFO("hci_event_input: Link key notification\r\n");
 			bdaddr = (void *)((u8_t *)p->payload); /* Get the Bluetooth address */
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("bdaddr: %02x:%02x:%02x:%02x:%02x:%02x\n",
 						((u8_t *)p->payload)[5], ((u8_t *)p->payload)[4], ((u8_t *)p->payload)[3],

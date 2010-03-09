@@ -39,11 +39,19 @@ SECTIONS
 		__vectors_ram_start__ = .;
 		__vectors_load_start__ = . + (LOADADDR(.vectors) - ADDR(.vectors));
 		*(.vectors .vectors.*)
+		. = ALIGN(4);
+		__vectors_ram_end__ = .;
+	} >sram AT>xcodesram
+
+	.fast : {
+		__fast_start__ = .;
+		__fast_load_start__ = . + (LOADADDR(.fast) - ADDR(.fast));
+		*(.fast .fast.*)
         */screen.o(.text)
         */oled.o(.text)
         */bitmap.o(.text)
 		. = ALIGN(4);
-		__vectors_ram_end__ = .;
+		__fast_end__ = .;
 	} >sram AT>xcodesram
 
 	.text : {
@@ -77,16 +85,6 @@ SECTIONS
 		. = ALIGN(4);
 		__rodata_end__ = .;
 	} >xcodesram
-
-
-	.fast : {
-		__fast_start__ = .;
-		__fast_load_start__ = . + (LOADADDR(.fast) - ADDR(.fast));
-		*(.fast .fast.*)
-		. = ALIGN(4);
-		__fast_end__ = .;
-	} >xdatasram
-
 
 	.stack : {
 		__stack_start__ = .;

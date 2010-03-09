@@ -53,6 +53,7 @@ void hci_arg(void *arg);
 void hci_cmd_complete(err_t (* cmd_complete)(void *arg, struct hci_pcb *pcb, 
 			u8_t ogf, u8_t ocf, u8_t result));
 void hci_pin_req(err_t (* pin_req)(void *arg, struct bd_addr *bdaddr));
+void hci_link_key_req(err_t (* link_key_req)(void *arg, struct bd_addr *bdaddr));
 void hci_link_key_not(err_t (* link_key_not)(void *arg, struct bd_addr *bdaddr, u8_t *key));
 void  hci_wlp_complete(err_t (* wlp_complete)(void *arg, struct bd_addr *bdaddr));
 void hci_connection_complete(err_t (* conn_complete)(void *arg, struct bd_addr *bdaddr));
@@ -354,6 +355,7 @@ struct hci_pcb {
 	err_t (* inq_complete)(void *arg, struct hci_pcb *pcb, struct hci_inq_res *ires, u16_t result);
 	err_t (* rbd_complete)(void *arg, struct bd_addr *bdaddr);
 	err_t (* link_key_not)(void *arg, struct bd_addr *bdaddr, u8_t *key);
+	err_t (* link_key_req)(void *arg, struct bd_addr *bdaddr);
 	err_t (* wlp_complete)(void *arg, struct bd_addr *bdaddr);
 	err_t (* conn_complete)(void *arg, struct bd_addr *bdaddr);
 	err_t (* cmd_complete)(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t result);
@@ -368,6 +370,10 @@ struct hci_pcb {
 #define HCI_EVENT_LINK_KEY_NOT(pcb,bdaddr,key,ret) \
 	if((pcb)->link_key_not != NULL) { \
 		(ret = (pcb)->link_key_not((pcb)->callback_arg,(bdaddr),(key))); \
+	}
+#define HCI_EVENT_LINK_KEY_REQ(pcb,bdaddr,ret) \
+	if((pcb)->link_key_req != NULL) { \
+		(ret = (pcb)->link_key_req((pcb)->callback_arg,(bdaddr))); \
 	}
 #define HCI_EVENT_INQ_COMPLETE(pcb,result,ret) \
 	if((pcb)->inq_complete != NULL) \
