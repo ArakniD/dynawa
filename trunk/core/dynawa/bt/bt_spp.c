@@ -282,7 +282,8 @@ err_t rfcomm_disconnected(void *arg, struct rfcomm_pcb *pcb, err_t err)
 		; //ppp_lp_disconnected(pcb);
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.data.handle = pcb;
+        ev.data.bt.req = arg;
+        ev.data.bt.param.data.handle = pcb;
         event_post(&ev);
 	}
 	rfcomm_close(pcb);
@@ -311,7 +312,8 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
 
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.data.handle = pcb;
+        ev.data.bt.req = arg;
+        ev.data.bt.param.data.handle = pcb;
         event_post(&ev);
 	} else if(pcb->psm == RFCOMM_PSM) {
 	    LWIP_DEBUGF(BT_SPP_DEBUG, ("RFCOMM_PSM %x\n", arg));
@@ -327,6 +329,7 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
         // TODO: EVENT_BT_RFCOMM_DISCONNECTED done in rfcomm_lp_disconnected() too
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.data.bt.req = arg;
         ev.data.bt.data.handle = pcb;
         event_post(&ev);
 */
@@ -501,6 +504,7 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
 	struct pbuf *q = NULL;
 	
 	LWIP_DEBUGF(BT_SPP_DEBUG, ("spp_recv: p->len == %d p->tot_len == %d\n", p->len, p->tot_len));
+/* MV
 	if(arg != NULL) {
 		q = pbuf_alloc(PBUF_RAW, p->len + ((struct pbuf *)arg)->len, PBUF_RAM);
 		LWIP_ERROR("couldn't alloc pbuf", q == NULL, return ERR_MEM);
@@ -513,6 +517,7 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
 		data = q->payload;
 		p = q;
 	}
+*/
     int i;
     for (i = 0; i < p->len; ++i) {
         LWIP_DEBUGF(BT_SPP_DEBUG, ("data: %c %d\n", data[i], data[i]));
@@ -522,8 +527,9 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
     TRACE_INFO("spp_recv %d\r\n", p->len);
     event ev;
     ev.type = EVENT_BT_DATA;
-    ev.data.bt.data.handle = pcb;
-    ev.data.bt.data.pbuf = p;
+    ev.data.bt.req = arg;
+    ev.data.bt.param.data.handle = pcb;
+    ev.data.bt.param.data.pbuf = p;
     event_post(&ev);
 
 	return ERR_OK;
@@ -842,7 +848,8 @@ err_t link_key_not(void *arg, struct bd_addr *bdaddr, u8_t *key)
 
     event ev;
     ev.type = EVENT_BT_LINK_KEY_NOT;
-    ev.data.bt.ptr = ev_bdaddr_link_key;
+    ev.data.bt.req = arg;
+    ev.data.bt.param.ptr = ev_bdaddr_link_key;
     event_post(&ev);
 
 	return hci_write_stored_link_key(bdaddr, key); /* Write link key to be stored in the
@@ -870,7 +877,8 @@ err_t link_key_req(void *arg, struct bd_addr *bdaddr)
 
     event ev;
     ev.type = EVENT_BT_LINK_KEY_REQ;
-    ev.data.bt.ptr = ev_bdaddr;
+    ev.data.bt.req = arg;
+    ev.data.bt.param.ptr = ev_bdaddr;
     event_post(&ev);
 }
 
@@ -970,7 +978,8 @@ err_t rfcomm_connected(void *arg, struct rfcomm_pcb *pcb, err_t err)
 
             event ev;
             ev.type = EVENT_BT_RFCOMM_CONNECTED;
-            ev.data.bt.data.handle = pcb;
+            ev.data.bt.req = arg;
+            ev.data.bt.param.data.handle = pcb;
             event_post(&ev);
 
             //bt_rfcomm_send(pcb, "AT*SEAM=\"MBW-150\",13\r");
@@ -1030,6 +1039,7 @@ err_t l2cap_connected(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_t
 	struct rfcomm_pcb *rfcommpcb;
 
 	u8_t ssp[] = {0x35, 0x03, 0x19, 0x11, 0x01}; /* Service search pattern with LAP UUID is default */ 
+    // 0x8e771401
 	err_t ret;
 
 	u8_t attrids[] = {0x35, 0x03, 0x09, 0x00, 0x04}; /* Attribute IDs to search for in data element 
@@ -1185,7 +1195,8 @@ TRACE_BT("bdaddr %x %x\r\n", &(bt_spp_state.bdaddr), bdaddr);
  */
 err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t result)
 {
-	u8_t cod_spp[] = {0x08,0x04,0x24};
+	//u8_t cod_spp[] = {0x08,0x04,0x24};
+	u8_t cod_wearable[] = {0x00,0x07,0x04};
 	//u8_t devname[] = "iAirlink----";
 	u8_t devname[] = "DynawaTCH---";
 	u8_t n1, n2, n3;
@@ -1250,7 +1261,8 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 				case HCI_SET_EVENT_FILTER:
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_SET_EVENT_FILTER.\n"));
-                        hci_write_cod(cod_spp);
+                        //hci_write_cod(cod_spp);
+                        hci_write_cod(cod_wearable);
                         // discoverable
                         hci_write_scan_enable(HCI_SCAN_EN_INQUIRY | HCI_SCAN_EN_PAGE);
                         // nondiscoverable
@@ -1350,7 +1362,8 @@ void sdp_attributes_recv2(void *arg, struct sdp_pcb *sdppcb, u16_t attribl_bc, s
 
     event ev;
     ev.type = EVENT_BT_SDP_RES;
-    ev.data.bt.sdp.cn = cn;
+    ev.data.bt.req = arg;
+    ev.data.bt.param.sdp.cn = cn;
     event_post(&ev);
 
 	sdp_free(sdppcb);
@@ -1370,7 +1383,8 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 	struct sdp_pcb *sdppcb;
 	struct rfcomm_pcb *rfcommpcb;
 
-	u8_t ssp[] = {0x35, 0x03, 0x19, 0x11, 0x01}; /* Service search pattern with LAP UUID is default */ 
+	//u8_t ssp[] = {0x35, 0x03, 0x19, 0x11, 0x01}; /* Service search pattern with LAP UUID is default */ 
+	u8_t ssp[] = {0x35, 0x05, 0x1a, 0x8e, 0x77, 0x14, 0x01}; /* Service search pattern with LAP UUID is default */ 
 	err_t ret;
 
 	u8_t attrids[] = {0x35, 0x03, 0x09, 0x00, 0x04}; /* Attribute IDs to search for in data element 
@@ -1388,6 +1402,7 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 					return ERR_MEM;
 				}
 
+                sdp_arg(sdppcb, arg);
 				l2cap_recv(l2cappcb, sdp_recv);
 
 				ret = sdp_service_search_attrib_req(sdppcb, 0xFFFF, ssp, sizeof(ssp),
@@ -1403,6 +1418,7 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 					return ERR_MEM;
 				}
 
+                rfcomm_arg(rfcommpcb, arg);
 				//MV hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
 
                 // MV
@@ -1418,28 +1434,30 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 		//MV bt_spp_start();
         event ev;
         ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.data.handle = l2cappcb;
+        ev.data.bt.req = arg;
+        ev.data.bt.param.data.handle = l2cappcb;
         event_post(&ev);
 	}
 
 	return ERR_OK;
 }
 
-void _bt_rfcomm_connect(struct bd_addr *bdaddr, u8_t cn) {
+void _bt_rfcomm_connect(void *req, struct bd_addr *bdaddr, u8_t cn) {
 	struct l2cap_pcb *l2cappcb;
 
     if((l2cappcb = l2cap_new()) == NULL) {
         LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: Could not alloc L2CAP pcb\n"));
         return;
     }
-    l2cap_arg(l2cappcb, 0x5678);
+    l2cap_arg(l2cappcb, req);
+    // TODO: cn!!!!
     bt_spp_state.cn = cn;
     LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", bt_spp_state.cn));
 
     l2ca_connect_req(l2cappcb, bdaddr, RFCOMM_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
 }
 
-void _bt_sdp_search(struct bd_addr *bdaddr) {
+void _bt_sdp_search(void *req, struct bd_addr *bdaddr) {
 	struct l2cap_pcb *l2cappcb;
 
     if((l2cappcb = l2cap_new()) == NULL) {
@@ -1448,7 +1466,7 @@ void _bt_sdp_search(struct bd_addr *bdaddr) {
     } 
 
     // MV test
-    l2cap_arg(l2cappcb, 0x1234);
+    l2cap_arg(l2cappcb, req);
     l2cap_disconnect_ind(l2cappcb, l2cap_disconnected_ind);
 
     l2ca_connect_req(l2cappcb, bdaddr, SDP_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
@@ -1456,4 +1474,13 @@ void _bt_sdp_search(struct bd_addr *bdaddr) {
 
 void _bt_inquiry() {
     hci_inquiry(0x009E8B33, 0x04, 0x01, inquiry_complete);
+}
+
+void _bt_rfcomm_send(void *req, struct rfcomm_pcb *pcb, struct pbuf *p) {
+    rfcomm_arg(pcb, req);
+    if(rfcomm_cl(pcb)) {
+        rfcomm_uih_credits(pcb, PBUF_POOL_SIZE - rfcomm_remote_credits(pcb), p);
+    } else {
+        rfcomm_uih(pcb, rfcomm_cn(pcb), p);
+    }
 }

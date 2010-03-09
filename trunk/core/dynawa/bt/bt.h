@@ -36,6 +36,7 @@ typedef struct {
 
 typedef struct {
     uint8_t id;
+    void *req;
     union {
         bt_cmd_send send;
         void *ptr;
@@ -51,6 +52,11 @@ typedef union {
     struct {
         uint8_t cn;
     } sdp;
+} bt_param;
+
+typedef struct {
+    void *req;
+    bt_param param;
 } bt_event;
 
 #define BT_LINK_KEY_LEN     16

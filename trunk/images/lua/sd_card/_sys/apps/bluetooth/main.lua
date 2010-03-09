@@ -4,6 +4,8 @@ require ("dynawa")
 local device_bdaddr = string.char(0x37, 0xb0, 0x87, 0xcc, 0x1f, 0x00) -- SGH-I780
 local jump = {}
 
+local request_count = 1
+
 local mbw150_response_count
 local mbw150_request = {
     "AT*SEAUDIO=0,0\r",
@@ -21,8 +23,63 @@ local mbw150_request = {
     --"AT+CHUP",
 }
 
+local cmd = {
+    SET_LINK_KEY = 3,
+    INQUIRY = 4,
+    SOCKET_NEW = 100,
+    SDP_SEARCH = 200,
+    LISTEN = 300,
+    CONNECT = 301,
+    SEND = 400,
+}
+
+local event = {
+    BT_STARTED = 100,
+    BT_STOPPED = 101,
+    BT_LINK_KEY_NOT = 110,
+    BT_LINK_KEY_REQ = 111,
+    BT_RFCOMM_CONNECTED = 115,
+    BT_RFCOMM_DISCONNECTED = 116,
+    BT_DATA = 120,
+    BT_SDP_RES = 130,
+}
+
 local function bdaddr2str(bdaddr)
     return string.format("%02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
+end
+
+-- Socket class
+local bt_socket = {
+    -- constants
+    -- socket protocol
+    PROTO_HCI = 1,
+    PROTO_L2CAP = 2,
+    PROTO_SDP = 3,
+    PROTO_RFCOMM = 4,
+
+    -- socket state
+    INITIALIZED = 1,
+
+    -- (static) constructor
+    new = function() 
+        socket = {
+            listen = function()
+            end,
+            connect = function()
+            end,
+            close = function()
+            end,
+            state = bt.socket.INITIALIZED,
+        }
+        socket.handle = dynawa.bt.cmd(cmd.SOCKET_NEW, socket)    -- allocate socket mem
+        return socket 
+    end,
+}
+
+local function find_service()
+    local socket = bt_socket.new(bt_socket.PROTO_SDP)
+ 
+    dynawa.bt.cmd(cmd.SDP_SEARCH, socket, message.bdaddr)    -- sdp_search
 end
 
 local menu_result = function(message)
@@ -68,7 +125,13 @@ jump.something_else = function(args)
 end
 
 local function reconnect(message)
-    dynawa.bt.cmd(5, message.bdaddr)    -- sdp_search
+    dynawa.bt.cmd(cmd.SDP_SEARCH, new_request(), message.bdaddr)    -- sdp_search
+end
+
+local function new_request()
+    local request = {id = request_count}
+    request_count = request_count + 1
+    return request 
 end
 
 local function got_message(message)
@@ -79,48 +142,53 @@ local function got_message(message)
 	end
     --]]
 
-    if message.subtype == 100 then -- 100: EVENT_BT_STARTED
+    if message.subtype == event.BT_STARTED then -- 100: EVENT_BT_STARTED
 		log("EVENT_BT_STARTED")
 
         local link_key = my.globals.prefs.devices[device_bdaddr]
         if link_key then
-            dynawa.bt.cmd(3, device_bdaddr, link_key)
+            dynawa.bt.cmd(cmd.SET_LINK_KEY, device_bdaddr, link_key)
         end
-        dynawa.bt.cmd(5, device_bdaddr)    -- sdp_search
-        --dynawa.bt.cmd(4)      -- inquiry
-    elseif message.subtype == 101 then -- 101: EVENT_BT_STOPPED
+        dynawa.bt.cmd(cmd.SDP_SEARCH, new_request(), device_bdaddr)    -- sdp_search
+        --dynawa.bt.cmd(cmd.INQUIRY)      -- inquiry
+    elseif message.subtype == event.BT_STOPPED then
 		log("EVENT_BT_STOPPED")
-    elseif message.subtype == 110 then -- 110: EVENT_BT_LINK_KEY_NOT
+    elseif message.subtype == event.BT_LINK_KEY_NOT then
 		log("EVENT_BT_LINK_KEY_NOT")
         local bdaddr = message.bdaddr
         local link_key = message.link_key
 		log("bdaddr " .. bdaddr2str(bdaddr))
         my.globals.prefs.devices[bdaddr] = link_key
         dynawa.file.save_data(my.globals.prefs)
-    elseif message.subtype == 111 then -- 110: EVENT_BT_LINK_KEY_REQ
+    elseif message.subtype == event.BT_LINK_KEY_REQ then
 		log("EVENT_BT_LINK_KEY_REQ")
         local bdaddr = message.bdaddr
 		log("bdaddr " .. bdaddr2str(bdaddr))
         local link_key = my.globals.prefs.devices[bdaddr]
         if link_key then
-            dynawa.bt.cmd(3, bdaddr, link_key)
+            dynawa.bt.cmd(cmd.SET_LINK_KEY, bdaddr, link_key)
         end
-    elseif message.subtype == 115 then -- 115: EVENT_BT_RFCOMM_CONNECTED
+    elseif message.subtype == event.BT_RFCOMM_CONNECTED then
 		log("EVENT_BT_RFCOMM_CONNECTED")
+        local request = message.request
         local handle = message.handle
+		log("request " .. request.id)
 		log("handle " .. tostring(handle))
         mbw150_response_count = 1
-        dynawa.bt.cmd(10, handle, "AT*SEAM=\"MBW-150\",13\r")
-    elseif message.subtype == 116 then -- 116: EVENT_BT_RFCOMM_DISCONNECTED
+        dynawa.bt.cmd(cmd.RFCOMM_SEND, new_request(), handle, "AT*SEAM=\"MBW-150\",13\r")
+    elseif message.subtype == event.BT_RFCOMM_DISCONNECTED then
 		log("EVENT_BT_RFCOMM_DISCONNECTED")
+        local request = message.request
         local handle = message.handle
+		log("request " .. request.id)
 		log("handle " .. tostring(handle))
 
-        --dynawa.bt.cmd(5, device_bdaddr)    -- sdp_search
         dynawa.delayed_callback{time=10 * 1000, callback=reconnect, bdaddr=device_bdaddr}
-    elseif message.subtype == 120 then -- 120: EVENT_BT_DATA
+    elseif message.subtype == event.BT_DATA then
 		log("EVENT_BT_DATA")
+        local request = message.request
         local data = message.data
+		log("request " .. request.id)
         if not data then
 		    log("empty data")
             data = "OK"
@@ -135,14 +203,16 @@ local function got_message(message)
             end
         end
         log(data)
-        dynawa.bt.cmd(10, message.handle, data)
-    elseif message.subtype == 130 then -- 130: EVENT_BT_SDP_RES
+        dynawa.bt.cmd(cmd.RFCOMM_SEND, new_request(), message.handle, data)
+    elseif message.subtype == event.BT_SDP_RES then
 		log("EVENT_BT_SDP_RES")
+        local request = message.request
         local channel = message.channel
+		log("request " .. request.id)
 		log("channel " .. channel)
         if channel > 0 then
             local bdaddr = string.char(0x37, 0xb0, 0x87, 0xcc, 0x1f, 0x00)
-            dynawa.bt.cmd(6, bdaddr, channel)
+            dynawa.bt.cmd(cmd.RFCOMM_CONNECT, new_request(), bdaddr, channel)
         end
     end
 end

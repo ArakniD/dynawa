@@ -242,6 +242,8 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_SET_EV_MASK_OCF 0x01
 #define HCI_RESET_OCF 0x03
 #define HCI_SET_EV_FILTER_OCF 0x05
+// MV
+#define HCI_W_STORED_LINK_KEY 0x11
 #define HCI_W_PAGE_TIMEOUT_OCF 0x18
 #define HCI_W_SCAN_EN_OCF 0x1A
 #define HCI_R_COD_OCF 0x23
