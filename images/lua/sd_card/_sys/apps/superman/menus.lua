@@ -109,6 +109,33 @@ my.globals.menus.file = function(fullname)
 	return menu
 end
 
+local function dump_string(value)
+	if type(value)~="string" then
+		return tostring(value)
+	end
+	if #value > 100 then
+		value = value:sub(1,100)
+	end
+	local binary = false
+	for i=1, #value do
+		local char = value:sub(i,i)
+		if char < " " or char > "~" then
+			binary = true
+			break
+		end
+	end
+	if binary then
+		local bytes = {}
+		for i=1, #value do
+			table.insert(bytes, string.format("%02x",string.byte(value:sub(i,i))))
+		end
+		value = table.concat(bytes, " ")
+	else
+		value = '"'..value..'"'
+	end
+	return value
+end
+
 my.globals.menus.data_browser = function()
 	local data = assert(my.globals.data_browser.data, "Data browser invoked but no data stored")
 	local menu = {banner = my.globals.data_browser.location, items = {}}
@@ -133,33 +160,7 @@ my.globals.menus.data_browser = function()
 					my.globals.data_browser = {data = value, location = my.globals.data_browser.location .. "/"..key}
 				end})
 			else
-				local binary = false
-				if type(value) == "string" then
-					if #value > 100 then
-						value = value:sub(1,100)
-					end
-					for i=1, #value do
-						local char = value:sub(i,i)
-						if char < " " or char > "~" then
-							binary = true
-							break
-						end
-					end
-					if binary then
-						local bytes = {}
-						for i=1, #value do
-							table.insert(bytes, string.format("%02x",string.byte(value:sub(i,i))))
-						end
-						value = table.concat(bytes, " ")
-					else
-						value = '"'..value..'"'
-					end
-				end
-				local separ = " = "
-				if binary then
-					separ = " $ "
-				end
-				table.insert(menu.items,{text = key..separ..tostring(value)})
+				table.insert(menu.items,{text = dump_string(key).." : "..dump_string(value)})
 			end
 		end
 	end
