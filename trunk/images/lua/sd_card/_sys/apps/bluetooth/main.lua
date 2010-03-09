@@ -149,7 +149,7 @@ local function got_message(message)
         if link_key then
             dynawa.bt.cmd(cmd.SET_LINK_KEY, device_bdaddr, link_key)
         end
-        dynawa.bt.cmd(cmd.SDP_SEARCH, new_request(), device_bdaddr)    -- sdp_search
+        dynawa.bt.cmd(cmd.SDP_SEARCH, new_request, device_bdaddr)    -- sdp_search
         --dynawa.bt.cmd(cmd.INQUIRY)      -- inquiry
     elseif message.subtype == event.BT_STOPPED then
 		log("EVENT_BT_STOPPED")

@@ -133,10 +133,33 @@ my.globals.menus.data_browser = function()
 					my.globals.data_browser = {data = value, location = my.globals.data_browser.location .. "/"..key}
 				end})
 			else
+				local binary = false
 				if type(value) == "string" then
-					value = '"'..value..'"'
+					if #value > 100 then
+						value = value:sub(1,100)
+					end
+					for i=1, #value do
+						local char = value:sub(i,i)
+						if char < " " or char > "~" then
+							binary = true
+							break
+						end
+					end
+					if binary then
+						local bytes = {}
+						for i=1, #value do
+							table.insert(bytes, string.format("%02x",string.byte(value:sub(i,i))))
+						end
+						value = table.concat(bytes, " ")
+					else
+						value = '"'..value..'"'
+					end
 				end
-				table.insert(menu.items,{text = key.." = "..tostring(value)})
+				local separ = " = "
+				if binary then
+					separ = " $ "
+				end
+				table.insert(menu.items,{text = key..separ..tostring(value)})
 			end
 		end
 	end
