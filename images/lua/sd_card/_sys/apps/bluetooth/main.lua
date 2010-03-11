@@ -7,7 +7,6 @@ TODO:
 --]]
 
 require("dynawa")
-require ("dynawa")
 
 
 local event = {
@@ -36,6 +35,13 @@ local cmd = {
     CONNECT = 301,
     SEND = 400,
 }
+
+local function bdaddr2str(bdaddr)
+    return string.format("%02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
+end
+
+
+-- dynawa.bt.socket begin
 
 local bt_socket = {
     -- constants
@@ -73,22 +79,28 @@ local bt_socket = {
 }
 
 
+-- outside of the bt_socket table because of use of bt_socket.slot  ... 
+
 bt_socket.new = function(socket_proto, socket_event_handler, socket_event_handler_data) 
-        assert(socket_proto == bt_socket.PROTO_RFCOMM or socket_proto == bt_socket.PROTO_SDP, "Socket proto" .. socket_proto .. " not implemented")
-        assert(socket_event_handler, "socket: no event handler")
-        bt_socket.socket_count = bt_socket.socket_count + 1
-        local socket = {
-            id = bt_socket.socket_count,
+    assert(socket_proto == bt_socket.PROTO_RFCOMM or socket_proto == bt_socket.PROTO_SDP, "Socket proto" .. socket_proto .. " not implemented")
+    assert(socket_event_handler, "socket: no event handler")
+    bt_socket.socket_count = bt_socket.socket_count + 1
+    local socket = {
+        id = bt_socket.socket_count,
 
-            proto = socket_proto,
-            event_handler = socket_event_handler,
-            event_handler_data = socket_event_handler_data,
+        proto = socket_proto,
+        event_handler = socket_event_handler,
+        event_handler_data = socket_event_handler_data,
 
-            state = bt_socket.STATE_INITIALIZED,
-        }
-        socket._c = dynawa.bt.cmd(cmd.SOCKET_NEW, socket)    -- allocate C socket
-        return socket 
-    end
+        state = bt_socket.STATE_INITIALIZED,
+    }
+    socket._c = dynawa.bt.cmd(cmd.SOCKET_NEW, socket)    -- allocate C socket
+    return socket 
+end
+
+dynawa.bt.socket = bt_socket
+
+-- dynawa.bt.socket end
 
 local function set_link_key(bdaddr, link_key)
     dynawa.bt.cmd(cmd.SET_LINK_KEY, bdaddr, link_key)
@@ -157,21 +169,32 @@ local mbw150 = {
 
     -- callbacks
 
-    reconnect = function(message)
-        local connection = assert(message.conn)
+    reconnect_attempt = function(message)
+        local connection = assert(message.connection)
         local handler = connection.handler
         find_service(connection.bdaddr, handler.find_service_events, connection)
+    end,
+
+    reconnect = function(connection)
+        local handler = connection.handler
+        connection.connection_attempt = connection.connection_attempt + 1
+        local when = connection.connection_attempt * 60
+        log(bdaddr2str(connection.bdaddr) .. " - attempt #" .. connection.connection_attempt .. " to reconnect in " .. when .. "s")
+        dynawa.delayed_callback{time = when * 1000, callback=handler.reconnect_attempt, ["connection"] = connection}
     end,
 
     socket_events = function(connection, socket, event_id, data)
         local handler = connection.handler
         if event_id == event.BT_CONNECTED then
+            log(bdaddr2str(connection.bdaddr) .. " - connected")
+            connection.connection_attempt = 0
             connection.parser_state = 1 
             local data_out = "AT*SEAM=\"MBW-150\",13\r"
             bt_socket.send(socket, data_out)
         elseif event_id == event.BT_DISCONNECTED then
+            log(bdaddr2str(connection.bdaddr) .. " - disconnected")
             bt_socket.close(socket) -- possible reuse?
-            dynawa.delayed_callback{time=10 * 1000, callback=handler.reconnect, conn = connection}
+            handler.reconnect(connection)
         elseif event_id == event.BT_DATA then
             local data_out
             if not data then
@@ -223,16 +246,17 @@ local mbw150 = {
                 bt_socket.connect(socket, connection.bdaddr, channel)
             else
                 log("no remote listening RFCOMM")
-                --TODO reconnect?
+                handler.reconnect(connection)
             end
         -- TODO: better operation result reporting:
         --  like: == event.BT_ERROR
-        elseif event_id == event.BT_DISCONNECT then
-            --TODO reconnect?
+        elseif event_id == event.BT_DISCONNECTED then
+            handler.reconnect(connection)
         end
     end,
 
     start = function(connection)
+        connection.connection_attempt = 0
         local handler = connection.handler
         find_service(connection.bdaddr, handler.find_service_events, connection)
     end,
@@ -253,10 +277,6 @@ local event = {
     BT_DATA = 120,
     BT_FIND_SERVICE_RES = 130,
 }
-
-local function bdaddr2str(bdaddr)
-    return string.format("%02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
-end
 
 local function got_message(message)
     log("Got BT message "..message.subtype)
