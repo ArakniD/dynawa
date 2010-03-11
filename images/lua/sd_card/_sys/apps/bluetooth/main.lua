@@ -162,7 +162,16 @@ local mbw150 = {
             {"OK", 13, "AT+CCLK?\r", nil},
         },
         [13] = {
-            {"CCLK", 14, nil, nil},
+            --{"CCLK", 14, nil, nil},
+            {"CCLK", 14, nil, 
+                function(connection, data)
+                    -- example: +CCLK: "2010/03/11,23:45:14+00"
+                    local year, month, day, hour, min, sec = string.match(data, "CCLK: \"(%d+)/(%d+)/(%d+),(%d+):(%d+):(%d+)")
+                    local time = os.time({["year"]=year, ["month"]=month, ["day"]=day, ["hour"]=hour, ["min"]=min, ["sec"]=sec})
+                    log("time " .. time)
+                    dynawa.time.set(time)
+                end 
+            },
         },
         --{ "X", "AT+CHUP" },
     },
@@ -217,7 +226,7 @@ local mbw150 = {
                             end
                             -- state handler
                             if transition[4] then
-                                -- TODO
+                                transition[4](connection, data)
                             end
                             break
                         end
