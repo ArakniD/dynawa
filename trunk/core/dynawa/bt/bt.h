@@ -29,6 +29,13 @@
 #define BT_ERR_MEM                1
 #define BT_ERR_ALREADY_STARTED    10
 
+// TODO: move to bt_socket.h?
+#define BT_SOCKET_STATE_INITIALIZED     1
+#define BT_SOCKET_STATE_CONNECTING      2
+#define BT_SOCKET_STATE_CONNECTED       3
+//#define BT_SOCKET_STATE_DISCONNECTING 4
+#define BT_SOCKET_STATE_DISCONNECTED    5
+
 typedef struct {
     uint8_t proto;
     uint16_t state;

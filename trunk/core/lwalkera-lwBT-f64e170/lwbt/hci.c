@@ -54,6 +54,28 @@ struct hci_link *hci_tmp_link;
 
 struct hci_pcb *pcb;
 
+// MV
+
+struct hci_cmd {
+    struct hci_cmd *next;
+    struct pbuf *p;
+};
+
+struct hci_cmd_queue {
+    struct hci_cmd *head;
+    struct hci_cmd *tail;
+    uint32_t cmd_count;
+};
+
+static struct hci_cmd_queue hci_cmd_main_queue = {NULL, NULL, 0};
+static struct hci_cmd_queue hci_cmd_connect_queue = {NULL, NULL, 0};
+uint32_t cmd_connect_count;
+
+void cmd_queue_free(struct hci_cmd_queue *queue);
+err_t hci_cmd_main_send(struct pbuf *p);
+void hci_cmd_main_queue_flush(void);
+err_t hci_cmd_connect_send(struct pbuf *p);
+void hci_cmd_connect_queue_flush(void);
 
 /* 
  * hci_init():
@@ -71,6 +93,10 @@ err_t hci_init(void)
 	/* Clear globals */
 	hci_active_links = NULL;
 	hci_tmp_link = NULL;
+
+    // MV
+    cmd_connect_count = 1;
+
 	return ERR_OK;
 }
 
@@ -133,6 +159,10 @@ void hci_reset_all(void)
 		ires = tires;
 	}
 	lwbt_memp_free(MEMP_HCI_PCB, pcb);
+
+    // MV
+    cmd_queue_free(&hci_cmd_main_queue);
+    cmd_queue_free(&hci_cmd_connect_queue);
 
 	hci_init();
 }
@@ -516,6 +546,9 @@ TRACE_BT("hci_get_link\r\n");
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("\n"));
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("Link_type: 0x%x\n",((u8_t *)p->payload)[9]));
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("Encryption_Mode: 0x%x\n",((u8_t *)p->payload)[10]));
+
+            cmd_connect_count++;
+            hci_cmd_connect_queue_flush();
 			break;
 		case HCI_DISCONNECTION_COMPLETE:
 			switch(((u8_t *)p->payload)[0]) {
@@ -554,6 +587,8 @@ TRACE_BT("hci_get_link\r\n");
 			pcb->numcmd += ((u8_t *)p->payload)[0]; /* Add number of completed command packets to the
 													   number of command packets that the BT module 
 													   can buffer */
+            hci_cmd_main_queue_flush();
+
 			pbuf_header(p, -1); /* Adjust payload pointer not to cover
 								   Num_HCI_Command_Packets parameter */
 			//ocf = *((u16_t *)p->payload) & 0x03FF;
@@ -655,6 +690,9 @@ TRACE_BT("hci_get_link\r\n");
 			/* Add number of completed command packets to the number of command
 			 * packets that the BT module can buffer */
 			pcb->numcmd += ((u8_t *)p->payload)[1]; 
+
+            hci_cmd_main_queue_flush();
+
 			LWIP_DEBUGF(HCI_EV_DEBUG, ("Command_Opcode: 0x%x 0x%x\n", ((u8_t *)p->payload)[2], ((u8_t *)p->payload)[3]));
 			break;
 		case HCI_HARDWARE_ERROR:
@@ -779,9 +817,7 @@ struct pbuf * hci_cmd_ass(struct pbuf *p, u8_t ocf, u8_t ogf, u8_t len)
 	((u8_t *)p->payload)[1] = (ocf & 0xff); /* OCF & OGF */
 	((u8_t *)p->payload)[2] = (ocf >> 8)|(ogf << 2);
 	((u8_t *)p->payload)[3] = len-HCI_CMD_HDR_LEN-1; /* Param len = plen - cmd hdr - ptype */
-	if(pcb->numcmd != 0) {
-		--pcb->numcmd; /* Reduce number of cmd packets that the host controller can buffer */
-	}
+
 	return p;
 }
 
@@ -818,10 +854,8 @@ err_t hci_inquiry(u32_t lap, u8_t inq_len, u8_t num_resp, err_t (* inq_complete)
 	//MEMCPY(((u8_t *)p->payload)+4, inqres->cod, 3);
 	((u8_t *)p->payload)[7] = inq_len;
 	((u8_t *)p->payload)[8] = num_resp;
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_disconnect():
@@ -851,10 +885,8 @@ err_t hci_disconnect(struct bd_addr *bdaddr, u8_t reason)
 	//((u16_t *)p->payload)[2] = link->conhdl;
     CPU2U16LE((u8_t*)p->payload + 4, link->conhdl);
 	((u8_t *)p->payload)[6] = reason;
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_reject_connection_request():
@@ -877,10 +909,8 @@ err_t hci_reject_connection_request(struct bd_addr *bdaddr, u8_t reason)
 	/* Assembling cmd prameters */
 	MEMCPY(((u8_t *)p->payload) + 4, bdaddr->addr, 6);
 	((u8_t *)p->payload)[10] = reason;
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_pin_code_request_reply():
@@ -908,10 +938,7 @@ err_t hci_pin_code_request_reply(struct bd_addr *bdaddr, u8_t pinlen, u8_t *pinc
 	((u8_t *)p->payload)[10] = pinlen;
 	MEMCPY(((u8_t *)p->payload) + 11, pincode, pinlen);
 
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_pin_code_request_neg_reply():
@@ -931,10 +958,8 @@ err_t hci_pin_code_request_neg_reply(struct bd_addr *bdaddr)
 	p = hci_cmd_ass(p, HCI_PIN_CODE_REQ_NEG_REP, HCI_LINK_CTRL_OGF, HCI_PIN_CODE_REQ_NEG_REP_PLEN);
 	/* Assembling cmd prameters */
 	MEMCPY(((u8_t *)p->payload)+4, bdaddr->addr, 6);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_sniff_mode():
@@ -974,9 +999,7 @@ err_t hci_sniff_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_inter
 	//((u16_t *)p->payload)[6] = timeout;
     CPU2U16LE((u8_t*)p->payload + 12, timeout);
 
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_write_link_policy_settings():
@@ -1010,9 +1033,8 @@ err_t hci_write_link_policy_settings(struct bd_addr *bdaddr, u16_t link_policy)
     CPU2U16LE((u8_t*)p->payload + 4, link->conhdl);
 	//((u16_t *)p->payload)[3] = link_policy;
     CPU2U16LE((u8_t*)p->payload + 6, link_policy);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-	return ERR_OK;
+
+    return hci_cmd_main_send(p);
 }
 
 /* hci_reset():
@@ -1030,10 +1052,8 @@ err_t hci_reset(void)
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_RESET_OCF, HCI_HC_BB_OGF, HCI_RESET_PLEN);
 	/* Assembling cmd prameters */
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_set_event_filter():
@@ -1099,9 +1119,8 @@ err_t hci_set_event_filter(u8_t filter_type, u8_t filter_cond_type, u8_t* cond)
 	if(cond_len) {
 		MEMCPY(((u8_t *)p->payload)+6, cond, cond_len);
 	}
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-	return ERR_OK;
+
+    return hci_cmd_main_send(p);
 }
 
 /* hci_write_stored_link_key():
@@ -1122,10 +1141,8 @@ err_t hci_write_stored_link_key(struct bd_addr *bdaddr, u8_t *link)
 	((u8_t *)p->payload)[4] = 0x01;
 	MEMCPY(((u8_t *)p->payload) + 5, bdaddr->addr, 6);
 	MEMCPY(((u8_t *)p->payload) + 11, link, 16);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_change_local_name():
@@ -1144,10 +1161,8 @@ err_t hci_change_local_name(u8_t *name, u8_t len)
 	p = hci_cmd_ass(p, HCI_CHANGE_LOCAL_NAME, HCI_HC_BB_OGF, HCI_CHANGE_LOCAL_NAME_PLEN + len);
 	/* Assembling cmd prameters */
 	MEMCPY(((u8_t *)p->payload) + 4, name, len);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_write_page_timeout():
@@ -1168,10 +1183,8 @@ err_t hci_write_page_timeout(u16_t page_timeout)
 	/* Assembling cmd prameters */
 	//((u16_t *)p->payload)[2] = page_timeout;
     CPU2U16LE((u8_t*)p->payload + 4, page_timeout);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_write_scan_enable():
@@ -1191,10 +1204,8 @@ err_t hci_write_scan_enable(u8_t scan_enable)
 	p = hci_cmd_ass(p, HCI_W_SCAN_EN_OCF, HCI_HC_BB_OGF, HCI_W_SCAN_EN_PLEN);
 	/* Assembling cmd prameters */
 	((u8_t *)p->payload)[4] = scan_enable;
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_write_cod():
@@ -1214,10 +1225,8 @@ err_t hci_write_cod(u8_t *cod)
 	p = hci_cmd_ass(p, HCI_W_COD_OCF, HCI_HC_BB_OGF, HCI_W_COD_PLEN);
 	/* Assembling cmd prameters */
 	MEMCPY(((u8_t *)p->payload)+4, cod, 3);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_set_hc_to_h_fc():
@@ -1239,10 +1248,7 @@ err_t hci_set_hc_to_h_fc(void)
 	((u8_t *)p->payload)[4] = 0x01; /* Flow control on for HCI ACL Data Packets and off for HCI 
 									   SCO Data Packets in direction from Host Controller to 
 									   Host */
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_host_buffer_size():
@@ -1269,12 +1275,12 @@ err_t hci_host_buffer_size(void)
 	//((u16_t *)p->payload)[4] = 1; /* Host Total Num SCO Data Packets */
     // MV ^^^ ERROR: offset should be 9, not 8!!!
     CPU2U16LE((u8_t*)p->payload + 9, 1);
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
+
+    err_t err = hci_cmd_main_send(p);
 
 	pcb->host_num_acl = HCI_HOST_MAX_NUM_ACL;
 
-	return ERR_OK;
+	return err;
 }
 
 /* hci_host_num_comp_packets():
@@ -1300,12 +1306,11 @@ err_t hci_host_num_comp_packets(u16_t conhdl, u16_t num_complete)
 	//((u16_t *)p->payload)[3] = num_complete; /* Number of completed acl packets */
     CPU2U16LE((u8_t*)p->payload + 7, num_complete);
 
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
+    err_t err = hci_cmd_main_send(p);
 
 	pcb->host_num_acl += num_complete;
 
-	return ERR_OK;
+	return err;
 }
 
 /* hci_read_buffer_size():
@@ -1324,10 +1329,8 @@ err_t hci_read_buffer_size(void)
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_R_BUF_SIZE_OCF, HCI_INFO_PARAM_OGF, HCI_R_BUF_SIZE_PLEN);
 	/* Assembling cmd prameters */
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_read_local_features()
@@ -1345,10 +1348,8 @@ err_t hci_read_local_features(void)
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_R_SUPPORTED_LOCAL_FEATURES_OCF, HCI_INFO_PARAM_OGF, HCI_R_SUPPORTED_LOCAL_FEATURES_PLEN);
 	/* Assembling cmd prameters */
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* hci_read_bd_addr():
@@ -1369,10 +1370,8 @@ err_t hci_read_bd_addr(err_t (* rbd_complete)(void *arg, struct bd_addr *bdaddr)
 	/* Assembling command packet */
 	p = hci_cmd_ass(p, HCI_READ_BD_ADDR, HCI_INFO_PARAM_OGF, HCI_R_BD_ADDR_PLEN);
 	/* Assembling cmd prameters */
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
 
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* lp_write_flush_timeout():
@@ -1407,9 +1406,7 @@ err_t lp_write_flush_timeout(struct bd_addr *bdaddr, u16_t flushto)
 	//((u16_t *)p->payload)[3] = flushto;
     CPU2U16LE((u8_t*)p->payload + 6, flushto);
 
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-	return ERR_OK;
+    return hci_cmd_main_send(p);
 }
 
 /* lp_connect_req():
@@ -1473,9 +1470,8 @@ err_t lp_connect_req(struct bd_addr *bdaddr, u8_t allow_role_switch)
 	//((u16_t *)p->payload)[7] = clock_offset;
     CPU2U16LE((u8_t*)p->payload + 14, clock_offset);
 	((u8_t *)p->payload)[16] = allow_role_switch;
-	phybusif_output(p, p->tot_len);
-	pbuf_free(p);
-	return ERR_OK;
+
+    return hci_cmd_connect_send(p);
 }
 
 /* lp_acl_write():
@@ -1589,3 +1585,103 @@ u16_t lp_pdu_maxsize(void)
 }
 
 
+
+// MV
+
+struct pbuf *cmd_queue_remove_head(struct hci_cmd_queue *queue) {
+    struct pbuf *p = NULL;
+    struct hci_cmd *cmd = queue->head;
+    
+    if (cmd) {
+        queue->head = cmd->next;
+
+        if (queue->head == NULL) {
+            queue->tail = NULL;
+        }
+
+        p = cmd->p;
+        free(cmd);
+
+        --queue->cmd_count;        
+    }
+    return p;
+}
+
+err_t cmd_queue_add_tail(struct hci_cmd_queue *queue, struct pbuf *p) {
+    struct hci_cmd *cmd = malloc(sizeof(struct hci_cmd));
+    if (cmd == NULL) {
+        return ERR_MEM;
+    }
+    cmd->next = NULL;
+    cmd->p = p;
+    
+    if (queue->tail) {
+        queue->tail->next = cmd;
+    } else {
+        queue->head = cmd;
+        queue->tail = cmd;
+    }
+
+    queue->cmd_count++;        
+    return ERR_OK;
+}
+
+void cmd_queue_free(struct hci_cmd_queue *queue) {
+    while(cmd_queue_remove_head(queue));
+}
+
+// main_queue
+
+void hci_cmd_main_queue_flush(void) {
+    struct pbuf *p;
+    while(pcb->numcmd && (p = cmd_queue_remove_head(&hci_cmd_main_queue))) {
+        phybusif_output(p, p->tot_len);
+        pbuf_free(p);
+
+        --pcb->numcmd;
+        TRACE_INFO("HCI command dequeued %d\r\n", hci_cmd_main_queue.cmd_count);
+    }
+}
+
+err_t hci_cmd_main_send(struct pbuf *p) {
+    err_t err;
+	if(pcb->numcmd == 0) {
+        err = cmd_queue_add_tail(&hci_cmd_main_queue, p);
+        TRACE_INFO("HCI command queued %d\r\n", hci_cmd_main_queue.cmd_count);
+	} else {
+		--pcb->numcmd; /* Reduce number of cmd packets that the host controller can buffer */
+
+        phybusif_output(p, p->tot_len);
+        pbuf_free(p);
+
+        err = ERR_OK;
+    }
+
+    return err;
+}
+
+// connect_queue 
+
+void hci_cmd_connect_queue_flush(void) {
+    struct pbuf *p;
+    while(cmd_connect_count && (p = cmd_queue_remove_head(&hci_cmd_connect_queue))) {
+        TRACE_INFO("HCI Connect Request dequeued\r\n");
+        hci_cmd_main_send(p);
+
+        --cmd_connect_count;
+    }
+}
+
+err_t hci_cmd_connect_send(struct pbuf *p) {
+    err_t err;
+	if(cmd_connect_count == 0) {
+        TRACE_INFO("HCI Connect Request queued\r\n");
+        err = cmd_queue_add_tail(&hci_cmd_connect_queue, p);
+	} else {
+        --cmd_connect_count;
+
+        err = hci_cmd_main_send(p);
+    }
+
+    return err;
+}

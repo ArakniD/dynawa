@@ -1438,7 +1438,7 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 				return ERR_VAL;
 		}
 	} else {
-		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP not connected. Redo inquiry\n"));
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP not connected.\n"));
 		l2cap_close(l2cappcb);
 		//MV bt_spp_start();
 
