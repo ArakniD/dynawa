@@ -132,6 +132,9 @@
 /// Clears the specified bit(s) in the UDP_CSR register.
 /// \param endpoint The endpoint number of the CSR to process.
 /// \param flags The bitmap to set to 1.
+//MV
+//while ((AT91C_BASE_UDP->UDP_CSR[endpoint] & (flags)) != (flags)); \
+
 #define SET_CSR(endpoint, flags) \
     { \
         volatile unsigned int reg; \
@@ -139,12 +142,14 @@
         reg |= REG_NO_EFFECT_1_ALL; \
         reg |= (flags); \
         AT91C_BASE_UDP->UDP_CSR[endpoint] = reg; \
-        while ( (AT91C_BASE_UDP->UDP_CSR[endpoint] & (flags)) != (flags)); \
     }
 
 /// Sets the specified bit(s) in the UDP_CSR register.
 /// \param endpoint The endpoint number of the CSR to process.
 /// \param flags The bitmap to clear to 0.
+// MV
+//while ( (AT91C_BASE_UDP->UDP_CSR[endpoint] & (flags)) == (flags)); \
+
 #define CLEAR_CSR(endpoint, flags) \
     { \
         volatile unsigned int reg; \
@@ -152,7 +157,6 @@
         reg |= REG_NO_EFFECT_1_ALL; \
         reg &= ~(flags); \
         AT91C_BASE_UDP->UDP_CSR[endpoint] = reg; \
-        while ( (AT91C_BASE_UDP->UDP_CSR[endpoint] & (flags)) == (flags)); \
     }
 //------------------------------------------------------------------------------
 
@@ -278,8 +282,6 @@ static void UDP_EndOfTransfer(unsigned char bEndpoint, char bStatus)
     // Check that endpoint was sending or receiving data
     if( (pEndpoint->state == UDP_ENDPOINT_RECEIVING)
         || (pEndpoint->state == UDP_ENDPOINT_SENDING)) {
-
-        //TRACE_DEBUG_WP("Eo");
 
         // Endpoint returns in Idle state
         pEndpoint->state = UDP_ENDPOINT_IDLE;

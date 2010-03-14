@@ -18,6 +18,7 @@ local event = {
     BT_DISCONNECTED = 16,
     BT_DATA = 20,
     BT_FIND_SERVICE_RES = 30,
+    BT_COMMAND_COMPLETE = 100,
 }
 
 
@@ -261,6 +262,9 @@ local mbw150 = {
         --  like: == event.BT_ERROR
         elseif event_id == event.BT_DISCONNECTED then
             handler.reconnect(connection)
+        elseif event_id == event.BT_COMMAND_COMPLETE then
+            --TODO: error parameter
+            handler.reconnect(connection)
         end
     end,
 
@@ -284,7 +288,10 @@ local function got_message(message)
     end
     --]]
 
-    if message.subtype == event.BT_STARTED then
+    if message.subtype == event.BT_COMMAND_COMPLETE then
+        log("BT_COMMAND_COMPLETE")
+        bt_socket.event(socket, event.BT_COMMAND_COMPLETE, message.error)
+    elseif message.subtype == event.BT_STARTED then
         log("BT_STARTED")
 
         active_connections = {}

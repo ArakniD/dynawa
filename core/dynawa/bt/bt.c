@@ -310,6 +310,7 @@ static void u_bt_task(bt_command *cmd)
                 bt_socket *sock = cmd->sock;
                 struct bd_addr *bdaddr = cmd->param.ptr;
 
+                sock->current_cmd = cmd->id;
                 _bt_find_service(sock, bdaddr);
 
                 free(bdaddr);

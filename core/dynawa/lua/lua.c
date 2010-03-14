@@ -158,6 +158,22 @@ int lua_event_loop (void) {
             break;
         case EVENT_BT:
             switch(ev.data.bt.type) {
+            case EVENT_BT_COMMAND_COMPLETE:
+                TRACE_INFO("EVENT_BT_COMMAND_COMPLETE\r\n");
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.data.bt.type);
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "error");
+                lua_pushnumber(L, ev.data.bt.param.error);
+                lua_settable(L, -3);
+                break;
             case EVENT_BT_STARTED:
                 TRACE_INFO("EVENT_BT_STARTED\r\n");
                 lua_newtable(L);

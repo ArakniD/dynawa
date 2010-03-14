@@ -1408,6 +1408,8 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 	u8_t attrids[] = {0x35, 0x03, 0x09, 0x00, 0x04}; /* Attribute IDs to search for in data element 
 														sequence form */
 
+    bt_socket *sock = (bt_socket*)arg;
+
 	if(result == L2CAP_CONN_SUCCESS) {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("l2cap_connected: L2CAP connected pcb->state = %d\n", l2cappcb->state));
 		/* Tell L2CAP that we wish to be informed of a disconnection request */
@@ -1420,7 +1422,8 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 					return ERR_MEM;
 				}
 
-                sdp_arg(sdppcb, arg);
+                sock->state = BT_SOCKET_STATE_RFCOMM_CONNECTING;
+                sdp_arg(sdppcb, sock);
 				l2cap_recv(l2cappcb, sdp_recv);
 
 				ret = sdp_service_search_attrib_req(sdppcb, 0xFFFF, ssp, sizeof(ssp),
@@ -1436,7 +1439,8 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 					return ERR_MEM;
 				}
 
-                rfcomm_arg(rfcommpcb, arg);
+                sock->state = BT_SOCKET_STATE_RFCOMM_CONNECTING;
+                rfcomm_arg(rfcommpcb, sock);
 				//MV hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
 
                 // MV
@@ -1457,8 +1461,10 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 
         event ev;
         ev.type = EVENT_BT;
-        ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        //ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.data.bt.type = EVENT_BT_COMMAND_COMPLETE;
         ev.data.bt.sock = sock;
+        ev.data.bt.param.error = BT_SOCKET_ERROR_L2CAP_CANNOT_CONNECT;
         event_post(&ev);
 	}
 
@@ -1472,6 +1478,8 @@ void _bt_rfcomm_connect(bt_socket *sock, struct bd_addr *bdaddr, u8_t cn) {
         LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: Could not alloc L2CAP pcb\n"));
         return;
     }
+    sock->state = BT_SOCKET_STATE_L2CAP_CONNECTING;
+
     sock->cn = cn;
     l2cap_arg(l2cappcb, sock);
     LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", sock->cn));
@@ -1488,6 +1496,8 @@ void _bt_find_service(bt_socket *sock, struct bd_addr *bdaddr) {
     } 
 
     // MV test
+    sock->state = BT_SOCKET_STATE_L2CAP_CONNECTING;
+
     l2cap_arg(l2cappcb, sock);
     l2cap_disconnect_ind(l2cappcb, l2cap_disconnected_ind);
 

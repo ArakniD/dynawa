@@ -11,12 +11,21 @@
 #define EVENT_BT_RFCOMM_DISCONNECTED    16
 #define EVENT_BT_DATA                   20
 #define EVENT_BT_FIND_SERVICE_RES       30
+#define EVENT_BT_COMMAND_COMPLETE       100
+
+#define BT_SOCKET_STATE_L2CAP_CONNECTING        1
+#define BT_SOCKET_STATE_RFCOMM_CONNECTING       2
+#define BT_SOCKET_STATE_RFCOMM_CONNECTED        3
+
+#define BT_SOCKET_ERROR_L2CAP_CANNOT_CONNECT    1
+#define BT_SOCKET_ERROR_RFCOMM_CANNOT_CONNECT   2
 
 typedef union {
     void *ptr;
     struct {
         uint8_t cn;
     } service;
+    uint16_t error;
 } bt_param;
 
 typedef struct {
