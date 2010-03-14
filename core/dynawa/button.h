@@ -1,5 +1,5 @@
-#ifndef BUTTONS_H
-#define BUTTONS_H
+#ifndef BUTTON_H
+#define BUTTON_H
 
 #include "io.h"
 #include "timer.h"
@@ -14,4 +14,4 @@ typedef struct {
     bool timer_started;
 } Button;
 
-#endif // BUTTONS_H
+#endif // BUTTON_H
