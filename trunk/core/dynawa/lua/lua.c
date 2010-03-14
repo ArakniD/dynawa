@@ -88,96 +88,78 @@ int lua_event_loop (void) {
         lua_getglobal(L, "handle_event");
 
         switch(ev.type) {
-        case EVENT_BUTTON_DOWN:
-            TRACE_LUA("EVENT_BUTTON_DOWN %d\r\n", ev.data.button.id);
-            lua_newtable(L);
+        case EVENT_BUTTON:
+            switch(ev.data.button.type) {
+            case EVENT_BUTTON_DOWN:
+                TRACE_LUA("EVENT_BUTTON_DOWN %d\r\n", ev.data.button.id);
+                lua_newtable(L);
 
-            lua_pushstring(L, "type");
-            lua_pushstring(L, "button_down");
-            lua_settable(L, -3);
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "button_down");
+                lua_settable(L, -3);
 
-            lua_pushstring(L, "button");
-            lua_pushnumber(L, ev.data.button.id);
-            lua_settable(L, -3);
-            break;
-        case EVENT_BUTTON_HOLD:
-            TRACE_LUA("EVENT_BUTTON_HOLD %d\r\n", ev.data.button.id);
-            lua_newtable(L);
+                lua_pushstring(L, "button");
+                lua_pushnumber(L, ev.data.button.id);
+                lua_settable(L, -3);
+                break;
+            case EVENT_BUTTON_HOLD:
+                TRACE_LUA("EVENT_BUTTON_HOLD %d\r\n", ev.data.button.id);
+                lua_newtable(L);
 
-            lua_pushstring(L, "type");
-            lua_pushstring(L, "button_hold");
-            lua_settable(L, -3);
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "button_hold");
+                lua_settable(L, -3);
 
-            lua_pushstring(L, "button");
-            lua_pushnumber(L, ev.data.button.id);
-            lua_settable(L, -3);
-/*
-rtc_open();
-TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
-rtc_close();
-*/
-            break;
-        case EVENT_BUTTON_UP:
-            TRACE_LUA("EVENT_BUTTON_UP %d\r\n", ev.data.button.id);
-            lua_newtable(L);
+                lua_pushstring(L, "button");
+                lua_pushnumber(L, ev.data.button.id);
+                lua_settable(L, -3);
+                break;
+            case EVENT_BUTTON_UP:
+                TRACE_LUA("EVENT_BUTTON_UP %d\r\n", ev.data.button.id);
+                lua_newtable(L);
 
-            lua_pushstring(L, "type");
-            lua_pushstring(L, "button_up");
-            lua_settable(L, -3);
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "button_up");
+                lua_settable(L, -3);
 
-            lua_pushstring(L, "button");
-            lua_pushnumber(L, ev.data.button.id);
-            lua_settable(L, -3);
+                lua_pushstring(L, "button");
+                lua_pushnumber(L, ev.data.button.id);
+                lua_settable(L, -3);
+                break;
+            default:
+                TRACE_ERROR("Uknown button event %x\r\n", ev.data.button.type);
+            }
             break;
         case EVENT_TIMER:
-            TRACE_LUA("EVENT_TIMER %x\r\n", ev.data.timer.handle);
+            switch(ev.data.timer.type) {
+            case EVENT_TIMER_FIRED:
+                TRACE_LUA("EVENT_TIMER_FIRED %x\r\n", ev.data.timer.handle);
 
-            {
-                Timer *timer = (Timer*)ev.data.timer.handle;
-                if (timer->freeOnStop) {
-                    TRACE_LUA("timer freed\r\n");
-                    free(timer);
+                {
+                    Timer *timer = (Timer*)ev.data.timer.handle;
+                    if (!timer->repeat && timer->freeOnStop) {
+                        TRACE_LUA("timer freed\r\n");
+                        free(timer);
+                    }
                 }
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "timer_fired");
+                lua_settable(L, -3);
+
+                lua_pushstring(L, "handle");
+                lua_pushlightuserdata(L, (void*)ev.data.timer.handle);
+                lua_settable(L, -3);
+                break;
+            default:
+                TRACE_ERROR("Uknown timer event %x\r\n", ev.data.timer.type);
             }
-            lua_newtable(L);
-
-            lua_pushstring(L, "type");
-            lua_pushstring(L, "timer_fired");
-            lua_settable(L, -3);
-
-            lua_pushstring(L, "handle");
-            lua_pushlightuserdata(L, (void*)ev.data.timer.handle);
-            lua_settable(L, -3);
             break;
-        case EVENT_BT_STARTED:
-            TRACE_INFO("EVENT_BT_STARTED\r\n");
-            lua_newtable(L);
-
-            lua_pushstring(L, "type");
-            lua_pushstring(L, "bluetooth");
-            lua_settable(L, -3);
-
-            lua_pushstring(L, "subtype");
-            lua_pushnumber(L, ev.type);
-            lua_settable(L, -3);
-            break;
-        case EVENT_BT_STOPPED:
-            TRACE_INFO("EVENT_BT_STOPPED\r\n");
-            lua_newtable(L);
-
-            lua_pushstring(L, "type");
-            lua_pushstring(L, "bluetooth");
-            lua_settable(L, -3);
-
-            lua_pushstring(L, "subtype");
-            lua_pushnumber(L, ev.type);
-            lua_settable(L, -3);
-            break;
-        case EVENT_BT_DATA:
-            TRACE_INFO("EVENT_BT_DATA %x\r\n", ev.data.bt.sock);
-            {
-                bt_event *btev = &ev.data.bt;
-
+        case EVENT_BT:
+            switch(ev.data.bt.type) {
+            case EVENT_BT_STARTED:
+                TRACE_INFO("EVENT_BT_STARTED\r\n");
                 lua_newtable(L);
 
                 lua_pushstring(L, "type");
@@ -185,162 +167,193 @@ rtc_close();
                 lua_settable(L, -3);
 
                 lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.type);
+                lua_pushnumber(L, ev.data.bt.type);
+                lua_settable(L, -3);
+                break;
+            case EVENT_BT_STOPPED:
+                TRACE_INFO("EVENT_BT_STOPPED\r\n");
+                lua_newtable(L);
+
+                lua_pushstring(L, "type");
+                lua_pushstring(L, "bluetooth");
                 lua_settable(L, -3);
 
-                bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
-                lua_pushstring(L, "socket");
-                lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                lua_pushstring(L, "subtype");
+                lua_pushnumber(L, ev.data.bt.type);
                 lua_settable(L, -3);
+                break;
+            case EVENT_BT_DATA:
+                TRACE_INFO("EVENT_BT_DATA %x\r\n", ev.data.bt.sock);
+                {
+                    bt_event *btev = &ev.data.bt;
 
-                /*
-                lua_pushstring(L, "handle");
-                lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
-                lua_settable(L, -3);
-                */
+                    lua_newtable(L);
 
-                lua_pushstring(L, "data");
-                uint16_t len = bt_buf_len(btev->param.ptr);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                TRACE_INFO("EVENT_BT_DATA %d\r\n", len);
-                if (len) {
-                    lua_pushlstring(L, bt_buf_payload(btev->param.ptr), len); 
-                } else {
-                    lua_pushnil(L);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
+
+                    bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
+                    lua_pushstring(L, "socket");
+                    lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                    lua_settable(L, -3);
+
+                    /*
+                    lua_pushstring(L, "handle");
+                    lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
+                    lua_settable(L, -3);
+                    */
+
+                    lua_pushstring(L, "data");
+                    uint16_t len = bt_buf_len(btev->param.ptr);
+
+                    TRACE_INFO("EVENT_BT_DATA %d\r\n", len);
+                    if (len) {
+                        lua_pushlstring(L, bt_buf_payload(btev->param.ptr), len); 
+                    } else {
+                        lua_pushnil(L);
+                    }
+                    lua_settable(L, -3);
+
+                    bt_buf_free(btev->param.ptr);
                 }
-                lua_settable(L, -3);
+                break;
+            case EVENT_BT_RFCOMM_CONNECTED:
+                TRACE_INFO("EVENT_BT_RFCOMM_CONNECTED %x\r\n", ev.data.bt.sock);
+                {
+                    bt_event *btev = &ev.data.bt;
 
-                bt_buf_free(btev->param.ptr);
-            }
-            break;
-        case EVENT_BT_RFCOMM_CONNECTED:
-            TRACE_INFO("EVENT_BT_RFCOMM_CONNECTED %x\r\n", ev.data.bt.sock);
-            {
-                bt_event *btev = &ev.data.bt;
+                    lua_newtable(L);
 
-                lua_newtable(L);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "type");
-                lua_pushstring(L, "bluetooth");
-                lua_settable(L, -3);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.type);
-                lua_settable(L, -3);
+                    bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
+                    lua_pushstring(L, "socket");
+                    lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                    lua_settable(L, -3);
 
-                bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
-                lua_pushstring(L, "socket");
-                lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
-                lua_settable(L, -3);
+                    /*
+                    lua_pushstring(L, "handle");
+                    lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
+                    lua_settable(L, -3);
+                    */
+                }
+                break;
+            case EVENT_BT_RFCOMM_DISCONNECTED:
+                TRACE_INFO("EVENT_BT_RFCOMM_DISCONNECTED %x\r\n", ev.data.bt.sock);
+                {
+                    bt_event *btev = &ev.data.bt;
 
-                /*
-                lua_pushstring(L, "handle");
-                lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
-                lua_settable(L, -3);
-                */
-            }
-            break;
-        case EVENT_BT_RFCOMM_DISCONNECTED:
-            TRACE_INFO("EVENT_BT_RFCOMM_DISCONNECTED %x\r\n", ev.data.bt.sock);
-            {
-                bt_event *btev = &ev.data.bt;
+                    lua_newtable(L);
 
-                lua_newtable(L);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "type");
-                lua_pushstring(L, "bluetooth");
-                lua_settable(L, -3);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.type);
-                lua_settable(L, -3);
+                    bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
+                    lua_pushstring(L, "socket");
+                    lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                    lua_settable(L, -3);
 
-                bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
-                lua_pushstring(L, "socket");
-                lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
-                lua_settable(L, -3);
+                    /*
+                    lua_pushstring(L, "handle");
+                    lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
+                    lua_settable(L, -3);
+                    */
+                }
+                break;
+            case EVENT_BT_LINK_KEY_NOT:
+                TRACE_INFO("EVENT_BT_LINK_KEY_NOT\r\n");
+                {
+                    bt_event *btev = &ev.data.bt;
 
-                /*
-                lua_pushstring(L, "handle");
-                lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
-                lua_settable(L, -3);
-                */
-            }
-            break;
-        case EVENT_BT_LINK_KEY_NOT:
-            TRACE_INFO("EVENT_BT_LINK_KEY_NOT\r\n");
-            {
-                bt_event *btev = &ev.data.bt;
+                    lua_newtable(L);
 
-                lua_newtable(L);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "type");
-                lua_pushstring(L, "bluetooth");
-                lua_settable(L, -3);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.type);
-                lua_settable(L, -3);
+                    struct bt_bdaddr_link_key *ev_bdaddr_link_key = btev->param.ptr;
+                    lua_pushstring(L, "bdaddr");
+                    lua_pushlstring(L, &ev_bdaddr_link_key->bdaddr, BT_BDADDR_LEN);
+                    lua_settable(L, -3);
 
-                struct bt_bdaddr_link_key *ev_bdaddr_link_key = btev->param.ptr;
-                lua_pushstring(L, "bdaddr");
-                lua_pushlstring(L, &ev_bdaddr_link_key->bdaddr, BT_BDADDR_LEN);
-                lua_settable(L, -3);
+                    lua_pushstring(L, "link_key");
+                    lua_pushlstring(L, &ev_bdaddr_link_key->link_key, BT_LINK_KEY_LEN); 
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "link_key");
-                lua_pushlstring(L, &ev_bdaddr_link_key->link_key, BT_LINK_KEY_LEN); 
-                lua_settable(L, -3);
+                    free(ev_bdaddr_link_key);
+                }
+                break;
+            case EVENT_BT_LINK_KEY_REQ:
+                TRACE_INFO("EVENT_BT_LINK_KEY_REQ\r\n");
+                {
+                    bt_event *btev = &ev.data.bt;
 
-                free(ev_bdaddr_link_key);
-            }
-            break;
-        case EVENT_BT_LINK_KEY_REQ:
-            TRACE_INFO("EVENT_BT_LINK_KEY_REQ\r\n");
-            {
-                bt_event *btev = &ev.data.bt;
+                    lua_newtable(L);
 
-                lua_newtable(L);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "type");
-                lua_pushstring(L, "bluetooth");
-                lua_settable(L, -3);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.type);
-                lua_settable(L, -3);
+                    struct bd_addr *ev_bdaddr = btev->param.ptr;
+                    lua_pushstring(L, "bdaddr");
+                    lua_pushlstring(L, ev_bdaddr, BT_BDADDR_LEN);
+                    lua_settable(L, -3);
 
-                struct bd_addr *ev_bdaddr = btev->param.ptr;
-                lua_pushstring(L, "bdaddr");
-                lua_pushlstring(L, ev_bdaddr, BT_BDADDR_LEN);
-                lua_settable(L, -3);
+                    free(ev_bdaddr);
+                }
+                break;
+            case EVENT_BT_FIND_SERVICE_RES:
+                TRACE_INFO("EVENT_BT_FIND_SERVICE_RES %x\r\n", ev.data.bt.sock);
+                {
+                    bt_event *btev = &ev.data.bt;
 
-                free(ev_bdaddr);
-            }
-            break;
-        case EVENT_BT_FIND_SERVICE_RES:
-            TRACE_INFO("EVENT_BT_FIND_SERVICE_RES %x\r\n", ev.data.bt.sock);
-            {
-                bt_event *btev = &ev.data.bt;
+                    lua_newtable(L);
 
-                lua_newtable(L);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "type");
-                lua_pushstring(L, "bluetooth");
-                lua_settable(L, -3);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.type);
-                lua_settable(L, -3);
+                    bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
+                    TRACE_INFO("ref_sock %x\r\n", sock->ref_lua_socket);
+                    lua_pushstring(L, "socket");
+                    lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                    lua_settable(L, -3);
 
-                bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
-                TRACE_INFO("ref_sock %x\r\n", sock->ref_lua_socket);
-                lua_pushstring(L, "socket");
-                lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
-                lua_settable(L, -3);
-
-                lua_pushstring(L, "channel");
-                lua_pushnumber(L, btev->param.service.cn);
-                lua_settable(L, -3);
+                    lua_pushstring(L, "channel");
+                    lua_pushnumber(L, btev->param.service.cn);
+                    lua_settable(L, -3);
+                }
+                break;
+            default:
+                TRACE_ERROR("Uknown bt event %x\r\n", ev.data.bt.type);
             }
             break;
         default:

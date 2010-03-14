@@ -10,14 +10,14 @@ require("dynawa")
 
 
 local event = {
-    BT_STARTED = 100,
-    BT_STOPPED = 101,
-    BT_LINK_KEY_NOT = 110,
-    BT_LINK_KEY_REQ = 111,
-    BT_CONNECTED = 115,
-    BT_DISCONNECTED = 116,
-    BT_DATA = 120,
-    BT_FIND_SERVICE_RES = 130,
+    BT_STARTED = 1,
+    BT_STOPPED = 5,
+    BT_LINK_KEY_NOT = 10,
+    BT_LINK_KEY_REQ = 11,
+    BT_CONNECTED = 15,
+    BT_DISCONNECTED = 16,
+    BT_DATA = 20,
+    BT_FIND_SERVICE_RES = 30,
 }
 
 
@@ -275,17 +275,6 @@ local mbw150 = {
 
 --local device_bdaddr = string.char(0x37, 0xb0, 0x87, 0xcc, 0x1f, 0x00) -- SGH-I780
 local active_connections
-
-local event = {
-    BT_STARTED = 100,
-    BT_STOPPED = 101,
-    BT_LINK_KEY_NOT = 110,
-    BT_LINK_KEY_REQ = 111,
-    BT_CONNECTED = 115,
-    BT_DISCONNECTED = 116,
-    BT_DATA = 120,
-    BT_FIND_SERVICE_RES = 130,
-}
 
 local function got_message(message)
     log("Got BT message "..message.subtype)

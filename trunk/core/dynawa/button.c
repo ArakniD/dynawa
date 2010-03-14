@@ -38,7 +38,8 @@ void button_timer_handler(void* context) {
         TRACE_INFO("butt held %d\r\n", button_id);
         TRACE_INFO("ticks %d\r\n", xTickCount);
 
-        ev.type = EVENT_BUTTON_HOLD;
+        ev.type = EVENT_BUTTON;
+        ev.data.button.type = EVENT_BUTTON_HOLD;
         ev.data.button.id = button_id;
 #if defined(BUTTON_TASK)
         portBASE_TYPE xHigherPriorityTaskWoken;
@@ -61,7 +62,7 @@ static void button_task( void* p ) {
         event ev;
         xQueueReceive(button_queue, &ev, -1);
 
-        switch(ev.type) {
+        switch(ev.data.button.type) {
         case EVENT_BUTTON_DOWN:
             button_id = ev.data.button.id;
             Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);

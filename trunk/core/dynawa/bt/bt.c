@@ -511,7 +511,8 @@ static void restartHandler()
 
 /*
     event ev;
-    ev.type = EVENT_BT_STARTED;
+    ev.type = EVENT_BT;
+    ev.data.bt.type = EVENT_BT_STARTED;
     event_post(&ev);
 */
 
@@ -702,7 +703,8 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     bc_state = BC_STATE_STOPPED;
 
     event ev;
-    ev.type = EVENT_BT_STOPPED;
+    ev.type = EVENT_BT;
+    ev.data.bt.type = EVENT_BT_STOPPED;
     event_post(&ev);
 
     ledrgb_set(0x4, 0, 0, 0x0);

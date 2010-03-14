@@ -1,4 +1,5 @@
 #include "button.h"
+#include "button_event.h"
 #include "io.h"
 #include "debug/trace.h"
 #include "event.h"
@@ -39,7 +40,8 @@ void button_isr(void* context) {
 #endif
 
 
-            ev.type = EVENT_BUTTON_DOWN;
+            ev.type = EVENT_BUTTON;
+            ev.data.button.type = EVENT_BUTTON_DOWN;
             ev.data.button.id = button_id;
 #if defined(BUTTON_TASK)
             portBASE_TYPE xHigherPriorityTaskWoken;
@@ -67,7 +69,8 @@ void button_isr(void* context) {
             button[button_id].held = false;
 #endif
 
-            ev.type = EVENT_BUTTON_UP;
+            ev.type = EVENT_BUTTON;
+            ev.data.button.type = EVENT_BUTTON_UP;
             ev.data.button.id = button_id;
 #if defined(BUTTON_TASK)
             portBASE_TYPE xHigherPriorityTaskWoken;

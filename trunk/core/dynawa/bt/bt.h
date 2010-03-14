@@ -5,6 +5,8 @@
 #include "lwbt/hci.h"
 #include "lwbt/bd_addr.h"
 
+#include "bt/bt_socket.h"
+
 #define BC_STATE_STOPPED             0
 #define BC_STATE_STARTED             10
 #define BC_STATE_ANAFREQ_SET         20
@@ -29,20 +31,6 @@
 #define BT_ERR_MEM                1
 #define BT_ERR_ALREADY_STARTED    10
 
-// TODO: move to bt_socket.h?
-#define BT_SOCKET_STATE_INITIALIZED     1
-#define BT_SOCKET_STATE_CONNECTING      2
-#define BT_SOCKET_STATE_CONNECTED       3
-//#define BT_SOCKET_STATE_DISCONNECTING 4
-#define BT_SOCKET_STATE_DISCONNECTED    5
-
-typedef struct {
-    uint8_t proto;
-    uint16_t state;
-    void *pcb;
-    uint8_t cn;
-} bt_socket;
-
 typedef struct {
     uint8_t id;
     bt_socket *sock;
@@ -50,18 +38,6 @@ typedef struct {
         void *ptr;
     } param; 
 } bt_command;
-
-typedef union {
-    void *ptr;
-    struct {
-        uint8_t cn;
-    } service;
-} bt_param;
-
-typedef struct {
-    bt_socket *sock;
-    bt_param param;
-} bt_event;
 
 #define BT_LINK_KEY_LEN     16
 #define BT_BDADDR_LEN      6

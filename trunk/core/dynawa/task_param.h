@@ -19,6 +19,7 @@
 #define TASK_BT_RX_STACK   1024
 
 #define TASK_LUA_PRI     1
-#define TASK_LUA_STACK   8192
+//#define TASK_LUA_STACK   8192
+#define TASK_LUA_STACK    16384
 
 #endif // TASK_PARAM_H

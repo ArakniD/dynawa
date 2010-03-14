@@ -58,6 +58,7 @@ static int app_initialized = 0;
 #include "lwbt/sdp.h"
 #include "lwbt/rfcomm.h"
 
+#include "bt.h"
 #include "event.h"
 
 
@@ -285,7 +286,8 @@ err_t rfcomm_disconnected(void *arg, struct rfcomm_pcb *pcb, err_t err)
         sock->pcb = NULL;
 
         event ev;
-        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
         ev.data.bt.sock = sock;
         event_post(&ev);
 	}
@@ -317,7 +319,8 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
         sock->pcb = NULL;
 
         event ev;
-        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
         ev.data.bt.sock = sock;
         event_post(&ev);
 	} else if(pcb->psm == RFCOMM_PSM) {
@@ -336,7 +339,8 @@ err_t l2cap_disconnected_ind(void *arg, struct l2cap_pcb *pcb, err_t err)
         sock->pcb = NULL;
 
         event ev;
-        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
         ev.data.bt.sock = sock;
         event_post(&ev);
 */
@@ -533,7 +537,8 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
 // MV
     TRACE_INFO("spp_recv %d\r\n", p->len);
     event ev;
-    ev.type = EVENT_BT_DATA;
+    ev.type = EVENT_BT;
+    ev.data.bt.type = EVENT_BT_DATA;
     ev.data.bt.sock = arg;
     ev.data.bt.param.ptr = p;
     event_post(&ev);
@@ -853,7 +858,8 @@ err_t link_key_not(void *arg, struct bd_addr *bdaddr, u8_t *key)
     trace_bytes("linkkey", key, BT_LINK_KEY_LEN);
 
     event ev;
-    ev.type = EVENT_BT_LINK_KEY_NOT;
+    ev.type = EVENT_BT;
+    ev.data.bt.type = EVENT_BT_LINK_KEY_NOT;
     ev.data.bt.sock = arg;
     ev.data.bt.param.ptr = ev_bdaddr_link_key;
     event_post(&ev);
@@ -882,7 +888,8 @@ err_t link_key_req(void *arg, struct bd_addr *bdaddr)
     byte_memcpy(ev_bdaddr, bdaddr, sizeof(struct bd_addr));
 
     event ev;
-    ev.type = EVENT_BT_LINK_KEY_REQ;
+    ev.type = EVENT_BT;
+    ev.data.bt.type = EVENT_BT_LINK_KEY_REQ;
     ev.data.bt.sock = arg;
     ev.data.bt.param.ptr = ev_bdaddr;
     event_post(&ev);
@@ -986,7 +993,8 @@ err_t rfcomm_connected(void *arg, struct rfcomm_pcb *pcb, err_t err)
             sock->pcb = pcb;
 
             event ev;
-            ev.type = EVENT_BT_RFCOMM_CONNECTED;
+            ev.type = EVENT_BT;
+            ev.data.bt.type = EVENT_BT_RFCOMM_CONNECTED;
             ev.data.bt.sock = sock;
             event_post(&ev);
 
@@ -1316,7 +1324,8 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("Initialization done.\n"));
                         
                         event ev;
-                        ev.type = EVENT_BT_STARTED;
+                        ev.type = EVENT_BT;
+                        ev.data.bt.type = EVENT_BT_STARTED;
                         event_post(&ev);
 
                         //MV
@@ -1369,7 +1378,8 @@ void sdp_attributes_recv2(void *arg, struct sdp_pcb *sdppcb, u16_t attribl_bc, s
     }
 
     event ev;
-    ev.type = EVENT_BT_FIND_SERVICE_RES;
+    ev.type = EVENT_BT;
+    ev.data.bt.type = EVENT_BT_FIND_SERVICE_RES;
     ev.data.bt.sock = (bt_socket*)arg;
     ev.data.bt.param.service.cn = cn;
     event_post(&ev);
@@ -1446,7 +1456,8 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
         sock->pcb = NULL;
 
         event ev;
-        ev.type = EVENT_BT_RFCOMM_DISCONNECTED;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
         ev.data.bt.sock = sock;
         event_post(&ev);
 	}
