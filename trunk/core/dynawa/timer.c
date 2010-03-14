@@ -33,6 +33,8 @@ extern Timer_Manager *p_timer_manager;
 // extern
 void TimerIsr_Wrapper( );
 
+static xSemaphoreHandle timer_mutex;
+
 /**
   Make a new timer.
   Note - the timer index selected will be used for all subsequent timers created.
@@ -97,6 +99,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     // this could be a lot smarter - for example, modifying the current period?
     if (sync && !timer_manager.servicing ) 
         Task_enterCritical();
+        //xSemaphoreTake(timer_mutex, -1);
 
     TIMER_DBG_PROCESSING(true);
     if ( !timer_manager.running )
@@ -170,12 +173,13 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     TIMER_DBG_PROCESSING(false);
     if (sync && !timer_manager.servicing ) 
         Task_exitCritical();
+        //xSemaphoreGive(timer_mutex);
 
     TRACE_TMR("<<Timer_start %x\r\n", timer);
     return CONTROLLER_OK;
 }
 
-/**	
+/** 
   Stop a timer.
   @return 0 on success.
   */
@@ -184,6 +188,7 @@ int Timer_stop( Timer *timer )
     TRACE_TMR(">>Timer_stop %x\r\n", timer);
     if (sync && !timer_manager.servicing ) 
         Task_enterCritical();
+        //xSemaphoreTake(timer_mutex, -1);
     TIMER_DBG_PROCESSING(true);
 
 // MV TODO: reschedule timer?
@@ -241,6 +246,7 @@ int Timer_stop( Timer *timer )
     TIMER_DBG_PROCESSING(false);
     if (sync && !timer_manager.servicing ) 
         Task_exitCritical();
+        //xSemaphoreGive(timer_mutex);
 
     TRACE_TMR("<<Timer_stop %x\r\n", timer);
     return CONTROLLER_OK;
@@ -273,7 +279,12 @@ void Timer_setTimeTarget( int target )
 
 int Timer_managerInit(int timerindex)
 {
-p_timer_manager = &timer_manager;
+    timer_mutex = xSemaphoreCreateMutex();
+    if(timer_mutex == NULL) {
+        return CONTROLLER_ERROR_INSUFFICIENT_RESOURCES;
+    }
+    
+    p_timer_manager = &timer_manager;
     switch(timerindex)
     {
         case 1:
@@ -345,6 +356,8 @@ void Timer_managerDeinit( )
     unsigned int mask = 0x1 << timer_manager.channel_id;
     AT91C_BASE_AIC->AIC_IDCR = mask; // disable the interrupt
     AT91C_BASE_PMC->PMC_PCDR = mask; // power down
+
+    vQueueDelete(timer_mutex);
 }
 
 // MV

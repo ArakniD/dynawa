@@ -17,6 +17,7 @@ the specific language governing permissions and limitations under the License.
 
 #include "usbserial.h"
 #include "error.h"
+#include "debug/trace.h"
 
 #include "string.h"
 //#include "AT91SAM7X256.h"
@@ -185,13 +186,16 @@ void usbserial_onTxData(void *pArg, unsigned char status, unsigned int sent, uns
     // in fact, we're pretty unlikely to ever see it since we're always trying to read as much as can be transferred at once
     if( status == USBD_STATUS_SUCCESS )
     {
-        usbserial.justWrote = sent;
+        //usbserial.justWrote = sent;
+        usbserial.justWrote += sent;
     }
-    // if (remaining <= 0) {
-    long xHigherPriorityTaskWoken = false;
-    Semaphore_giveFromISR(usbserial.writeSemaphore, &xHigherPriorityTaskWoken);
-    if (xHigherPriorityTaskWoken)
-        portYIELD_FROM_ISR();
+    if (remaining <= 0) {
+        long xHigherPriorityTaskWoken = false;
+        Semaphore_giveFromISR(usbserial.writeSemaphore, &xHigherPriorityTaskWoken);
+        if (xHigherPriorityTaskWoken) {
+            portYIELD_FROM_ISR();
+        }
+    }
 }
 
 /**
