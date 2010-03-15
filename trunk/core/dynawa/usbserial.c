@@ -186,10 +186,11 @@ void usbserial_onTxData(void *pArg, unsigned char status, unsigned int sent, uns
     // in fact, we're pretty unlikely to ever see it since we're always trying to read as much as can be transferred at once
     if( status == USBD_STATUS_SUCCESS )
     {
-        //usbserial.justWrote = sent;
-        usbserial.justWrote += sent;
+        usbserial.justWrote = sent;
+        //usbserial.justWrote += sent;
     }
-    if (remaining <= 0) {
+    //if (remaining <= 0) {
+    if (1) {
         long xHigherPriorityTaskWoken = false;
         Semaphore_giveFromISR(usbserial.writeSemaphore, &xHigherPriorityTaskWoken);
         if (xHigherPriorityTaskWoken) {
