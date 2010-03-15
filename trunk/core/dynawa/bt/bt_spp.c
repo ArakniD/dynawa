@@ -594,6 +594,23 @@ err_t rfcomm_accept(void *arg, struct rfcomm_pcb *pcb, err_t err)
 
 	rfcomm_disc(pcb, rfcomm_disconnected);
 	if(pcb->cn != 0) {
+        bt_socket *sock = (bt_socket*)arg;
+
+        bt_socket *client_sock = bt_socket_new();
+        if (client_sock == NULL) {
+            return ERR_MEM;
+        }
+        rfcomm_arg(pcb, client_sock);
+
+        client_sock->state = BT_SOCKET_STATE_RFCOMM_CONNECTED;
+        client_sock->pcb = pcb;
+    
+        event ev;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_RFCOMM_ACCEPTED;
+        ev.data.bt.sock = sock;
+        ev.data.bt.param.ptr = client_sock;
+        event_post(&ev);
 		//set recv callback
 		rfcomm_recv(pcb, spp_recv);
 	}
@@ -659,6 +676,7 @@ err_t bt_spp_init(void)
 	}
 	rfcomm_listen(rfcommpcb, 0, rfcomm_accept);
 
+/*
 	LWIP_DEBUGF(RFCOMM_DEBUG, ("bt_spp_init: Allocate RFCOMM PCB for CN 1\n"));
 	if((rfcommpcb = rfcomm_new(NULL)) == NULL) {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("lap_init: Could not alloc RFCOMM PCB for channel 1\n"));
@@ -672,6 +690,7 @@ err_t bt_spp_init(void)
 	} else {
 		sdp_register_service(record);
 	}
+*/
 
     // MV
     hci_link_key_not(link_key_not); /* Set function to be called if a new link key is created */
@@ -990,6 +1009,7 @@ err_t rfcomm_connected(void *arg, struct rfcomm_pcb *pcb, err_t err)
             rfcomm_recv(pcb, spp_recv);
 
             bt_socket *sock = (bt_socket*)arg;
+            sock->state = BT_SOCKET_STATE_RFCOMM_CONNECTED;
             sock->pcb = pcb;
 
             event ev;
@@ -1379,7 +1399,7 @@ void sdp_attributes_recv2(void *arg, struct sdp_pcb *sdppcb, u16_t attribl_bc, s
 
     event ev;
     ev.type = EVENT_BT;
-    ev.data.bt.type = EVENT_BT_FIND_SERVICE_RES;
+    ev.data.bt.type = EVENT_BT_FIND_SERVICE_RESULT;
     ev.data.bt.sock = (bt_socket*)arg;
     ev.data.bt.param.service.cn = cn;
     event_post(&ev);
@@ -1422,7 +1442,7 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 					return ERR_MEM;
 				}
 
-                sock->state = BT_SOCKET_STATE_RFCOMM_CONNECTING;
+                sock->state = BT_SOCKET_STATE_SDP_CONNECTED;
                 sdp_arg(sdppcb, sock);
 				l2cap_recv(l2cappcb, sdp_recv);
 
@@ -1462,7 +1482,7 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
         event ev;
         ev.type = EVENT_BT;
         //ev.data.bt.type = EVENT_BT_RFCOMM_DISCONNECTED;
-        ev.data.bt.type = EVENT_BT_COMMAND_COMPLETE;
+        ev.data.bt.type = EVENT_BT_ERROR;
         ev.data.bt.sock = sock;
         ev.data.bt.param.error = BT_SOCKET_ERROR_L2CAP_CANNOT_CONNECT;
         event_post(&ev);
@@ -1471,12 +1491,37 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 	return ERR_OK;
 }
 
-void _bt_rfcomm_connect(bt_socket *sock, struct bd_addr *bdaddr, u8_t cn) {
+err_t _bt_rfcomm_listen(bt_socket *sock, u8_t cn) {
+	struct rfcomm_pcb *rfcommpcb;
+	struct sdp_record *record;
+
+	LWIP_DEBUGF(RFCOMM_DEBUG, ("bt_spp_init: Allocate RFCOMM PCB for CN 1\n"));
+	if((rfcommpcb = rfcomm_new(NULL)) == NULL) {
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("lap_init: Could not alloc RFCOMM PCB for channel 1\n"));
+		return ERR_MEM;
+	}
+    sock->state = BT_SOCKET_STATE_RFCOMM_LISTENING;
+
+    sock->cn = cn;
+
+    rfcomm_arg(rfcommpcb, sock);
+	rfcomm_listen(rfcommpcb, 1, rfcomm_accept);
+
+	if((record = sdp_record_new((u8_t *)spp_service_record, sizeof(spp_service_record))) == NULL) {
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_spp_init: Could not alloc SDP record\n"));
+		return ERR_MEM;
+	} else {
+		sdp_register_service(record);
+	}
+    return ERR_OK;
+}
+
+err_t _bt_rfcomm_connect(bt_socket *sock, struct bd_addr *bdaddr, u8_t cn) {
 	struct l2cap_pcb *l2cappcb;
 
     if((l2cappcb = l2cap_new()) == NULL) {
         LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: Could not alloc L2CAP pcb\n"));
-        return;
+        return ERR_MEM;
     }
     sock->state = BT_SOCKET_STATE_L2CAP_CONNECTING;
 
@@ -1485,9 +1530,10 @@ void _bt_rfcomm_connect(bt_socket *sock, struct bd_addr *bdaddr, u8_t cn) {
     LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", sock->cn));
 
     l2ca_connect_req(l2cappcb, bdaddr, RFCOMM_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
+    return ERR_OK;
 }
 
-void _bt_find_service(bt_socket *sock, struct bd_addr *bdaddr) {
+err_t _bt_find_service(bt_socket *sock, struct bd_addr *bdaddr) {
 	struct l2cap_pcb *l2cappcb;
 
     if((l2cappcb = l2cap_new()) == NULL) {
@@ -1502,6 +1548,7 @@ void _bt_find_service(bt_socket *sock, struct bd_addr *bdaddr) {
     l2cap_disconnect_ind(l2cappcb, l2cap_disconnected_ind);
 
     l2ca_connect_req(l2cappcb, bdaddr, SDP_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
+    return ERR_OK;
 }
 
 void _bt_inquiry() {

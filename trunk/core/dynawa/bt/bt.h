@@ -23,6 +23,7 @@
 #define BT_COMMAND_INQUIRY 4
 #define BT_COMMAND_FIND_SERVICE 5
 #define BT_COMMAND_RFCOMM_CONNECT 6
+#define BT_COMMAND_RFCOMM_LISTEN 7
 
 #define BT_LED_LOW          0x40
 #define BT_LED_HIGH         0xff
@@ -36,6 +37,7 @@ typedef struct {
     bt_socket *sock;
     union {
         void *ptr;
+        uint8_t cn;
     } param; 
 } bt_command;
 

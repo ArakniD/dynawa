@@ -4,6 +4,14 @@
 #include "types.h"
 #include "lib_dynawa_bt.h"
 
+bt_lua_socket *bt_socket_new(void) {
+    bt_lua_socket *sock = (bt_lua_socket*)malloc(sizeof(bt_lua_socket));
+    if (sock) {
+        memset(sock, 0, sizeof(bt_lua_socket));
+    }
+    return sock;
+}
+
 static int l_cmd (lua_State *L) {
     uint16_t cmd = luaL_checkint(L, 1);
 
@@ -33,11 +41,10 @@ static int l_cmd (lua_State *L) {
             lua_pushvalue(L, 2);
             uint32_t ref_lua_socket = luaL_ref(L, LUA_REGISTRYINDEX);
 
-            bt_lua_socket *sock = (bt_lua_socket*)malloc(sizeof(bt_lua_socket));
+            bt_lua_socket *sock = bt_socket_new();
             if (sock == NULL) {
                 panic();
             }
-            memset(sock, 0, sizeof(bt_lua_socket));
 
             sock->ref_lua_socket = ref_lua_socket;
             TRACE_INFO("ref_sock %x\r\n", sock->ref_lua_socket);
@@ -55,6 +62,18 @@ static int l_cmd (lua_State *L) {
             free(sock);
         }
         break;
+    case 102:       // SOCKET_BIND
+        {
+            luaL_checktype(L, 3, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = lua_touserdata(L, 3);
+
+            lua_pushvalue(L, 2);
+            uint32_t ref_lua_socket = luaL_ref(L, LUA_REGISTRYINDEX);
+
+            sock->ref_lua_socket = ref_lua_socket;
+            TRACE_INFO("ref_sock %x\r\n", sock->ref_lua_socket);
+        }
+        break;
     case 200:       // FIND_SERVICE
         {
             luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
@@ -66,6 +85,14 @@ static int l_cmd (lua_State *L) {
         }
         break;
     case 300:       // LISTEN
+        {
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
+
+            uint8_t channel = luaL_checkint(L, 3);
+
+            bt_rfcomm_listen((bt_socket*)sock, channel);
+        }
         break;
     case 301:       // CONNECT
         {

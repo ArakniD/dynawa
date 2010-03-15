@@ -293,6 +293,14 @@ static void u_bt_task(bt_command *cmd)
                 free(bdaddr_link_key);
             }
             break;
+        case BT_COMMAND_RFCOMM_LISTEN:
+            {
+                TRACE_INFO("BT_COMMAND_RFCOMM_LISTEN\r\n");
+                bt_socket *sock = cmd->sock;
+
+                _bt_rfcomm_listen(sock, cmd->param.cn);
+            }
+            break;
         case BT_COMMAND_RFCOMM_CONNECT:
             {
                 TRACE_INFO("BT_COMMAND_RFCOMM_CONNECT\r\n");
@@ -811,6 +819,20 @@ void bt_inquiry() {
 }
 
 // socket commands
+
+void bt_rfcomm_listen(bt_socket *sock, uint8_t channel) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_rfcomm_listen %x %d\r\n", sock, channel);
+
+    cmd.id = BT_COMMAND_RFCOMM_LISTEN;
+    cmd.sock = sock;
+    cmd.param.cn = channel;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
 
 void bt_rfcomm_connect(bt_socket *sock, uint8_t *bdaddr, uint8_t channel) {
     bt_command cmd;
