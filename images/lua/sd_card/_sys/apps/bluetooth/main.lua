@@ -16,11 +16,11 @@ local event = {
     BT_LINK_KEY_REQ = 11,
     BT_CONNECTED = 15,
     BT_DISCONNECTED = 16,
+    BT_ACCEPTED = 17,
     BT_DATA = 20,
-    BT_FIND_SERVICE_RES = 30,
-    BT_COMMAND_COMPLETE = 100,
+    BT_FIND_SERVICE_RESULT = 30,
+    BT_ERROR = 100,
 }
-
 
 -- BT API begin
 
@@ -31,6 +31,7 @@ local cmd = {
     INQUIRY = 4,
     SOCKET_NEW = 100,
     SOCKET_CLOSE = 101,
+    SOCKET_BIND = 102,
     FIND_SERVICE = 200,
     LISTEN = 300,
     CONNECT = 301,
@@ -63,7 +64,12 @@ local bt_socket = {
 
 
     -- functions
-    listen = function(socket)
+
+    -- public
+    listen = function(socket, channel)
+        dynawa.bt.cmd(cmd.LISTEN, socket._c, channel)
+    end,
+    advertise_service = function(socket, service)
     end,
     connect = function(socket, bdaddr, channel)
         dynawa.bt.cmd(cmd.CONNECT, socket._c, bdaddr, channel)
@@ -82,7 +88,7 @@ local bt_socket = {
 
 -- outside of the bt_socket table because of use of bt_socket.slot  ... 
 
-bt_socket.new = function(socket_proto, socket_event_handler, socket_event_handler_data) 
+bt_socket._new = function(socket_proto, socket_event_handler, socket_event_handler_data) 
     assert(socket_proto == bt_socket.PROTO_RFCOMM or socket_proto == bt_socket.PROTO_SDP, "Socket proto" .. socket_proto .. " not implemented")
     assert(socket_event_handler, "socket: no event handler")
     bt_socket.socket_count = bt_socket.socket_count + 1
@@ -95,9 +101,25 @@ bt_socket.new = function(socket_proto, socket_event_handler, socket_event_handle
 
         state = bt_socket.STATE_INITIALIZED,
     }
+    return socket
+end
+
+bt_socket.new = function(socket_proto, socket_event_handler, socket_event_handler_data) 
+    assert(socket_proto == bt_socket.PROTO_RFCOMM or socket_proto == bt_socket.PROTO_SDP, "Socket proto" .. socket_proto .. " not implemented")
+    assert(socket_event_handler, "socket: no event handler")
+    bt_socket.socket_count = bt_socket.socket_count + 1
+    local socket = bt_socket._new(socket_proto, socket_event_handler, socket_event_handler_data)
     socket._c = dynawa.bt.cmd(cmd.SOCKET_NEW, socket)    -- allocate C socket
     return socket 
 end
+
+bt_socket._new_from_c = function(socket, _c_new_socket)
+    local socket_new = bt_socket._new(socket.proto, socket.event_handler, socket.event_handler_data)
+    dynawa.bt.cmd(cmd.SOCKET_BIND, socket_new, _c_new_socket)    --bind Lua & C socket
+    socket_new._c = _c_new_socket
+    return socket_new 
+end
+
 
 dynawa.bt.socket = bt_socket
 
@@ -177,6 +199,12 @@ local mbw150 = {
         --{ "X", "AT+CHUP" },
     },
 
+    -- functions
+
+    log = function(connection, message)
+        log(connection.bdaddr_str .. ": " .. message)
+    end,
+
     -- callbacks
 
     reconnect_attempt = function(message)
@@ -189,36 +217,37 @@ local mbw150 = {
         local handler = connection.handler
         connection.connection_attempt = connection.connection_attempt + 1
         local when = connection.connection_attempt * 60
-        log(bdaddr2str(connection.bdaddr) .. " - attempt #" .. connection.connection_attempt .. " to reconnect in " .. when .. "s")
+        handler.log(connection, "attempt #" .. connection.connection_attempt .. " to reconnect in " .. when .. "s")
         dynawa.delayed_callback{time = when * 1000, callback=handler.reconnect_attempt, ["connection"] = connection}
     end,
 
-    socket_events = function(connection, socket, event_id, data)
+    socket_events = function(connection, socket, event_id, message)
         local handler = connection.handler
         if event_id == event.BT_CONNECTED then
-            log(bdaddr2str(connection.bdaddr) .. " - connected")
+            handler.log(connection, "connected")
             connection.connection_attempt = 0
             connection.parser_state = 1 
             local data_out = "AT*SEAM=\"MBW-150\",13\r"
             bt_socket.send(socket, data_out)
         elseif event_id == event.BT_DISCONNECTED then
-            log(bdaddr2str(connection.bdaddr) .. " - disconnected")
+            handler.log(connection, "disconnected")
             bt_socket.close(socket) -- possible reuse?
             handler.reconnect(connection)
         elseif event_id == event.BT_DATA then
+            local data_in = message.data
             local data_out
-            if not data then
-                log("got empty data")
-                data_out = "OK"
+            if not data_in then
+                handler.log(connection, "got empty data")
+                --data_out = "OK"
             else
-                log("got " .. data)
+                handler.log(connection, "got " .. data_in)
                 local state_transitions = handler.parser_state_machine[connection.parser_state]
                 if state_transitions then
                     for i, transition in ipairs(state_transitions) do
-                        if string.match(data, transition[1]) then
+                        if string.match(data_in, transition[1]) then
                             -- next state
                             if transition[2] then
-                                log("state " .. connection.parser_state .. " -> " .. transition[2])
+                                handler.log(connection, "state " .. connection.parser_state .. " -> " .. transition[2])
                                 connection.parser_state = transition[2]
                             end
                             -- response string
@@ -227,7 +256,7 @@ local mbw150 = {
                             end
                             -- state handler
                             if transition[4] then
-                                transition[4](connection, data)
+                                transition[4](connection, data_in)
                             end
                             break
                         end
@@ -235,43 +264,99 @@ local mbw150 = {
                 end
             end
             if data_out then
-                log("sending " .. data_out)
+                handler.log(connection, "sending " .. data_out)
                 bt_socket.send(socket, data_out)
             end
+        elseif event_id == event.BT_ERROR then
+            handler.log(connection, "socket_events: error " .. message.error)
+            bt_socket.close(socket) -- possible reuse?
+            handler.reconnect(connection)
         else
-            assert(false, "unknown socket event")
+            assert(false, "socket_events: unknown event " .. event_id)
         end
     end,
 
-    find_service_events = function(connection, socket, event_id, channel)
+    find_service_events = function(connection, socket, event_id, message)
         local handler = connection.handler
         -- TODO: better operation result reporting:
         --  like: == event.BT_OK
-        if event_id == event.BT_FIND_SERVICE_RES then
-            log("channel " .. channel)
+        if event_id == event.BT_FIND_SERVICE_RESULT then
+            local channel = message.channel
+            handler.log(connection, "channel " .. channel)
             if channel > 0 then
                 connection.channel = channel
                 local socket = bt_socket.new(bt_socket.PROTO_RFCOMM, handler.socket_events, connection)
                 connection.socket = socket
                 bt_socket.connect(socket, connection.bdaddr, channel)
             else
-                log("no remote listening RFCOMM")
+                handler.log(connection, "find_service_events: no remote listening RFCOMM")
                 handler.reconnect(connection)
             end
-        -- TODO: better operation result reporting:
-        --  like: == event.BT_ERROR
-        elseif event_id == event.BT_DISCONNECTED then
+        elseif event_id == event.BT_ERROR then
+            handler.log(connection, "find_service_events: error " .. message.error)
             handler.reconnect(connection)
-        elseif event_id == event.BT_COMMAND_COMPLETE then
-            --TODO: error parameter
-            handler.reconnect(connection)
+        else
+            assert(false, "find_service_events: unknown event " .. event_id)
         end
     end,
 
     start = function(connection)
-        connection.connection_attempt = 0
         local handler = connection.handler
+        connection.connection_attempt = 0
+        connection.bdaddr_str = bdaddr2str(connection.bdaddr)
         find_service(connection.bdaddr, handler.find_service_events, connection)
+    end,
+}
+
+-- echo (service) plugin
+
+local echo = {
+
+    -- private variables
+
+
+    -- functions
+
+    log = function(connection, message)
+        log("echo: " .. message)
+    end,
+
+    -- callbacks
+
+    socket_events = function(connection, socket, event_id, message)
+        local handler = connection.handler
+        if event_id == event.BT_ACCEPTED then
+            handler.log(connection, "accepted")
+        elseif event_id == event.BT_DISCONNECTED then
+            handler.log(connection, "disconnected")
+            bt_socket.close(socket) -- possible reuse?
+        elseif event_id == event.BT_DATA then
+            local data_in = message.data
+            local data_out
+            if not data_in then
+                handler.log(connection, "got empty data")
+                data_out = "OK"
+            else
+                handler.log(connection, "got " .. data_in)
+                data_out = data_in
+            end
+            if data_out then
+                handler.log(connection, "sending " .. data_out)
+                bt_socket.send(socket, data_out)
+            end
+        elseif event_id == event.BT_ERROR then
+            handler.log(connection, "socket_events: error " .. message.error)
+            --bt_socket.close(socket) -- possible reuse?
+        else
+            assert(false, "socket_events: unknown event " .. event_id)
+        end
+    end,
+
+    start = function(connection)
+        local handler = connection.handler
+        -- listen test
+        local socket = bt_socket.new(bt_socket.PROTO_RFCOMM, handler.socket_events, connection)
+        bt_socket.listen(socket, 1)
     end,
 }
 
@@ -288,25 +373,39 @@ local function got_message(message)
     end
     --]]
 
-    if message.subtype == event.BT_COMMAND_COMPLETE then
-        log("BT_COMMAND_COMPLETE")
-        bt_socket.event(socket, event.BT_COMMAND_COMPLETE, message.error)
+    if message.subtype == event.BT_ERROR then
+        log("BT_ERROR")
+        local socket = message.socket
+        assert(socket)
+        bt_socket.event(socket, event.BT_ERROR, message)
     elseif message.subtype == event.BT_STARTED then
         log("BT_STARTED")
 
         active_connections = {}
-        for bdaddr, link_key in pairs(my.globals.prefs.devices) do
-            log("Connecting " .. bdaddr2str(bdaddr))
 
-            set_link_key(bdaddr, link_key)
-
+        if false then
             local connection = {
-                bdaddr = bdaddr,
-                handler = mbw150,
+                handler = echo,
             }
 
             table.insert(active_connections, connection)
             connection.handler.start(connection)
+        end
+
+        if true then
+            for bdaddr, link_key in pairs(my.globals.prefs.devices) do
+                log("Connecting " .. bdaddr2str(bdaddr))
+
+                set_link_key(bdaddr, link_key)
+
+                local connection = {
+                    bdaddr = bdaddr,
+                    handler = mbw150,
+                }
+
+                table.insert(active_connections, connection)
+                connection.handler.start(connection)
+            end
         end
     elseif message.subtype == event.BT_STOPPED then
         log("BT_STOPPED")
@@ -342,22 +441,32 @@ local function got_message(message)
         log("socket " .. socket.id)
         bt_socket.event(socket, event.BT_DISCONNECTED, nil)
         --bt_socket.close(socket)
+    elseif message.subtype == event.BT_ACCEPTED then
+        log("BT_ACCEPTED")
+        local socket = message.socket
+        assert(socket)
+        log("socket " .. socket.id)
+        local _c_client_socket = message.client_socket
+        assert(_c_client_socket)
+
+        local client_socket = bt_socket._new_from_c(socket, _c_client_socket)
+        log("socket " .. client_socket.id)
+        client_socket.state = bt_socket.STATE_CONNECTED
+        bt_socket.event(socket, event.BT_ACCEPTED, client_socket)
     elseif message.subtype == event.BT_DATA then
         log("BT_DATA")
         local socket = message.socket
         assert(socket)
-        local data = message.data
+        --local data = message.data
         log("socket " .. socket.id)
-        bt_socket.event(socket, event.BT_DATA, data)
-    elseif message.subtype == event.BT_FIND_SERVICE_RES then
-        log("BT_FIND_SERVICE_RES")
+        bt_socket.event(socket, event.BT_DATA, message)
+    elseif message.subtype == event.BT_FIND_SERVICE_RESULT then
+        log("BT_FIND_SERVICE_RESULT")
         local socket = message.socket
         assert(socket)
         log("socket " .. socket.id)
-        local channel = message.channel
-        log("channel " .. channel)
 
-        bt_socket.event(socket, event.BT_FIND_SERVICE_RES, channel)
+        bt_socket.event(socket, event.BT_FIND_SERVICE_RESULT, message)
         bt_socket.close(socket)
     end
 end

@@ -158,21 +158,29 @@ int lua_event_loop (void) {
             break;
         case EVENT_BT:
             switch(ev.data.bt.type) {
-            case EVENT_BT_COMMAND_COMPLETE:
-                TRACE_INFO("EVENT_BT_COMMAND_COMPLETE\r\n");
-                lua_newtable(L);
+            case EVENT_BT_ERROR:
+                TRACE_INFO("EVENT_BT_ERROR\r\n");
+                {
+                    bt_event *btev = &ev.data.bt;
+                    lua_newtable(L);
 
-                lua_pushstring(L, "type");
-                lua_pushstring(L, "bluetooth");
-                lua_settable(L, -3);
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "subtype");
-                lua_pushnumber(L, ev.data.bt.type);
-                lua_settable(L, -3);
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
 
-                lua_pushstring(L, "error");
-                lua_pushnumber(L, ev.data.bt.param.error);
-                lua_settable(L, -3);
+                    bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
+                    lua_pushstring(L, "socket");
+                    lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                    lua_settable(L, -3);
+
+                    lua_pushstring(L, "error");
+                    lua_pushnumber(L, ev.data.bt.param.error);
+                    lua_settable(L, -3);
+                }
                 break;
             case EVENT_BT_STARTED:
                 TRACE_INFO("EVENT_BT_STARTED\r\n");
@@ -258,11 +266,32 @@ int lua_event_loop (void) {
                     lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
                     lua_settable(L, -3);
 
-                    /*
-                    lua_pushstring(L, "handle");
-                    lua_pushlightuserdata(L, (void*)btev->param.data.pcb);
+                }
+                break;
+            case EVENT_BT_RFCOMM_ACCEPTED:
+                TRACE_INFO("EVENT_BT_RFCOMM_ACCEPTED %x\r\n", ev.data.bt.sock);
+                {
+                    bt_event *btev = &ev.data.bt;
+
+                    lua_newtable(L);
+
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
                     lua_settable(L, -3);
-                    */
+
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
+
+                    bt_lua_socket *sock = (bt_lua_socket*)btev->sock;
+                    lua_pushstring(L, "socket");
+                    lua_rawgeti(L, LUA_REGISTRYINDEX, sock->ref_lua_socket);
+                    lua_settable(L, -3);
+
+                    bt_lua_socket *client_sock = (bt_lua_socket*)btev->param.ptr;
+                    lua_pushstring(L, "client_socket");
+                    lua_pushlightuserdata(L, (void*)client_sock);
+                    lua_settable(L, -3);
                 }
                 break;
             case EVENT_BT_RFCOMM_DISCONNECTED:
@@ -342,8 +371,8 @@ int lua_event_loop (void) {
                     free(ev_bdaddr);
                 }
                 break;
-            case EVENT_BT_FIND_SERVICE_RES:
-                TRACE_INFO("EVENT_BT_FIND_SERVICE_RES %x\r\n", ev.data.bt.sock);
+            case EVENT_BT_FIND_SERVICE_RESULT:
+                TRACE_INFO("EVENT_BT_FIND_SERVICE_RESULT %x\r\n", ev.data.bt.sock);
                 {
                     bt_event *btev = &ev.data.bt;
 

@@ -1619,8 +1619,8 @@ err_t cmd_queue_add_tail(struct hci_cmd_queue *queue, struct pbuf *p) {
         queue->tail->next = cmd;
     } else {
         queue->head = cmd;
-        queue->tail = cmd;
     }
+    queue->tail = cmd;
 
     queue->cmd_count++;        
     return ERR_OK;
@@ -1639,7 +1639,7 @@ void hci_cmd_main_queue_flush(void) {
         pbuf_free(p);
 
         --pcb->numcmd;
-        TRACE_INFO("HCI command dequeued %d\r\n", hci_cmd_main_queue.cmd_count);
+        TRACE_INFO("HCI command dequeued %x %d\r\n", p, hci_cmd_main_queue.cmd_count);
     }
 }
 
@@ -1647,7 +1647,7 @@ err_t hci_cmd_main_send(struct pbuf *p) {
     err_t err;
 	if(pcb->numcmd == 0) {
         err = cmd_queue_add_tail(&hci_cmd_main_queue, p);
-        TRACE_INFO("HCI command queued %d\r\n", hci_cmd_main_queue.cmd_count);
+        TRACE_INFO("HCI command queued %x %d\r\n", p, hci_cmd_main_queue.cmd_count);
 	} else {
 		--pcb->numcmd; /* Reduce number of cmd packets that the host controller can buffer */
 
@@ -1665,7 +1665,7 @@ err_t hci_cmd_main_send(struct pbuf *p) {
 void hci_cmd_connect_queue_flush(void) {
     struct pbuf *p;
     while(cmd_connect_count && (p = cmd_queue_remove_head(&hci_cmd_connect_queue))) {
-        TRACE_INFO("HCI Connect Request dequeued\r\n");
+        TRACE_INFO("HCI Connect Request dequeued %x %d %d\r\n", p, cmd_connect_count, hci_cmd_connect_queue.cmd_count);
         hci_cmd_main_send(p);
 
         --cmd_connect_count;
@@ -1675,8 +1675,8 @@ void hci_cmd_connect_queue_flush(void) {
 err_t hci_cmd_connect_send(struct pbuf *p) {
     err_t err;
 	if(cmd_connect_count == 0) {
-        TRACE_INFO("HCI Connect Request queued\r\n");
         err = cmd_queue_add_tail(&hci_cmd_connect_queue, p);
+        TRACE_INFO("HCI Connect Request queued %x %d\r\n", p, hci_cmd_connect_queue.cmd_count);
 	} else {
         --cmd_connect_count;
 
