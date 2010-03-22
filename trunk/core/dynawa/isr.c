@@ -1,12 +1,24 @@
+#include "AT91SAM7SE512.h"
+#include "FreeRTOS.h"
 #include "debug/trace.h"
 
 /// Default spurious interrupt handler. Infinite loop.
 //------------------------------------------------------------------------------
-void defaultSpuriousHandler( void )
+void SpuriousIsr_Handler( void )
 {
     TRACE_ERROR("defaultSpuriousHandler\r\n");
-    panic();
+    //panic();
     //while (1);
+    AT91C_BASE_AIC->AIC_EOICR = 0;
+}
+
+void defaultSpuriousHandler( void )
+{
+    portSAVE_CONTEXT(); // Save the context of the interrupted task.
+    /* Call the handler to do the work.  This must be a separate
+       function to ensure the stack frame is set up correctly. */
+    SpuriousIsr_Handler();
+    portRESTORE_CONTEXT(); // Restore the context of whichever task will execute next.
 }
 
 //------------------------------------------------------------------------------

@@ -35,6 +35,8 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "debug/trace.h"
 
 
+#define SET_HOST_WAKE       1
+
 #define SET_TX_POWER        0
 #define TX_POWER            2
 
@@ -48,14 +50,15 @@ static unsigned int bt_open_count = 0;
 
 /* -------------------- Command line args processing -------------------- */
 
-static unsigned long baudRate = 115200;
+static unsigned long baudRate = 460800;
+//static unsigned long baudRate = 115200;
 //static unsigned long baudRate = 38400;
 
 //#define USART_BAUDRATE_38400
-#define USART_BAUDRATE_115200
+//#define USART_BAUDRATE_115200
 //#define USART_BAUDRATE_230400
 //#define USART_BAUDRATE_460800
-//#define USART_BAUDRATE_921600
+#define USART_BAUDRATE_921600
 
 #if defined(USART_BAUDRATE_38400)
 #define USART_BAUDRATE      38400
@@ -69,7 +72,6 @@ static unsigned long baudRate = 115200;
 #elif defined(USART_BAUDRATE_460800)
 #define USART_BAUDRATE      460800
 #define USART_BAUDRATE_CD    0x075f
-#define USART_CD_FP         0x4
 #elif defined(USART_BAUDRATE_921600)
 #define USART_BAUDRATE      921600
 #define USART_BAUDRATE_CD    0x0ebf
@@ -384,6 +386,44 @@ static void u_bt_task(bt_command *cmd)
             cmd[8] = USART_BAUDRATE_CD;    // value (divider);
             TRACE_INFO("SETTING BAUDRATE %d\r\n", USART_BAUDRATE);
             queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
+#if SET_HOST_WAKE
+        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
+// PS_UART_HOST_WAKE_SIGNAL 
+            uint16 *cmd = malloc(sizeof(uint16) * 9);
+            cmd[0] = BCCMDPDU_SETREQ;
+            cmd[1] = 9;         // number of uint16s in PDU
+            cmd[2] = 2;    // value choosen by host
+            cmd[3] = BCCMDVARID_PS;
+            cmd[4] = BCCMDPDU_STAT_OK;
+            cmd[5] = PSKEY_UART_HOST_WAKE_SIGNAL;
+            cmd[6] = 1;         // length
+            cmd[7] = 0;         // default store
+            //cmd[8] = 3;       // enabled
+            cmd[8] = 0;         // disabled
+            TRACE_INFO("SETTING UART_HOST_WAKE_SIGNAL\r\n");
+            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
+        } else if (bc_state == BC_STATE_UART_HOST_WAKE_SIGNAL) {
+// PS_UART_HOST_WAKE
+            uint16 *cmd = malloc(sizeof(uint16) * 12);
+            cmd[0] = BCCMDPDU_SETREQ;
+            cmd[1] = 12;         // number of uint16s in PDU
+            cmd[2] = 2;    // value choosen by host
+            cmd[3] = BCCMDVARID_PS;
+            cmd[4] = BCCMDPDU_STAT_OK;
+            cmd[5] = PSKEY_UART_HOST_WAKE;
+            cmd[6] = 1;         // length
+            cmd[7] = 0;         // default store
+            cmd[8] = 0x0001;         // enable
+            cmd[9] = 0x01f4;    // sleep timeout = 500ms
+            cmd[10] = 0x0005;   // break len = 5ms
+            cmd[11] = 0x0020;   // pause length = 32ms
+            TRACE_INFO("SETTING UART_HOST_WAKE\r\n");
+            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 12, cmd);
+        } else if (bc_state == BC_STATE_UART_HOST_WAKE) {
+#else
+        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
+#endif
+/*
 #if SET_TX_POWER
         } else if (bc_state == BC_STATE_BAUDRATE_SET) {
 // PS_LC_MAX_TX_POWER
@@ -431,6 +471,7 @@ static void u_bt_task(bt_command *cmd)
 #else
         } else if (bc_state == BC_STATE_BAUDRATE_SET) {
 #endif
+*/
 // warm reset
             uint16 *cmd = malloc(sizeof(uint16) * 9);
             //cmd[0] = 0;         // BCCMDPDU_GETREQ
@@ -648,9 +689,9 @@ Undefined
 
 Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky protokol ma BC naject, pak -BCRES do 1
 */
-#define BCBOOT0_MASK (1 << 23)
-#define BCBOOT1_MASK (1 << 25)
-#define BCBOOT2_MASK (1 << 29)
+#define BCBOOT0_MASK (1 << 23)  // BC4 PIO0
+#define BCBOOT1_MASK (1 << 25)  // BC4 PIO1
+#define BCBOOT2_MASK (1 << 29)  // BC4 PIO4
 #define BCNRES_MASK (1 << 30)
 
 /*

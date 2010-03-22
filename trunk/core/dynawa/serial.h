@@ -1,19 +1,19 @@
 /*********************************************************************************
 
- Copyright 2006-2009 MakingThings
+  Copyright 2006-2009 MakingThings
 
- Licensed under the Apache License, 
- Version 2.0 (the "License"); you may not use this file except in compliance 
- with the License. You may obtain a copy of the License at
+  Licensed under the Apache License, 
+  Version 2.0 (the "License"); you may not use this file except in compliance 
+  with the License. You may obtain a copy of the License at
 
- http://www.apache.org/licenses/LICENSE-2.0 
- 
- Unless required by applicable law or agreed to in writing, software distributed
- under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- CONDITIONS OF ANY KIND, either express or implied. See the License for
- the specific language governing permissions and limitations under the License.
+http://www.apache.org/licenses/LICENSE-2.0 
 
-*********************************************************************************/
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for
+the specific language governing permissions and limitations under the License.
+
+ *********************************************************************************/
 
 #ifndef SERIAL_H
 #define SERIAL_H
@@ -22,6 +22,8 @@
 #include "rtos.h"
 //#include "AT91SAM7X256.h"
 #include "AT91SAM7SE512.h"
+
+#define DMA     1
 
 #define SERIAL_PORTS 2
 #define SERIAL_DEFAULT_BAUD        9600
@@ -47,16 +49,21 @@
   the implementation is interrupt per character so it's not particularly fast.
 
   \todo Convert to DMA interface for higher performance, and add support for debug UART
-*/
+  */
 typedef struct {
-  AT91S_USART* uart;
-  Queue* rxQueue;
-  Queue* txQueue;
-  Semaphore* rxSem;
-  Semaphore* txSem;
-  char rxBuf[SERIAL_RX_BUF_SIZE];
+    AT91S_USART* uart;
+    Queue* rxQueue;
+    Queue* txQueue;
 
-  int baud, bits, parity, stopBits, handshaking; 
+    Semaphore* rxSem;
+    Semaphore* txSem;
+    char rxBuf[2][SERIAL_RX_BUF_SIZE];
+    int rxCurBuf;
+    int rxBufCurPos;
+    int rxBreak;
+    char *rpr;
+
+    int baud, bits, parity, stopBits, handshaking; 
 } Serial_Internal;
 
 // static stuff
@@ -85,7 +92,7 @@ bool Serial_handshaking( int channel );
 int Serial_writeChar( int channel, char character );
 //int Serial_write( char* data, int length, int timeout = 0);
 int Serial_write( int channel, char* data, int length, int timeout);
-int Serial_writeDMA( int channel, void *data, int length);
+int Serial_writeDMA( int channel, void *data, int length, int timeout);
 int Serial_bytesAvailable( int channel );
 bool Serial_anyBytesAvailable( int channel );
 //int Serial_read( char* data, int length, int timeout = 0);
