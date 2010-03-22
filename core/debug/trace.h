@@ -44,7 +44,7 @@
 //#define TR_SYS          
 //#define TR_TMR          
 //#define TR_RTC          
-//#define TR_SER          
+#define TR_SER          
 //#define TR_SD           
 //#define TR_USB          
 //#define TR_BOT          

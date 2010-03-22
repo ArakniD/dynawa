@@ -87,6 +87,25 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
             } else if (bc_state == BC_STATE_BAUDRATE_SET) {
                 if (cmd[3] == BCCMDVARID_PS) {
                     if (cmd[4] == BCCMDPDU_STAT_OK) {
+                        bc_state = BC_STATE_UART_HOST_WAKE_SIGNAL;
+                        TRACE_INFO("BC_STATE_UART_HOST_WAKE_SIGNAL\r\n");
+                    } else {
+                        TRACE_ERROR("BC_STATE_UART_HOST_WAKE_SIGNAL failed\r\n");
+                    }
+                }
+            } else if (bc_state == BC_STATE_UART_HOST_WAKE_SIGNAL) {
+                if (cmd[3] == BCCMDVARID_PS) {
+                    if (cmd[4] == BCCMDPDU_STAT_OK) {
+                        bc_state = BC_STATE_UART_HOST_WAKE;
+                        TRACE_INFO("BC_STATE_UART_HOST_WAKE\r\n");
+                    } else {
+                        TRACE_ERROR("BC_STATE_UART_HOST_WAKE failed\r\n");
+                    }
+                }
+/*
+            } else if (bc_state == BC_STATE_BAUDRATE_SET) {
+                if (cmd[3] == BCCMDVARID_PS) {
+                    if (cmd[4] == BCCMDPDU_STAT_OK) {
                         bc_state = BC_STATE_LC_MAX_TX_POWER;
                         TRACE_INFO("BC_STATE_LC_MAX_TX_POWER\r\n");
                     } else {
@@ -111,6 +130,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
                         TRACE_ERROR("BC_STATE_LC_MAX_TX_POWER_NO_RSSI failed\r\n");
                     }
                 }
+*/
             }
         }
         NumberOfHciCommands = 1;

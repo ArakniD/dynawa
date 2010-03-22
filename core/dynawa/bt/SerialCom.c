@@ -27,12 +27,15 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "abcsp.h"
 #include "debug/trace.h"
 
+extern volatile portTickType xTickCount;
+
 #define SERIAL_CHANNEL 0
 
 extern void BgIntPump(void);
 
 #define	TX_BUF_MAX_SIZE				((uint16_t) 4096)	/* the buffer size for incoming and outgoing characters */
-#define RX_BUF_MAX_SIZE				((uint16_t) 4096)
+//#define RX_BUF_MAX_SIZE				((uint16_t) 4096)
+#define RX_BUF_MAX_SIZE				((uint16_t) 1024)
 
 /* the following number can be used to limit the number of bytes send at the time to the YABCSP libray.
 If not defined as many bytes as possible are send to the library */
@@ -83,6 +86,8 @@ static uint16_t	txSize;
 static uint16_t	rxSize;
 static uint8_t	txBuf[TX_BUF_MAX_SIZE];
 static uint8_t	rxBuf[RX_BUF_MAX_SIZE];
+// MV Test - rxBuf in SRAM (32KB)
+//static uint8_t *rxBuf = 0x8000 - RX_BUF_MAX_SIZE;
 
 static unsigned long baudRate;
 static char comPortString[128];
@@ -206,8 +211,8 @@ void txThreadFunc(void)
                             no2Send = TX_BUF_MAX_SIZE - txOut;
                         }
 
-                        //if (WriteFile(comHandle, &(txBuf[txOut]), no2Send, &bytesWritten, &osWrote))
-                        if (!Serial_write(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
+                        //if (!Serial_write(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
+                        if (!Serial_writeDMA(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
                         {
                             //TRACE_BT("data written\r\n");
                             bytesWritten = no2Send;
@@ -277,13 +282,12 @@ void txThreadFunc(void)
     vTaskDelete(NULL);
 }
 
-void rxThreadFunc(void)
+void rxThreadFunc_last_working(void)
+//void rxThreadFunc(void)
 {
 	uint16_t		event;
 	uint8_t		*rxData;
 	uint16_t		bytesRead;
-	bool_t		readSuccess;
-	bool_t		startRead;
 	uint16_t	theRxSize;
 	//COMSTAT		comStat;
 	uint16_t		errors;
@@ -409,6 +413,639 @@ void rxThreadFunc(void)
     vTaskDelete(NULL);
 }
 
+void rxThreadFunc_new(void)
+//void rxThreadFunc(void)
+{
+	uint16_t		event;
+	uint8_t		*rxData;
+	uint16_t		bytesRead;
+	bool_t		readSuccess;
+	bool_t		startRead;
+	uint16_t	theRxSize;
+	uint16_t		errors;
+	uint16_t		numberToRead;
+
+
+	rxData = rxBuf;
+	rxSize = 0;
+
+    TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
+	while (TRUE)
+	{
+        xSemaphoreTake(rxMutex, portMAX_DELAY);
+		theRxSize = rxSize;
+        xSemaphoreGive(rxMutex);
+
+		/*	find next position for rx data in and if any space available in buffer	*/
+		if (theRxSize < RX_BUF_MAX_SIZE)
+		{
+			startRead = TRUE;
+		}
+		else
+		{
+			/*	wait for available space in the buffer	*/
+            readSuccess = FALSE;
+			startRead = FALSE;
+		}
+		
+		/*	kick the read process if allowed (space left in rx buffer)	*/
+		if (startRead)
+		{
+			rxData = rxBuf + rxIn;
+#if 0
+            int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
+            //TRACE_BT("AVAIL %d\r\n", bytesAvail);
+            numberToRead =  bytesAvail > 0 ? bytesAvail : 1;
+            if (rxIn + numberToRead > RX_BUF_MAX_SIZE)
+            {
+                numberToRead = RX_BUF_MAX_SIZE - rxIn;
+            }
+
+            //TRACE_BT("READING\r\n");
+            bytesRead = Serial_read(SERIAL_CHANNEL, rxData, numberToRead, -1);
+            //TRACE_BT("DATA READ %d\r\n", bytesRead);
+            if (bytesRead < 0)
+            {
+                readSuccess = FALSE;
+                errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
+            }
+            else
+            {
+                readSuccess = TRUE;
+                if (bytesRead > 0)
+                {
+                    handleRxData(bytesRead, rxData);
+                }
+            }
+#else
+
+            bytesRead = 0;
+            int count = 0;
+            while(1) {
+
+                int bytesAvail = Serial_bytesAvailable(SERIAL_CHANNEL);
+                //TRACE_BT("AVAIL %d\r\n", bytesAvail);
+
+                if (bytesRead) {
+                    if (!bytesAvail) 
+                        break;
+                    numberToRead = bytesAvail;
+                } else {
+                    numberToRead =  bytesAvail > 0 ? bytesAvail : 1;
+                }
+                if (rxIn + bytesRead + numberToRead > RX_BUF_MAX_SIZE)
+                {
+                    numberToRead = RX_BUF_MAX_SIZE - rxIn - bytesRead;
+                }
+                if (!numberToRead)
+                    break;
+
+                //TRACE_BT("READING %x %d\r\n", rxData, numberToRead);
+                int n = Serial_read(SERIAL_CHANNEL, rxData + bytesRead, numberToRead, -1);
+                //TRACE_BT("DATA READ %d\r\n", n);
+                if (n < 0)
+                {
+                    readSuccess = FALSE;
+                    errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
+                    bytesRead = n;
+                    break;
+                }
+                bytesRead += n;
+                count++;
+            }
+            if (bytesRead >= 0) {
+                readSuccess = TRUE;
+                if (bytesRead > 0) {
+                    handleRxData(bytesRead, rxData);
+                }
+            }
+#endif
+		}
+
+		if (!readSuccess)
+		{
+            //TRACE_BT("rxEvent Wait\r\n");
+            xQueueReceive(rxEvents, &event, portMAX_DELAY); 
+            //TRACE_BT("rxEvent\r\n");
+            switch (event)
+            {
+                case CLOSE_DOWN_EVENT:
+                {
+                    /*	to do	*/
+                    break;
+                }
+                case DATA_READ_EVENT:
+                {
+                    /* sufficient data has been read from the rx buffer to restart the reader thread */
+// TODO
+                    break;
+                }
+                default:
+                {
+                    /*	error occured	*/
+                    errorHandler(__LINE__, __FILE__, "Default called");
+                    break;
+                }
+            }
+
+			if (event == CLOSE_DOWN_EVENT)
+			{
+				break;
+			}
+		}
+	}	/*	end while	*/
+
+    vTaskDelete(NULL);
+}
+
+//void rxThreadFuncDMA(void)
+void rxThreadFunc(void)
+{
+	uint16_t		event;
+	uint8_t		*rxData;
+	uint16_t		bytesRead;
+	bool_t		readSuccess;
+	bool_t		startRead;
+	uint16_t	theRxSize;
+	uint16_t		errors;
+	uint16_t		numberToRead;
+    int         ringBuffCycle = 0;
+
+	rxData = rxBuf;
+	rxSize = 0;
+
+    TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
+
+    Serial_setDMARxBuff(SERIAL_CHANNEL, rxBuf, RX_BUF_MAX_SIZE, rxBuf, RX_BUF_MAX_SIZE);
+    Serial_DMARxStart(SERIAL_CHANNEL);
+	while (TRUE)
+	{
+        xSemaphoreTake(rxMutex, portMAX_DELAY);
+		theRxSize = rxSize;
+        xSemaphoreGive(rxMutex);
+
+		/*	find next position for rx data in and if any space available in buffer	*/
+        TRACE_INFO("rxSize %d rxIn %d\r\n", theRxSize, rxIn);
+		if (theRxSize < RX_BUF_MAX_SIZE)
+		{
+            // ring buffer cycled 
+            if (rxIn == 0) {
+
+                TRACE_INFO("\n---------------- Cycle %d -----------------\r\n\n", ringBuffCycle);
+                if (ringBuffCycle) {
+                    Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, 0, rxBuf, RX_BUF_MAX_SIZE);
+                }
+                ringBuffCycle++;
+            }
+			startRead = TRUE;
+		}
+		else
+		{
+			/*	wait for available space in the buffer	*/
+            readSuccess = FALSE;
+			startRead = FALSE;
+		}
+		
+		/*	kick the read process if allowed (space left in rx buffer)	*/
+		if (startRead)
+		{
+			rxData = rxBuf + rxIn;
+
+#if 0
+            int rcr;
+            uint8_t *rpr = Serial_getDMARxBuff(SERIAL_CHANNEL, &rcr);
+            TRACE_INFO("RPR %x RCR %d\r\n", rpr, rcr);
+            bytesRead = Serial_waitForDMARxData3(SERIAL_CHANNEL, rxBuf, RX_BUF_MAX_SIZE, rxData, 1, -1);
+#elif 0                
+            int rcr;
+            uint8_t *currRxData = Serial_getDMARxBuff(SERIAL_CHANNEL, &rcr);
+
+            int bytesAvail = 0;
+            if (currRxData > rxData) {
+                bytesAvail = currRxData - rxData;
+            } else if (currRxData < rxData) {
+                bytesAvail = rxBuf + RX_BUF_MAX_SIZE - rxData;
+            }
+     
+            TRACE_BT("AVAIL %d\r\n", bytesAvail);
+            if (bytesAvail) {
+                TRACE_BT("READING\r\n");
+                bytesRead = bytesAvail;
+            } else {
+                // TODO: Wait for DMA data
+                TRACE_BT("WAITTING\r\n");
+                bytesRead = Serial_waitForDMARxData3(SERIAL_CHANNEL, rxBuf, RX_BUF_MAX_SIZE, rxData, 1, -1);
+            }
+#else
+            // Polling every 10ms
+            TRACE_SER("Read %d\r\n", xTickCount);
+            int waitCount = 0;
+            while (1) {
+                int rcr;
+                uint8_t *currRxData = Serial_getDMARxBuff(SERIAL_CHANNEL, &rcr);
+
+                int bytesAvail = 0;
+                if (currRxData > rxData) {
+                    bytesAvail = currRxData - rxData;
+                } else if (currRxData < rxData) {
+                    bytesAvail = rxBuf + RX_BUF_MAX_SIZE - rxData;
+                }
+         
+                if (bytesAvail) {
+                    TRACE_SER("AVAIL %d %d\r\n", bytesAvail, waitCount);
+                    TRACE_BT("READING\r\n");
+                    bytesRead = bytesAvail;
+                    break;
+                }
+                // TODO: Wait for DMA data
+                TRACE_BT("WAITTING\r\n");
+                if (0 || waitCount < 40) {
+                    Task_sleep(10);
+                    waitCount++;
+                } else {
+                    Serial_waitForData(SERIAL_CHANNEL, -1);
+                    waitCount = 0;
+                }
+            }
+    
+#endif
+            TRACE_INFO("bytesRead %d\r\n", bytesRead);
+            if (bytesRead >= 0)
+            {
+                readSuccess = TRUE;
+                if (bytesRead > 0) {
+                    handleRxData(bytesRead, rxData);
+                }
+            }
+		}
+
+		if (!readSuccess)
+		{
+            //TRACE_BT("rxEvent Wait\r\n");
+            xQueueReceive(rxEvents, &event, portMAX_DELAY); 
+            //TRACE_BT("rxEvent\r\n");
+            switch (event)
+            {
+                case CLOSE_DOWN_EVENT:
+                {
+                    /*	to do	*/
+                    break;
+                }
+                case DATA_READ_EVENT:
+                {
+                    /* sufficient data has been read from the rx buffer to restart the reader thread */
+// TODO
+                    /*
+                    if (rxIn == 0) {
+                        Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, 0, rxBuf, RX_BUF_MAX_SIZE);
+                    }
+                    */
+                    break;
+                }
+                default:
+                {
+                    /*	error occured	*/
+                    errorHandler(__LINE__, __FILE__, "Default called");
+                    break;
+                }
+            }
+
+			if (event == CLOSE_DOWN_EVENT)
+			{
+				break;
+			}
+		}
+	}	/*	end while	*/
+
+    vTaskDelete(NULL);
+}
+
+#if 0
+void rxThreadFuncDMA_DoubleBuf(void)
+//void rxThreadFunc(void)
+{
+	uint16_t		event;
+	uint8_t		*rxData;
+	uint16_t		bytesRead;
+	bool_t		readSuccess;
+	bool_t		startRead;
+	uint16_t	theRxSize;
+	uint16_t		errors;
+	uint16_t		numberToRead;
+    int         ringBuffCycle = 0;
+    int         currRxBuffNo = 0;
+    uint8_t     *currRxBuff;
+    bool_t wait = 0;
+
+    currRxBuf = &rxDMABuf[0];
+	//rxData = currRxBuf;
+	rxSize = 0;
+
+    TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
+
+      
+    Serial_setDMARxBuff(SERIAL_CHANNEL, &rxDMABuf[0], RX_BUF_MAX_SIZE, &rxDMABuf[1], RX_BUF_MAX_SIZE);
+	while (TRUE)
+	{
+        xSemaphoreTake(rxMutex, portMAX_DELAY);
+		theRxSize = rxSize;
+        xSemaphoreGive(rxMutex);
+
+		/*	find next position for rx data in and if any space available in buffer	*/
+        TRACE_INFO("rxSize %d rxIn %d\r\n", theRxSize, rxIn);
+		if (theRxSize < RX_BUF_MAX_SIZE)
+		{
+            // ring buffer cycled 
+            if (rxIn == 0) {
+                TRACE_INFO("\n---------------- Cycle %d -----------------\r\n\n", ringBuffCycle);
+                if (ringBuffCycle) {
+                    wait = TRUE;
+                    waitForEmptyRxBuff = TRUE;
+                    readSuccess = FALSE;
+                    startRead = FALSE;
+                } else {
+                    startRead = TRUE;
+                }
+                ringBuffCycle++;
+            }
+		}
+		else
+		{
+			/*	wait for available space in the buffer	*/
+            wait = TRUE;
+            readSuccess = FALSE;
+			startRead = FALSE;
+		}
+		
+		/*	kick the read process if allowed (space left in rx buffer)	*/
+		if (startRead)
+		{
+			rxData = currRxBuf + rxIn;
+
+#if 1
+            int rcr;
+            uint8_t *rpr = Serial_getDMARxBuff(SERIAL_CHANNEL, &rcr);
+            TRACE_INFO("RPR %x RCR %d\r\n", rpr, rcr);
+            bytesRead = Serial_waitForDMARxData3(SERIAL_CHANNEL, currRxBuf, RX_BUF_MAX_SIZE, rxData, 1, -1);
+            TRACE_INFO("bytesRead %d\r\n", bytesRead);
+#else                
+            while (1) {
+                Serial_DMARxStop(SERIAL_CHANNEL);
+                uint8_t *currRxData = Serial_getDMARxBuff(SERIAL_CHANNEL);
+
+                int bytesAvail = 0;
+                if (currRxData > rxData) {
+                    bytesAvail = currRxData - rxData;
+                } else if (currRxData < rxData) {
+                    bytesAvail = RX_BUF_MAX_SIZE - (int)rxData;
+                }
+         
+                TRACE_BT("AVAIL %d\r\n", bytesAvail);
+                if (bytesAvail) {
+                    Serial_DMARxStart(SERIAL_CHANNEL);
+                    TRACE_BT("READING\r\n");
+                    bytesRead = bytesAvail;
+                    break;
+                } else {
+                    // TODO: Wait for DMA data
+                    TRACE_BT("WAITTING\r\n");
+                    if (Serial_waitForDMARxData(SERIAL_CHANNEL, 1, -1) < 0) 
+                    {
+                        errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
+                        bytesRead = -1;
+                        break;
+                    }
+                }
+            }
+#endif
+            if (bytesRead >= 0)
+            {
+                readSuccess = TRUE;
+                if (bytesRead > 0) {
+                    handleRxData(bytesRead, rxData);
+                }
+            } else {
+                readSuccess = FALSE;
+            }
+		}
+
+		if (wait)
+		{
+            do {
+                //TRACE_BT("rxEvent Wait\r\n");
+                xQueueReceive(rxEvents, &event, portMAX_DELAY); 
+                //TRACE_BT("rxEvent\r\n");
+                switch (event)
+                {
+                    case CLOSE_DOWN_EVENT:
+                    {
+                        /*	to do	*/
+                        wait = FALSE;
+                        break;
+                    }
+                    case DATA_READ2_EVENT:
+                    {
+                        /* sufficient data has been read from the rx buffer to restart the reader thread */
+                        if (rxIn == 0) {
+                            Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, 0, currRxBuf, RX_BUF_MAX_SIZE);
+                            currRxBuffNo = !currRxBuffNo;
+                            currRxBuf = &rxDMABuf[currRxBuffNo];
+                            startRead = TRUE;
+                            wait = FALSE;
+                        }
+                    }
+                    case DATA_READ_EVENT:
+                    {
+                        /* sufficient data has been read from the rx buffer to restart the reader thread */
+                        wait = FALSE;
+                        break;
+                    }
+                    default:
+                    {
+                        /*	error occured	*/
+                        errorHandler(__LINE__, __FILE__, "Default called");
+                        break;
+                    }
+                }
+			} while (wait));
+
+			if (event == CLOSE_DOWN_EVENT)
+			{
+				break;
+			}
+		}
+	}	/*	end while	*/
+
+    vTaskDelete(NULL);
+}
+#endif
+
+void rxThreadFuncDMA_semiworking(void)
+//void rxThreadFunc(void)
+{
+	uint16_t		event;
+	uint8_t		*rxData;
+	uint16_t		bytesRead;
+	bool_t		readSuccess;
+	bool_t		startRead;
+	uint16_t	theRxSize;
+	uint16_t		errors;
+	uint16_t		numberToRead;
+	uint16_t		lastCurrFreeSize;
+	uint16_t		lastNextFreeSize;
+	uint16_t		lastTheRxOut;
+    int         ringBuffCycle = 0;
+
+	rxData = rxBuf;
+	rxSize = 0;
+    lastTheRxOut = 0;
+
+    TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
+
+    Serial_setDMARxBuff(SERIAL_CHANNEL, rxData, RX_BUF_MAX_SIZE, NULL, 0);
+	while (TRUE)
+	{
+        xSemaphoreTake(rxMutex, portMAX_DELAY);
+		theRxSize = rxSize;
+        xSemaphoreGive(rxMutex);
+
+		/*	find next position for rx data in and if any space available in buffer	*/
+        // !!!! TODO: rxSize + rxIn sometimes > RX_BUF_MAX_SIZE !!!!
+        int theRxOut = rxIn - rxSize;
+        if (theRxOut < 0)
+            theRxOut = RX_BUF_MAX_SIZE + theRxOut;
+
+        TRACE_INFO("rxSize %d rxIn %d rxOut %d\r\n", theRxSize, rxIn, theRxOut);
+		if (theRxSize < RX_BUF_MAX_SIZE)
+		{
+            // ring buffer cycled 
+            if (rxIn == 0) {
+                TRACE_INFO("\n---------------- Cycle %d -----------------\r\n\n", ringBuffCycle++);
+                lastCurrFreeSize = RX_BUF_MAX_SIZE;
+                lastNextFreeSize = 0;
+            }
+
+            // adjust DMA buffers
+
+            int currFreeSize = RX_BUF_MAX_SIZE - theRxSize;
+            int nextFreeSize = 0;
+
+            // check if there is an empty space at the beginning of rxBuf
+            if (theRxSize < rxIn) {
+                // TODO 
+                nextFreeSize = rxIn - theRxSize;
+                currFreeSize -= nextFreeSize;
+            }
+            TRACE_INFO("Free C %d (%d) N %d (%d)\r\n", currFreeSize, lastCurrFreeSize, nextFreeSize, lastNextFreeSize);
+
+            if (lastTheRxOut > theRxOut) {
+                Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, RX_BUF_MAX_SIZE - lastTheRxOut, NULL, 0);
+            } else if (theRxOut > rxIn && theRxOut > lastTheRxOut) {
+                Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, theRxOut - lastTheRxOut, NULL, 0);
+            }
+            if (nextFreeSize > lastNextFreeSize) {
+                Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, 0, rxBuf, nextFreeSize);
+            }
+            lastCurrFreeSize = currFreeSize;
+            lastNextFreeSize = nextFreeSize;
+            lastTheRxOut = theRxOut;
+
+			startRead = TRUE;
+		}
+		else
+		{
+            lastCurrFreeSize = 0;
+            lastNextFreeSize = 0;
+
+			/*	wait for available space in the buffer	*/
+            readSuccess = FALSE;
+			startRead = FALSE;
+		}
+		
+		/*	kick the read process if allowed (space left in rx buffer)	*/
+		if (startRead)
+		{
+			rxData = rxBuf + rxIn;
+
+#if 1
+            int rcr;
+            uint8_t *rpr = Serial_getDMARxBuff(SERIAL_CHANNEL, &rcr);
+            TRACE_INFO("RPR %x RCR %d\r\n", rpr, rcr);
+            bytesRead = Serial_waitForDMARxData2(SERIAL_CHANNEL, rxBuf, RX_BUF_MAX_SIZE, rxData, 1, -1);
+            TRACE_INFO("bytesRead %d\r\n", bytesRead);
+#else                
+            while (1) {
+                Serial_DMARxStop(SERIAL_CHANNEL);
+                uint8_t *currRxData = Serial_getDMARxBuff(SERIAL_CHANNEL);
+
+                int bytesAvail = 0;
+                if (currRxData > rxData) {
+                    bytesAvail = currRxData - rxData;
+                } else if (currRxData < rxData) {
+                    bytesAvail = RX_BUF_MAX_SIZE - (int)rxData;
+                }
+         
+                TRACE_BT("AVAIL %d\r\n", bytesAvail);
+                if (bytesAvail) {
+                    Serial_DMARxStart(SERIAL_CHANNEL);
+                    TRACE_BT("READING\r\n");
+                    bytesRead = bytesAvail;
+                    break;
+                } else {
+                    // TODO: Wait for DMA data
+                    TRACE_BT("WAITTING\r\n");
+                    if (Serial_waitForDMARxData(SERIAL_CHANNEL, 1, -1) < 0) 
+                    {
+                        errorHandler(__LINE__, __FILE__, "Serious error in read file in rx thread");
+                    }
+                }
+            }
+#endif
+            if (bytesRead >= 0)
+            {
+                readSuccess = TRUE;
+                if (bytesRead > 0) {
+                    handleRxData(bytesRead, rxData);
+                }
+            }
+		}
+
+		if (!readSuccess)
+		{
+            //TRACE_BT("rxEvent Wait\r\n");
+            xQueueReceive(rxEvents, &event, portMAX_DELAY); 
+            //TRACE_BT("rxEvent\r\n");
+            switch (event)
+            {
+                case CLOSE_DOWN_EVENT:
+                {
+                    /*	to do	*/
+                    break;
+                }
+                case DATA_READ_EVENT:
+                {
+                    /* sufficient data has been read from the rx buffer to restart the reader thread */
+// TODO
+                    break;
+                }
+                default:
+                {
+                    /*	error occured	*/
+                    errorHandler(__LINE__, __FILE__, "Default called");
+                    break;
+                }
+            }
+
+			if (event == CLOSE_DOWN_EVENT)
+			{
+				break;
+			}
+		}
+	}	/*	end while	*/
+
+    vTaskDelete(NULL);
+}
+
 void rxThreadFunc_old(void)
 {
 	//OVERLAPPED	osRead	= {0};
@@ -439,7 +1076,7 @@ void rxThreadFunc_old(void)
 	rxData = rxBuf;
 	rxSize = 0;
 
-    //TRACE_BT("rxThreadFunc\r\n");
+    TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
 	while (TRUE)
 	{
 		//EnterCriticalSection(&rxMutex);

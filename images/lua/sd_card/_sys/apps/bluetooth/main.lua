@@ -150,6 +150,7 @@ local mbw150 = {
     parser_state_machine = {
         [1] = {
             {"%*SEAM", 2, "AT*SEAUDIO=0,0\r", nil},
+            {"OK", 2, "AT*SEAUDIO=0,0\r", nil},
         },
         [2] = {
             {"ERR", 3, "AT+CIND=?\r", nil},
@@ -292,6 +293,10 @@ local mbw150 = {
                 handler.log(connection, "find_service_events: no remote listening RFCOMM")
                 handler.reconnect(connection)
             end
+        elseif event_id == event.BT_DISCONNECTED then
+            --TODO: this event shouldn't get here!
+            handler.log(connection, "find_service_events: disconnected")
+            handler.reconnect(connection)
         elseif event_id == event.BT_ERROR then
             handler.log(connection, "find_service_events: error " .. message.error)
             handler.reconnect(connection)

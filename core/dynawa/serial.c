@@ -21,58 +21,11 @@ the specific language governing permissions and limitations under the License.
 #include "error.h"
 #include "debug/trace.h"
 
+extern volatile portTickType xTickCount;
+
 Serial_Internal Serial_internals[SERIAL_PORTS];
 extern void (Serial0Isr_Wrapper)(void);
 extern void (Serial1Isr_Wrapper)(void);
-
-#define _ATMEL
-
-#if defined(ATMEL)
-// ATMEL
-
-#include <pio/pio.h>
-
-/// Pins to configure for the application.
-const Pin pins[] = {
-    //PINS_DBGU,
-    PIN_USART0_RXD,
-    PIN_USART0_TXD,
-    //PIN_USART0_CTS,
-    //PIN_USART0_RTS
-};
-
-
-//------------------------------------------------------------------------------
-/// Configures USART0 in hardware handshaking mode, asynchronous, 8 bits, 1 stop
-/// bit, no parity, 115200 bauds and enables its transmitter and receiver.
-//------------------------------------------------------------------------------
-void ConfigureUsart0(void)
-{
-    unsigned int mode = 
-        //AT91C_US_USMODE_HWHSH
-        AT91C_US_USMODE_NORMAL
-        | AT91C_US_CLKS_CLOCK
-        | AT91C_US_CHRL_8_BITS
-        //| AT91C_US_PAR_NONE
-        | AT91C_US_PAR_EVEN
-        | AT91C_US_NBSTOP_1_BIT
-        | AT91C_US_CHMODE_NORMAL;
-
-    // Enable the peripheral clock in the PMC
-    PMC_EnablePeripheral(AT91C_ID_US0);
-
-    // Configure the USART in the desired mode @115200 bauds
-    USART_Configure(AT91C_BASE_US0, mode, 115200, BOARD_MCK);
-
-    // Configure the RXBUFF interrupt
-    AIC_ConfigureIT(AT91C_ID_US0, 0, Serial0Isr_Wrapper);
-    AIC_EnableIT(AT91C_ID_US0);
-
-    // Enable receiver & transmitter
-    USART_SetTransmitterEnabled(AT91C_BASE_US0, 1);
-    USART_SetReceiverEnabled(AT91C_BASE_US0, 1);
-}
-#endif
 
 /**
   Create a new serial port.
@@ -89,23 +42,14 @@ void Serial_open( int channel, int q_size )
     TRACE_SER("Serial_init %d %d\r\n", channel, q_size);
     if( channel < 0 || channel >= 2 ) // make sure channel is valid
         return;
-    Serial_Internal* si = &Serial_internals[channel];
-    //if( si->rxQueue == NULL )
-        si->rxQueue = Queue_create( q_size, 1 );
-    //if( si->txQueue == NULL )
-        si->txQueue = Queue_create( q_size, 1 );
+    Serial_Internal* sp = &Serial_internals[channel];
+    //if( sp->rxQueue == NULL )
+        sp->rxQueue = Queue_create( q_size, 1 );
+    //if( sp->txQueue == NULL )
+        sp->txQueue = Queue_create( q_size, 1 );
 
-
-#if defined(ATMEL)
-    // Configure pins
-    PIO_Configure(pins, PIO_LISTSIZE(pins));
-
-    // Configure USART0 and display startup trace
-    ConfigureUsart0();
-
-    si->uart = AT91C_BASE_US0;
-    return;
-#endif
+    sp->rxSem = Semaphore_create();
+    sp->txSem = Semaphore_create();
 
     // default to SERIAL_0 values
     int id = AT91C_ID_US0;
@@ -117,7 +61,7 @@ void Serial_open( int channel, int q_size )
     {
         case 0:
             // values already set for this above
-            si->uart = AT91C_BASE_US0;
+            sp->uart = AT91C_BASE_US0;
             break;
         case 1:
             id = AT91C_ID_US1;
@@ -125,20 +69,20 @@ void Serial_open( int channel, int q_size )
             //txPinBit = IO_PA22_BIT;
             rxPin = IO_PA21;
             txPin = IO_PA22;
-            si->uart = AT91C_BASE_US1;
+            sp->uart = AT91C_BASE_US1;
             break;
     }
 
     unsigned int mask = 0x1 << id;                      
 
     AT91C_BASE_PMC->PMC_PCER = mask;   // Enable the peripheral clock
-    si->baud = SERIAL_DEFAULT_BAUD;
-    si->bits = SERIAL_DEFAULT_BITS;
-    si->stopBits = SERIAL_DEFAULT_STOPBITS;
-    si->parity = SERIAL_DEFAULT_PARITY;
-    si->handshaking = SERIAL_DEFAULT_HANDSHAKING;
-    si->uart->US_IDR = (unsigned int) -1; // Disable interrupts
-    si->uart->US_TTGR = 0;                // Timeguard disabled
+    sp->baud = SERIAL_DEFAULT_BAUD;
+    sp->bits = SERIAL_DEFAULT_BITS;
+    sp->stopBits = SERIAL_DEFAULT_STOPBITS;
+    sp->parity = SERIAL_DEFAULT_PARITY;
+    sp->handshaking = SERIAL_DEFAULT_HANDSHAKING;
+    sp->uart->US_IDR = (unsigned int) -1; // Disable interrupts
+    sp->uart->US_TTGR = 0;                // Timeguard disabled
     Io_init( &rx, rxPin, IO_A, false );
     Io_init( &tx, txPin, IO_A, true );
 
@@ -153,14 +97,36 @@ void Serial_open( int channel, int q_size )
         AT91C_BASE_AIC->AIC_SVR[ id ] = (unsigned int)Serial1Isr_Wrapper;
     // Store the Source Mode Register
     AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4;
+    //AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 4;
     // Clear the interrupt on the interrupt controller
     AT91C_BASE_AIC->AIC_ICCR = mask;
     AT91C_BASE_AIC->AIC_IECR = mask;
-    si->uart->US_IER = AT91C_US_RXRDY;
+
+    // MV
+    sp->rxBreak = 0;
+    sp->uart->US_IER = AT91C_US_RXBRK;
+#if DMA
+/*
+    sp->rxCurBuf = 0;
+    sp->rxCurBufPos = 0;
+    sp->uart->US_RPR = &sp->rxBuf[0];
+    sp->uart->US_RCR = SERIAL_RX_BUF_SIZE;
+
+    sp->uart->US_RNPR = &sp->rxBuf[1];
+    sp->uart->US_RNCR = SERIAL_RX_BUF_SIZE;
+
+    sp->uart->US_PTCR = AT91C_PDC_RXTEN;
+
+    //sp->uart->US_IER = AT91C_US_RXBUFF;  // both current & next buffer
+    sp->uart->US_IER = AT91C_US_ENDRX; // current buffer
+*/
+#else
+    sp->uart->US_IER = AT91C_US_RXRDY;
+#endif
 }
 
 void Serial_close (int channel) {
-    Serial_Internal* si = &Serial_internals[channel];
+    Serial_Internal* sp = &Serial_internals[channel];
 
     int id = AT91C_ID_US0;
     switch( channel )
@@ -178,17 +144,22 @@ void Serial_close (int channel) {
     AT91C_BASE_AIC->AIC_IDCR = mask;
     AT91C_BASE_PMC->PMC_PCDR = mask;   // Disable the peripheral clock
 
-    if (si->rxQueue) {
-        Queue_delete(si->rxQueue);
+    if (sp->rxQueue) {
+        Queue_delete(sp->rxQueue);
     }
-    if (si->txQueue) {
-        Queue_delete(si->txQueue);
+    if (sp->txQueue) {
+        Queue_delete(sp->txQueue);
+    }
+    if (sp->rxSem) {
+        Semaphore_delete(sp->rxSem);
+    }
+    if (sp->txSem) {
+        Semaphore_delete(sp->txSem);
     }
 }
 
 void Serial_setDetails( int channel )
 {
-#if !defined(ATMEL)
     if( channel < 0 || channel >= 2 ) // make sure channel is valid
         return;
 
@@ -196,6 +167,8 @@ void Serial_setDetails( int channel )
     // Reset receiver and transmitter
     sp->uart->US_CR = AT91C_US_RSTRX | AT91C_US_RSTTX | AT91C_US_RXDIS | AT91C_US_TXDIS; 
 
+
+/*
     // MCK is 47923200 for the Make Controller Kit
     // Calculate ( * 10 )
     int baudValue = ( MCK * 10 ) / ( sp->baud * 16 );
@@ -206,13 +179,28 @@ void Serial_setDetails( int channel )
         baudValue /= 10;
 
     sp->uart->US_BRGR = baudValue;
+*/
 
-    //sp->uart->US_BRGR = (MCK / sp->baud) / 16;  //...from Atmel example code...does this work?
-    // FP
-    /*
-       sp->uart->US_BRGR = ((MCK / sp->baud) / 16) | (4 << 16);
-       */
-    TRACE_SER("US_BRGR %x\r\n", sp->uart->US_BRGR);
+    int cd = ((MCK / sp->baud) / 16);
+    int min_baudrate_diff;
+    int best_fd;
+    int fd;
+    for (fd = 0; fd < 8; fd++) {
+        int baudrate = MCK / (16 * (cd + fd / 8.0));
+
+        int baudrate_diff = abs(baudrate - sp->baud);
+        if (!fd || baudrate_diff < min_baudrate_diff) {
+            min_baudrate_diff = baudrate_diff;
+            best_fd = fd;
+        }
+        TRACE_INFO("fd %d br %d\r\n", fd, baudrate);
+    }
+    if (best_fd) {
+        cd |= (best_fd << 16);
+    }
+    sp->uart->US_BRGR = cd;
+
+    TRACE_INFO("US_BRGR %x\r\n", sp->uart->US_BRGR);
 
     sp->uart->US_MR = ( AT91C_US_CHMODE_NORMAL ) |
         ( ( sp->handshaking ) ? AT91C_US_USMODE_HWHSH : AT91C_US_USMODE_NORMAL ) |
@@ -223,7 +211,6 @@ void Serial_setDetails( int channel )
     // 2 << 14; // this last thing puts it in loopback mode
 
     sp->uart->US_CR = AT91C_US_RXEN | AT91C_US_TXEN;
-#endif
 }
 
 /**
@@ -464,33 +451,43 @@ int Serial_write( int channel, char* data, int length, int timeout )
     return CONTROLLER_OK;
 }
 
-int Serial_writeDMA(int channel, void *data, int length)
+int Serial_writeDMA(int channel, void *data, int length, int timeout)
 {
     Serial_Internal* sp = &Serial_internals[ channel ];
     // Check if the first PDC bank is free
+    //TRACE_SER("Serial_writeDMA %d %x %d\r\n", channel, data, length);
     if ((sp->uart->US_TCR == 0) && (sp->uart->US_TNCR == 0))
     {
+        //TRACE_SER("TPR\r\n");
         sp->uart->US_TPR = (unsigned int) data;
         sp->uart->US_TCR = length;
         sp->uart->US_PTCR = AT91C_PDC_TXTEN;
-        return 1;
     }
     // Check if the second PDC bank is free
     else if (sp->uart->US_TNCR == 0)
     {
+        //TRACE_SER("TNPR\r\n");
         sp->uart->US_TNPR = (unsigned int) data;
         sp->uart->US_TNCR = length;
-        return 1;
+    } else {
+        return CONTROLLER_ERROR_NO_SPACE;
     }
-    else
-        return 0;
+
+    sp->uart->US_IER = AT91C_US_TXBUFE;     // both current & next buffer
+    //sp->uart->US_IER = AT91C_US_ENDTX;      // current buffer
+
+    //TRACE_SER("WDMA WAIT\r\n");
+    Semaphore_take(sp->txSem, -1); // wait until we get this back from the interrupt
+    //TRACE_SER("WDMA OK\r\n");
+    return CONTROLLER_OK;
 }
 
 int Serial_bytesAvailable( int channel )
 {
     Serial_Internal* sp = &Serial_internals[ channel ];
-    TRACE_SER("Serial_bytesAvailable %d\r\n", channel);
-    return Queue_msgsAvailable(sp->rxQueue);
+    int n = Queue_msgsAvailable(sp->rxQueue);
+    TRACE_SER("Serial_bytesAvailable %d %d\r\n", channel, n);
+    return n;
 }
 
 bool Serial_anyBytesAvailable( int channel )
@@ -517,31 +514,309 @@ int Serial_read( int channel, char* data, int length, int timeout )
     return count;
 }
 
+void Serial_DMARxStop(int channel) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    //if (!sp->dma_stop_count++) {
+    sp->uart->US_PTCR = AT91C_PDC_RXTDIS;
+    //}
+}
+
+void Serial_DMARxStart(int channel) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    //if (sp->dma_stop_count && --sp->dma_stop_count == 0) {
+    sp->uart->US_PTCR = AT91C_PDC_RXTEN;
+    //}
+}
+
+int Serial_waitForData( int channel, int timeout ) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    TRACE_SER("waitForData %d\r\n", xTickCount);
+    //sp->uart->US_IER = AT91C_US_RXBRK;
+
+    Serial_DMARxStop(channel);
+    //sp->rpr = sp->uart->US_RPR++;
+    //sp->uart->US_RCR--;
+
+    sp->uart->US_IER = AT91C_US_RXRDY; // one char
+    // TODO: timeout
+    Semaphore_take(sp->rxSem, timeout); // wait until we get this back from the interrupt
+    //Serial_DMARxStart(channel);
+    TRACE_SER("done %d\r\n", xTickCount);
+}
+
+int Serial_waitForDMARxData( int channel, int length, int timeout ) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    char *rnpr_saved;
+    int rncr_saved;
+
+    Serial_DMARxStop(channel);
+
+    int rcr = sp->uart->US_RCR;
+
+    if (rcr < length) {
+        Serial_DMARxStart(channel);
+        return -1;
+    }
+
+    unsigned int rnpr = 0;
+
+    if (rcr > length) {
+        rnpr = sp->uart->US_RNPR;
+
+        if (rnpr) {
+            rnpr_saved = rnpr;
+            rncr_saved = sp->uart->US_RNCR;
+        }
+
+        unsigned int rpr = sp->uart->US_RPR;
+        sp->uart->US_RNPR = rpr + length;
+        sp->uart->US_RNCR = rcr - length;
+
+        sp->uart->US_RCR = length;
+    }
+
+    Serial_DMARxStart(channel);
+
+
+    sp->uart->US_IER = AT91C_US_ENDRX; // current buffer
+    // TODO: timeout
+    Semaphore_take(sp->rxSem, -1); // wait until we get this back from the interrupt
+
+    if (rnpr) {
+        Serial_DMARxStop(channel);
+
+        sp->uart->US_RNPR = rnpr_saved;
+        sp->uart->US_RNCR = rncr_saved;
+
+        Serial_DMARxStart(channel);
+    }
+    return 0;
+}
+
+static int _getAvailDMARxData( Serial_Internal* sp, char *last_addr, char *buff_top) {
+    unsigned int rpr = sp->uart->US_RPR;
+
+    // (TRACE doesn't work, too slow) TRACE_INFO("avail %x %x\r\n", rpr, last_addr);
+    int avail = 0;
+    if (rpr > last_addr) {
+        avail = (char*)rpr - last_addr;
+    } else if (rpr < last_addr) {
+        avail = buff_top - last_addr;
+    }
+    return avail;
+}
+
+int Serial_waitForDMARxData2( int channel, char *buff, int buff_size, char *last_addr, int length, int timeout ) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    char *rnpr_saved;
+    int rncr_saved;
+    char *buff_top = buff + buff_size;
+
+    TRACE_SER("Serial_waitForDMARxData2 %d %x %d %d\r\n", channel, last_addr, buff_size, length);
+
+    
+    Serial_DMARxStop(channel);
+
+    int avail = _getAvailDMARxData(sp, last_addr, buff_top);
+
+    if (avail) {
+        Serial_DMARxStart(channel); 
+        TRACE_SER("Avail %d\r\n", avail);
+        return avail;
+    }
+
+    int rcr = sp->uart->US_RCR;
+
+    if (rcr < length) {
+        Serial_DMARxStart(channel);
+        return -1;
+    }
+
+    unsigned int rnpr = 0;
+
+    if (rcr > length) {
+        rnpr = sp->uart->US_RNPR;
+
+        if (rnpr) {
+            rnpr_saved = rnpr;
+            rncr_saved = sp->uart->US_RNCR;
+        }
+
+        unsigned int rpr = sp->uart->US_RPR;
+        sp->uart->US_RNPR = rpr + length;
+        sp->uart->US_RNCR = rcr - length;
+
+        sp->uart->US_RCR = length;
+    }
+
+    Serial_DMARxStart(channel);
+
+
+    sp->uart->US_IER = AT91C_US_ENDRX; // current buffer
+    // TODO: timeout
+    Semaphore_take(sp->rxSem, -1); // wait until we get this back from the interrupt
+
+    Serial_DMARxStop(channel);
+    avail = _getAvailDMARxData(sp, last_addr, buff_top);
+
+    if (rnpr) {
+
+        sp->uart->US_RNPR = rnpr_saved;
+        sp->uart->US_RNCR = rncr_saved;
+
+    }
+    Serial_DMARxStart(channel);
+    return avail;
+}
+
+int Serial_waitForDMARxData3( int channel, char *buff, int buff_size, char *last_addr, int length, int timeout ) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    char *buff_top = buff + buff_size;
+
+    TRACE_SER("Serial_waitForDMARxData3 %d %x %d %d\r\n", channel, last_addr, buff_size, length);
+
+    
+    Serial_DMARxStop(channel);
+
+    int avail = _getAvailDMARxData(sp, last_addr, buff_top);
+
+    if (avail) {
+        Serial_DMARxStart(channel); 
+        TRACE_SER("Avail %d\r\n", avail);
+        return avail;
+    }
+
+    int rcr = sp->uart->US_RCR;
+
+    if (rcr < length) {
+        Serial_DMARxStart(channel);
+        return -1;
+    }
+
+    sp->uart->US_IER = AT91C_US_RXRDY; // one char
+    Serial_DMARxStart(channel);
+
+    // TODO: timeout
+    Semaphore_take(sp->rxSem, -1); // wait until we get this back from the interrupt
+
+    Serial_DMARxStop(channel);
+    avail = _getAvailDMARxData(sp, last_addr, buff_top);
+
+    Serial_DMARxStart(channel);
+    return avail;
+}
+
+char* Serial_getDMARxBuff( int channel, int *count ) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+    
+    *count = sp->uart->US_RCR;
+    return (char*)sp->uart->US_RPR;
+}
+
+int Serial_setDMARxBuff( int channel, char *buff, int length, char *buff_next, int length_next ) {
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    TRACE_SER("Serial_setDMARxBuff %d %x %d %x %d\r\n", channel, buff, length, buff_next, length_next);
+    //Serial_DMARxStop(channel);
+
+    if (buff) {
+        sp->uart->US_RPR = (unsigned int)buff;
+        sp->uart->US_RCR = length;
+    } else if (length) {
+        sp->uart->US_RCR += length;
+    }
+
+    if (buff_next) {
+        sp->uart->US_RNPR = (unsigned int)buff_next;
+        sp->uart->US_RNCR = length_next;
+    }
+
+    //Serial_DMARxStart(channel);
+
+    return 0;
+}
+
+/*
+int Serial_bytesAvailableDMA( int channel )
+{
+    Serial_Internal* sp = &Serial_internals[ channel ];
+    int n = (char*)sp->uart->US_RCR - &sp->rxBuf[sp->rxPos];
+    TRACE_SER("Serial_bytesAvailable %d %d\r\n", channel, n);
+    return n;
+}
+
+int Serial_readDMA2( int channel, char* data, int length, int timeout )
+{
+    Serial_Internal* sp = &Serial_internals[ channel ];
+
+    int avail = Serial_bytesAvailableDMA(channel);
+    if (avail >= length) {
+        memcpy(data, &sp->rxBuf[sp->rxPos], length);
+        sp->rxPos += length;
+        return length;
+    }
+    int data_offset = 0;
+    int rem = length;
+    while (rem) {
+        int free = SERIAL_RX_BUF_SIZE - sp->rxPos;
+
+        int chunk;
+        if (rem > free)
+            chunk = free;
+        else 
+            chunk = rem;
+
+        int n = Serial_waitForDMARxData2(channel, sp->rxBuf, SERIAL_RX_BUF_SIZE, &sp->rxBuf[sp->rxPos], chunk, -1);
+        if (n == chunk) {
+                
+        }
+
+        memcpy(data + data_offset, &sp->rxBuf[sp->rxPos], n);
+        data_offset += n;
+        sp->rxPos += n;
+        rem -= n;
+    }
+    return length;
+}
+*/
+
 int Serial_readDMA( int channel, char* data, int length, int timeout )
 {
     Serial_Internal* sp = &Serial_internals[ channel ];
+
     // Check if the first PDC bank is free
-    int retval = 0;
     if ((sp->uart->US_RCR == 0) && (sp->uart->US_RNCR == 0))
     {
         sp->uart->US_RPR = (unsigned int) data;
         sp->uart->US_RCR = length;
         sp->uart->US_PTCR = AT91C_PDC_RXTEN;
-        retval = 1;
     }
     // Check if the second PDC bank is free
     else if (sp->uart->US_RNCR == 0)
     {
         sp->uart->US_RNPR = (unsigned int) data;
         sp->uart->US_RNCR = length;
-        retval = 1;
+    }
+    else 
+    {
+        return CONTROLLER_ERROR_NO_SPACE;
     }
 
-    if(retval)
-        sp->uart->US_IER = AT91C_US_RXBUFF;
+    if (timeout) {
+        sp->uart->US_IER = AT91C_US_RXBUFF;  // both current & next buffer
+        //sp->uart->US_IER = AT91C_US_ENDRX; // current buffer
 
-    Semaphore_take(sp->rxSem, -1); // wait until we get this back from the interrupt
-    return retval;
+        Semaphore_take(sp->rxSem, -1); // wait until we get this back from the interrupt
+        return length;
+    } else {   
+        return 0;
+    }
 }
 
 char Serial_readChar( int channel, int timeout )
