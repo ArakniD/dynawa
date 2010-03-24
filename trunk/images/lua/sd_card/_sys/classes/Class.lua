@@ -53,17 +53,8 @@ function Class:_name()
 	return rawget(self,"__name")
 end
 
-function Class:_init()
-end
-
-function Class:_cleanup()
-end
-
 local function recursive_call_cleanup(supers, o)
 	for _, super in ipairs(supers) do
-		if assert(super._cleanup) == Class._cleanup then
-			return
-		end
 		local func = rawget(super,"_cleanup")
 		if func then
 			log("Calling cleanup in "..super)
@@ -75,9 +66,6 @@ end
 
 local function recursive_call_init(supers, o)
 	for _, super in ipairs(supers) do
-		if assert(super._init) == Class._init then
-			return
-		end
 		local func = rawget(super,"_init")
 		recursive_call_init(super.__superclasses, o)
 		if func then
