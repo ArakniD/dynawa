@@ -211,7 +211,7 @@ while(true) do
 		print("Connected")
 		main_loop(fd_from)
 	end
-	--os.execute("sleep 1")
+	--os.execute("sleep 0.2")
 end
 
 --[[
