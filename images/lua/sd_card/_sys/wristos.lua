@@ -18,14 +18,22 @@ for i = 0,3 do
 	busy_bitmaps[i] = dynawa.bitmap.copy(busy_count,0,32*i,54,32)
 end
 busy_count = 0
-dynawa.busy = function()
+dynawa.busy = function(percentage) --todo: Rewrite!
 	dynawa.is_busy = true
 	local ticks = dynawa.ticks()
-	if ticks - busy_last > 100 then
+	if ticks - busy_last > 200 then
 		busy_count = (busy_count + 1) % 4
 		busy_last = ticks
 	end
-	dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,53,48)
+	--start + 4, wide 46, high 8
+	dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,53,48)	
+	if percentage then
+		local prog1 = math.floor(percentage * 46)
+		if prog1 == 0 then
+			prog1 = 1
+		end
+		dynawa.bitmap.show_partial(dynawa.bitmap.new(prog1,8,0,255,0),nil,nil,nil,nil,57,69)
+	end
 end
 
 dynawa.unique_id = function(num)
@@ -48,6 +56,34 @@ dynawa.unique_id = function(num)
 	return table.concat(result)
 end
 
+--FILE + serialization + global settings init
+dynawa.dofile(dynawa.dir.sys.."file.lua")
+
+dynawa.settings = dynawa.file.load_data(dynawa.dir.sys.."settings.data")
+if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_revision then
+	dynawa.settings = {
+		revision = dynawa.version.settings_revision,
+		default_font = "/_sys/fonts/default10.png",
+		autostart = {},
+		superman = {
+			shortcuts = {},
+		},
+	}
+	dynawa.file.save_settings()
+end
+
+--DISPLAY + BITMAP init
+dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
+
+--Classes
+dynawa.dofile(dynawa.dir.sys.."classes/init.lua")
+
+_G.private_main_handler = function(hw_event)
+	log(tostring(hw_event.type))
+end
+
+--[[
+
 --create the table for handling the lowest level incoming hardware messages
 -----------------------------------------------------------
 -----------------------------------------------------------
@@ -66,10 +102,6 @@ tbl.timer_fired = function (message)
 	local message = dynawa.hardware_vectors[handle]
 	if not message then
 		log("Timer "..tostring(handle).." should fire but its vector is unknown")
-		--[[log("known vectors:")
-		for k,v in pairs(dynawa.hardware_vectors) do
-			log("id:"..tostring(k))
-		end]]
 	else
 		assert(message.hardware == "timer")
 		if not message.autorepeat then
@@ -89,24 +121,7 @@ tbl=nil
 -----------------------------------------------------------
 -----------------------------------------------------------
 
---FILE + serialization + global settings init
-dynawa.dofile(dynawa.dir.sys.."file.lua")
 
-dynawa.settings = dynawa.file.load_data(dynawa.dir.sys.."settings.data")
-if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_revision then
-	dynawa.settings = {
-		revision = dynawa.version.settings_revision,
-		default_font = "/_sys/fonts/default10.png",
-		autostart = {},
-		superman = {
-			shortcuts = {},
-		},
-	}
-	dynawa.file.save_settings()
-end
-
---DISPLAY + BITMAP init
-dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 
 --SCHEDULER (apps + tasks + messages) init
 dynawa.dofile(dynawa.dir.sys.."scheduler.lua")
@@ -128,11 +143,6 @@ end
 
 -- Handle all messages in queue, including those new messages that are generated during the handling of the original messages!
 local function dispatch_queue()
-	--[[if _G.my then
-		log("_G.my is ".._G.my.id)
-	else
-		log("_G.my is nil")
-	end]]
 	local queue = assert(dynawa.message.queue)
 	local sanity = 999
 	assert(not _G.my,"There should be no active task at the start of dispatch_queue()")
@@ -174,5 +184,5 @@ _G.private_main_handler = function(message)
 	app.screen_updates = {pixels = 0}
 end
 
-dynawa.app.start("/_sys/apps/core/")
+dynawa.app.start("/_sys/apps/core/")]]
 

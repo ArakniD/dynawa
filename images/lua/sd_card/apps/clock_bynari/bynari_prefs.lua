@@ -29,7 +29,7 @@ local your_menu = function(message)
 				text = "Inferno", value = "red", after_select = after_select
 			},
 
-			{
+--[[			{
 				text = "Rainbow", value = "default", after_select = after_select
 			},
 			{
@@ -76,7 +76,7 @@ local your_menu = function(message)
 			},
 			{
 				text = "Inferno", value = "red", after_select = after_select
-			},
+			},]]
 
 		},
 	}
