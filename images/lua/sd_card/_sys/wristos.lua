@@ -78,8 +78,23 @@ dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 --Classes
 dynawa.dofile(dynawa.dir.sys.."classes/init.lua")
 
+local hw_vectors = {}
+hw_vectors.button_down = function(event)
+	dynawa.tch.devices.buttons["button"..event.button]:handle_event(event)
+end
+
+hw_vectors.button_up = hw_vectors.button_down
+
+hw_vectors.button_hold = hw_vectors.button_down
+
 _G.private_main_handler = function(hw_event)
-	log(tostring(hw_event.type))
+	--log(tostring(hw_event.type))
+	local handler = hw_vectors[hw_event.type]
+	if handler then
+		handler(hw_event)
+	else
+		log("No handler found for hw event "..hw_event.type..", ignored")
+	end
 end
 
 --[[

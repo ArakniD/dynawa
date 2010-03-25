@@ -104,8 +104,23 @@ function dynawa.debug.send(data)
 	send_raw("DATA_END")
 end
 
-local errfunc=function(errstat)
-	local tback = debug.traceback(errstat)
+local errfunc=function(errtxt)
+	local i = 1
+	local obj
+	repeat
+		local name,value = debug.getlocal(2,i)
+		if name == "self" then
+			obj = value
+			break
+		end
+--		log(tostring(name))
+		i = i + 1
+	until not name
+	local txt = errtxt
+	if obj then
+		txt = txt.."\nValue of 'self' = "..tostring(obj)
+	end
+	local tback = debug.traceback(txt,2)
 	return tback
 end
 	
@@ -163,7 +178,7 @@ function dynawa.debug.main_handler(msg)
 		return _G.private_main_handler(msg)
 	end
 
-	local status,result=xpcall(protected,errfunc,msg)
+	local status,result=xpcall(protected,errfunc)
 	if not status then --runtime error caught
 		dynawa.debug.send{runtime_error=result}
 	end

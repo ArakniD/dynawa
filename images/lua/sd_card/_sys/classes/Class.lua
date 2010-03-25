@@ -19,17 +19,26 @@ local metatable0 = {
 	end,
 }
 
+local invalid_metatable = {
+	__index = function (self)
+		error("Attempt to access deleted object")
+	end
+}
+
 rawset(_G,"Class", {
 	__superclasses = {},
     __name = "Class",
 })
 
 metatable0.__index = metatable0
+
 Class.__index = Class
+
 if dynawa.debug then
 	Class.__concat = metatable0.__concat
 	Class.__tostring = metatable0.__tostring
 end
+
 setmetatable(Class,metatable0)
 
 function Class:_is_class()
@@ -53,26 +62,10 @@ function Class:_name()
 	return rawget(self,"__name")
 end
 
-local function recursive_call_cleanup(supers, o)
-	for _, super in ipairs(supers) do
-		local func = rawget(super,"_cleanup")
-		if func then
-			log("Calling cleanup in "..super)
-			func(o)
-		end
-		recursive_call_cleanup(super.__superclasses, o)
-	end
+function Class:_del()
 end
 
-local function recursive_call_init(supers, o)
-	for _, super in ipairs(supers) do
-		local func = rawget(super,"_init")
-		recursive_call_init(super.__superclasses, o)
-		if func then
-			log("Calling init in "..super)
-			func(o)
-		end
-	end
+function Class:_init()
 end
 
 function Class:_delete(o)
@@ -81,12 +74,8 @@ function Class:_delete(o)
 	if o:_class() ~= self and self ~= Class then
 		error("_delete("..o..") called on "..self)
 	end
-	recursive_call_cleanup(self:_super(), o)
-	--#todo invalidate object
-end
-
-function Class:_new()
-
+	o:_del()
+	setmetatable(o,invalid_metatable)
 end
 
 local public_classes = {}
@@ -117,47 +106,73 @@ local search_metatable = {
 }
 
 if dynawa.debug then
-		search_metatable.__tostring = metatable0.__tostring
-		search_metatable.__concat = metatable0.__concat
+	search_metatable.__tostring = metatable0.__tostring
+	search_metatable.__concat = metatable0.__concat
 end
 
 local function new_class (name, c, ...)
-    c = c or {}
-   	c.__name = name
-    local supers = {...}
-    c.__superclasses = supers
+	c = c or {}
+	c.__name = name
+	local supers = {...}
+	--#todo check for duplicates in supers
+	--#todo Class MUST NOT be explicitly declared as super
+	c.__superclasses = supers
 	c.__index = c
-    if #supers == 0 then
-    	setmetatable(c,Class)
-    elseif #supers == 1 then
-    	setmetatable(c,supers[1])
-    else
-    	setmetatable(c,search_metatable)
-    end
-    if dynawa.debug then
+
+	if dynawa.debug then
 		c.__tostring = metatable0.__tostring
 		c.__concat = metatable0.__concat
 	end
-    return c
+
+	if #supers == 0 then
+		c.__mro = {c}
+		setmetatable(c,Class)
+	else
+		if #supers == 1 then
+			setmetatable(c,supers[1])
+		else
+			setmetatable(c,search_metatable)
+		end
+		c.__mro = c:_mro()
+		if not c.__mro then
+			error("Class inheritance is ambiguous (MRO cannot resolve, see http://www.python.org/download/releases/2.3/mro/ )")
+		end
+	end
+	return c
 end
 
-local function new_instance (self, o, bad)
-	assert(not bad, "Extraneous argument(s) while creating instance")
-	local o = o or {}
+local function new_instance (self, ...)
+	local o = {}
 	setmetatable(o, self)
-    recursive_call_init({self},o)
+    o:_init(...)
 	return o
 end
 
-
 function Class:_new (...)
 	assert(self:_is_class(), "This is an instance")
-    if self == Class then
-        return new_class(...)
-    else
-        return new_instance(self, ...)
-    end
+	if self == Class then
+		return new_class(...)
+	else
+		return new_instance(self, ...)
+	end
+end
+
+function Class:_mro()
+	if rawget(self,"__mro") then
+		return (rawget(self,"__mro"))
+	end
+	assert(self:_is_class())
+	local result = {self}
+	local supers = self:_super()
+	if #supers == 0 then
+		return result
+	end
+	local lists = {}
+	for _,super in ipairs(supers) do
+		table.insert(lists,super:_mro())
+	end
+	table.insert(lists,supers)
+	return result --#todo UNFINISHED
 end
 
 return Class
-
