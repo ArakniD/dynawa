@@ -91,9 +91,11 @@ local function class_check()
 		return true
 	end
 
-	----------------------------
-	-- vicenasobna dedicnost (pomale ale potencialne mozne - http://www.lua.org/pil/16.3.html)
 	local Mrdnik = Class:_new("Mrdnik", nil, Bitmap, Menu)
+	function Mrdnik:_init()
+		Bitmap._init(self)
+		Menu._init(self)
+	end
 
 	local mrdnik = Mrdnik:_new()
 	assert(check_list(Mrdnik.__superclasses, {Menu, Bitmap}))
@@ -120,10 +122,16 @@ end
 
 load_classes{
 	"Class",
-	"Object"
+	"Object",
+	"EventSource",
+	"Device",
+	"DeviceButton",
+	"Superman",
 }
 
 if dynawa.debug then
 	class_check()
 end
+
+Class:get_by_name("SuperMan"):_new()
 
