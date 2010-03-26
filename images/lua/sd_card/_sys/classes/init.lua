@@ -7,7 +7,22 @@ local function load_classes(classes)
 		local class = dofile(filename)
 		assert(class, "Class file "..filename.." returned nothing")
 		assert(class:_is_class(), "Class file "..filename.." did not return a class")
-		--todo: Analyze classes & generate reports
+		if dynawa.debug and dynawa.debug.pc_classinfo then
+			dynawa.debug.pc_classinfo(class)
+		end
+	end
+end
+
+local function tch_init()
+	dynawa.tch = {}
+	dynawa.tch.superman = self
+	dynawa.tch.devices = {}
+	--#todo DeviceNodes
+	dynawa.tch.devices.buttons = {}
+	local DeviceButton = Class:get_by_name("DeviceButton")
+	for i = 0, 4 do
+		local obj = DeviceButton:_new({number = i})
+		dynawa.tch.devices.buttons[obj.name] = obj
 	end
 end
 
@@ -26,6 +41,7 @@ local function class_check()
 	assert(#Object.__superclasses == 0)
 	assert(Object:_class() == Class)
 
+	assert(not object:_is_class())
 	assert(object:_class() == Object)
 	assert(not object:_is_class())
 	local stat,err = pcall(object._super,object)
@@ -58,6 +74,7 @@ local function class_check()
 	end
 
 	function Bitmap:_init()
+		coroutine.yield()
 		self.bitmap_init = true
 	end
 
@@ -83,7 +100,8 @@ local function class_check()
 
 	local Menu = Class:_new("Menu", nil, Object)
 
-	function Menu:_init()
+	function Menu:_init(args)
+		coroutine.yield()
 		self.menu_init = true
 	end
 
@@ -93,8 +111,7 @@ local function class_check()
 
 	local Mrdnik = Class:_new("Mrdnik", nil, Bitmap, Menu)
 	function Mrdnik:_init()
-		Bitmap._init(self)
-		Menu._init(self)
+		coroutine.yield()
 	end
 
 	local mrdnik = Mrdnik:_new()
@@ -126,12 +143,14 @@ load_classes{
 	"EventSource",
 	"Device",
 	"DeviceButton",
-	"Superman",
+	"SuperMan",
 }
 
 if dynawa.debug then
 	class_check()
 end
+
+tch_init()
 
 Class:get_by_name("SuperMan"):_new()
 

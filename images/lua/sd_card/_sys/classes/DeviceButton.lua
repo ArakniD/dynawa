@@ -3,10 +3,10 @@ local EventSource = Class:get_by_name("EventSource")
 
 local class = Class:_new("DeviceButton", nil, Device, EventSource)
 
-function class:_init(number)
-	assert(type(number) == "number", "Button must have numeric id")
-	Device._init(self, "button"..number)
-	EventSource._init(self)
+function class:_init(args)
+	assert(type(args.number) == "number", "Button must have numeric id")
+	args.name = "button"..args.number
+	coroutine.yield()
 end
 
 function class:handle_event(event)

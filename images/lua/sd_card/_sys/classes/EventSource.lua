@@ -5,7 +5,7 @@ local Object = Class:get_by_name("Object")
 local class = Class:_new("EventSource",nil,Object)
 
 function class:_init()
-	Object._init(self)
+	coroutine.yield()
 	self._event_listeners = {}
 end
 
