@@ -3,13 +3,14 @@
 local Object = Class:get_by_name("Object")
 local class = Class:_new("Device", {name = "unnamed"}, Object)
 
-function class:_init(name)
-	Object._init(self)
-	assert(name,"Device must have a name")
-	self.name = name
-	getmetatable(self).__tostring = function(obj)
-		return("[Device "..tostring(self.name).."]")
-	end
+function class:_init(args)
+	coroutine.yield()
+	assert(args.name,"Device must have a name")
+	self.name = args.name
+end
+
+function class:_tostring()
+	return("[Device "..tostring(self.name).."]")
 end
 
 Class:add_public(class)
