@@ -1,11 +1,11 @@
 --Object
 
-local Object = Class:_new("Object")
+local class = Class("Object")
 
-function Object:handle_event()
+function class:_init()
 end
 
-Class:add_public(Object)
+Class:add_public(class)
 
-return Object
+return class
 

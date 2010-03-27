@@ -1,100 +1,93 @@
 --Class
 
-local metatable0 = {
-	__tostring = function(self)
-		if self._tostring then
-			return self:_tostring()
-		end
-		if self:_is_class() then
-			local name = self:_name()
-			if not name then
-				return "[anonymous class]"
-			else
-				return "[class "..name.."]"
-			end
-		else --instance
-			return ("["..(self:_class():_name() or "anonymous class").." instance]")
-		end
-	end,
 
+local function tostring_default (self)
+	local fn = self.__tostring
+	if fn and fn ~= tostring_default and type(fn)=="function" then
+		return tostring(fn(self))
+	end
+	if self:_is_class() then
+		return "[class "..self:_name().."]"
+	else --instance
+		local name = self.name
+		if not name and self.id then
+			name = "#"..id
+		end
+		local clsname = assert(self:_class():_name())
+		if name then
+			return "["..name.." ("..clsname..")]"
+		else
+			return "[instance of "..clsname.."]"
+		end
+	end
+end
+
+local metatable0 = {
+	__tostring = tostring_default,
+	
 	__concat = function (o1,o2)
 		return (tostring(o1)..tostring(o2))
 	end,
-
-	__index = function (o, key)
-		if rawget(o,"__superclasses") then --It's a class
-			local mro = rawget(o,"__mro")
-			if mro ~= "Class" then
-				for i = 2, #mro do
-					local val = rawget(mro[i],key)
-					if val ~= nil then
-						return val
-					end
-				end
-			end
-			return rawget(Class,key)
-		else --It's an instance
-			local class = o.__instance_class
-			for i, class in ipairs (rawget(class,"__mro")) do
-				local val = rawget(class,key)
-				if val ~= nil then
-					return val
-				end
-			end
-			return rawget(Class, key)
-		end
+	
+	__call = function (c, ...)
+		return c:_new(...)
 	end
 }
 
 local invalid_metatable = {
 	__index = function (self)
 		error("Attempt to access deleted object")
-	end
+	end,
+	__newindex = function (self)
+		error("Attempt to modify deleted object")
+	end,
 }
 
 rawset(_G,"Class", {
-	__superclasses = {},
     __name = "Class",
-    __mro = "Class",
 })
 
---Class.__index = Class
-
-if dynawa.debug then
-	Class.__concat = metatable0.__concat
-	Class.__tostring = metatable0.__tostring
+local function add_metamethods(c)
+	c.__index = c
+	c.__tostring = metatable0.__tostring
+	c.__concat = metatable0.__concat
+	c.__call = metatable0.__call
 end
+
+add_metamethods(Class)
 
 setmetatable(Class,metatable0)
 
 function Class:_is_class()
-	return not not rawget(self,"__superclasses")
+	return not not rawget(self,"__index")
 end
 
 function Class:_super()
-	return assert(rawget(self,"__superclasses"),"This is an instance")
+	assert(self:_is_class(),"_super() called on instance")
+	if self == Class then
+		return Class
+	end
+	return assert(getmetatable(self))
 end
 
 function Class:_class()
 	if self:_is_class() then
 		return Class
 	else
-		return assert(self.__instance_class)
+		return assert(getmetatable(self))
 	end
 end
 
 function Class:_name()
-	assert(self:_is_class(),"This is an instance")
-	return rawget(self,"__name")
+	assert(self:_is_class(),"_name() called on instance")
+	return self.__name
 end
 
 function Class:_delete(o)
-	assert(o,"Instance not specified")
-	assert(not o:_is_class(),"This is not an instance")
-	if o:_class() ~= self and self ~= Class then
-		error("_delete("..o..") called on "..self)
+	assert(not o:_is_class(),"_delete() called on class")
+	if o._del then
+		o:_del()
 	end
-	--o:_del() -- #todo recursive
 	o.__deleted = true
 	setmetatable(o,invalid_metatable)
 end
@@ -102,8 +95,8 @@ end
 local public_classes = {}
 
 function Class:add_public(class)
-	assert(self == Class)
-	local name = class:_name()
+	assert(self == Class, "add_public() can only be called on _G.Class")
+	local name = assert(class:_name())
 	assert(name,"Public class must have a name")
 	assert(not public_classes[name], "Class "..name.." is already registered as public")
 	assert(class)
@@ -111,165 +104,39 @@ function Class:add_public(class)
 end
 
 function Class:get_by_name(name)
-	assert(self == Class)
+	assert(self == Class, "get_by_name() can only be called on _G.Class")
 	return public_classes[assert(name)]
 end
 
---[[local search_metatable = {								--THE ORIGINAL
-	__index = function (class, key)
-		for _, super in ipairs(class.__superclasses) do
-			local val = super[key]
-			if val then
-				return val
-			end
-		end
-	end
-}]]
+local anonymous_class_number = 1
 
-local search_metatable = {
-	__index = function (class, key)
-		for i, class in ipairs (class.__mro) do
-			local val = rawget(class[key])
-			if val ~= nil then
-				return val
-			end
-		end
-		return Class[key]
-	end
-}
-
-if dynawa.debug then
-	search_metatable.__tostring = metatable0.__tostring
-	search_metatable.__concat = metatable0.__concat
-end
-
-
-local function mro_goodhead(item, lists)
-	for i, list in ipairs(lists) do
-		for j = 2, #list do
-			if list[j] == item then
-				return false
-			end
-		end
-	end
-	return true
-end
-
-local table_copy = function(tbl)
-	local copy = {}
-	for k,v in pairs(tbl) do
-		copy[k] = v
-	end
-	return copy
-end
-
-local function mro(self)
-	if rawget(self,"__mro") then
-		return (rawget(self,"__mro"))
-	end
-	local result = {self}
-	local supers = self.__superclasses
-	if #supers == 0 then --supertrivial
-		return result
-	end
-	if #supers == 11111111111 then --trivial ************************************** #todo
-		result[2] = super[1]
-		return result
-	end
-	--real work
-	local lists = {}
-	for _,super in ipairs(supers) do
-		table.insert(lists,table_copy(assert(super.__mro)))
-		--log("list ".._.." has "..#(super.__mro).." items from "..super)
-	end
-	table.insert(lists,table_copy(supers))
-	while (#lists > 0) do
-		local goodhead = nil
-		for i, list in ipairs(lists) do
-			--log("list "..i.." of "..#lists.." for "..self)
-			if mro_goodhead(assert(list[1]), lists) then
-				goodhead = list[1]
-				break
-			end
-		end
-		if not goodhead then
-			return nil
-		end
-		table.insert(result, goodhead)
-		for i = #lists, 1, -1 do
-			local list = lists[i]
-			if assert(list[1]) == goodhead then
-				table.remove(list,1)
-				if #list == 0 then
-					local l1 = #lists
-					table.remove(lists, i)
-					local l2 = #lists
-					--log(l1.." - "..l2)
-				end
-			end
-		end
-	end
-	return result
-end
-
-local function new_class (name, c, ...)
+local function new_class (name, c, super)
 	c = c or {}
+	if not name then
+		name = "AnonymousClass"..anonymous_class_number
+		anonymous_class_number = anonymous_class_number + 1
+	end
 	c.__name = name
-	local supers = {...}
-	--#todo check for duplicates in supers
-	--#todo Class MUST NOT be explicitly declared as super
-	c.__superclasses = supers
-
-	if dynawa.debug then
-		c.__tostring = metatable0.__tostring
-		c.__concat = metatable0.__concat
-	end
-
-	c.__mro = mro(c)
-	if not c.__mro then
-		error("Class inheritance is ambiguous (MRO cannot resolve, see http://www.python.org/download/releases/2.3/mro/ )")
-	end
+	assert(super ~= Class)
+	super = super or Class
+	assert(super:_is_class(),"Supplied superclass is not a class")
 	
-	setmetatable(c,metatable0)
-	--[[
-	log ("MRO for "..c..":")
-	for _, class in ipairs(c.__mro) do
-		log("   "..class)
-	end
-	]]
+	add_metamethods(c)
+	setmetatable(c,super)
 	return c
 end
 
-local function recursive_init(o,c,args)
-	local coroutines = {}
-	for i, class in ipairs(c.__mro) do
-		if rawget(class,"_init") then
-			local cor = coroutine.create(function () class._init(o,args) end)
-			assert(coroutine.resume(cor))
-			assert(coroutine.status(cor)=="suspended","_init() of "..class.." did not yield")
-			table.insert(coroutines,cor)
-		end
+local function new_instance (self, ...)
+	local o = {}
+	setmetatable(o, self)
+	if self._init then
+		self._init(o,...)
 	end
-	if #coroutines > 0 then
-		--log(#coroutines.." cors to resume for new "..c.__name)
-		for i = #coroutines,1,-1 do
-			local cor = coroutines[i]
-			assert(coroutine.resume(cor))
-			assert(coroutine.status(cor)=="dead","_init() did not finish (yielded for 2nd time?)")
-		end
-	end
-end
-
-local function new_instance (self, args)
-	args = args or {}
-	local o = {__instance_class = self}
-	setmetatable(o, metatable0)
-    recursive_init(o,self,args)
 	return o
 end
 
 function Class:_new (...)
-	assert(self:_is_class(), "This is an instance")
+	assert(self:_is_class(), "_new() can only be called on a class, not on an instance")
 	if self == Class then
 		return new_class(...)
 	else

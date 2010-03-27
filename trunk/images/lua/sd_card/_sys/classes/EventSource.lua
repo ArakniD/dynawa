@@ -5,8 +5,9 @@ local Object = Class:get_by_name("Object")
 local class = Class:_new("EventSource",nil,Object)
 
 function class:_init()
-	coroutine.yield()
+	Object._init(self)
 	self._event_listeners = {}
+	--setmetatable(self._event_listeners,{__mode = "k"})
 end
 
 function class:generate_event(event)

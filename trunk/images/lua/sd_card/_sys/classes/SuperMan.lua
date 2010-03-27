@@ -1,6 +1,6 @@
 --SuperMan
 
-local class = Class:_new("SuperMan")
+local class = Class("SuperMan")
 
 Class:add_public(class)
 
