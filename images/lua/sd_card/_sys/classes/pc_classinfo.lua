@@ -1,10 +1,11 @@
 #!/usr/bin/env lua
+
 local nothing = function() end
 log = print
 dynawa={dir = {sys = "../"},debug={}}
 dynawa.busy = nothing
 local classes = {}
-dynawa.debug.pc_classinfo = function(cls)
+dynawa.debug.pc_classinfoXXXXXXXXXXXXXXXX = function(cls)
 	if cls ~= Class then
 		table.insert(classes,cls)
 	end

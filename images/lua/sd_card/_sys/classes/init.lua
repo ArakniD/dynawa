@@ -21,7 +21,7 @@ local function tch_init()
 	dynawa.tch.devices.buttons = {}
 	local DeviceButton = Class:get_by_name("DeviceButton")
 	for i = 0, 4 do
-		local obj = DeviceButton:_new({number = i})
+		local obj = DeviceButton(i)
 		dynawa.tch.devices.buttons[obj.name] = obj
 	end
 end
@@ -34,107 +34,50 @@ local function class_check()
 
 	--Object
 	local Object = assert(Class:get_by_name("Object"))
-	local object = Object:_new()
+	local object = Object()
 
 	assert(Object:_name() == "Object")
 	assert(Object:_is_class())
-	assert(#Object.__superclasses == 0)
 	assert(Object:_class() == Class)
 
 	assert(not object:_is_class())
 	assert(object:_class() == Object)
 	assert(not object:_is_class())
 	local stat,err = pcall(object._super,object)
-	assert (err:match("This is an instance"))
+	assert (err:match("called on instance"))
 
-	--assert(Object:tuk() == "forbidden") -- Jde zavolat, ale je to nesmysl
-	----------------------------------------------
-
-	local function check_list(list, check_list)
-		if #list ~= #check_list then
-		    return false
-		end
-		
-		local t = {}
-		for i, e in ipairs(list) do
-		    t[e] = true
-		end
-		for i, e in ipairs(check_list) do
-		    if not t[e] then
-		        return false
-		    end
-		end
-		return true
-	end	
-	
-	local Bitmap = Class:_new("Bitmap", {typebitmap = "bitmap"}, Object)
+	local Bitmap = Class("Bitmap", {typebitmap = "bitmap"}, Object)
 
 	function Bitmap:is_bitmap()
 		return true
 	end
 
 	function Bitmap:_init()
-		coroutine.yield()
 		self.bitmap_init = true
 	end
 
-	local bitmap = Bitmap:_new()
+	local bitmap = Bitmap()
+	assert(bitmap.bitmap_init)
 	assert(bitmap:is_bitmap())
 	assert(type(bitmap.handle_event == "function"))
 	----------------------------
+	assert("x"..Class == "x[class Class]")
+	assert("x"..Bitmap == "x[class Bitmap]")
+	assert("x"..Object == "x[class Object]")
+	assert("x"..bitmap == "x[instance of Bitmap]")
+	assert(("x"..Class()):match("class AnonymousClass"))
 
 	local AnotherBitmap = Class:_new("AnotherBitmap", {}, Bitmap)
-	local anotherBitmap = AnotherBitmap:_new()
+	local anotherBitmap = AnotherBitmap()
 
 	assert(AnotherBitmap:_name() == "AnotherBitmap")
-	assert(check_list(AnotherBitmap.__superclasses, {Bitmap}))
 	assert(AnotherBitmap:_class() == Class)
-	assert(check_list(anotherBitmap.__superclasses, {Bitmap}))
 	assert(anotherBitmap:_class() == AnotherBitmap)
 	----------------------------
 
 	local YetAnotherBitmap = Class:_new("YetAnotherBitmap", nil, AnotherBitmap)
 
 	local yetAnotherBitmap = YetAnotherBitmap:_new()
-	----------------------------
-
-	local Menu = Class:_new("Menu", nil, Object)
-
-	function Menu:_init(args)
-		coroutine.yield()
-		self.menu_init = true
-	end
-
-	function Menu:is_menu()
-		return true
-	end
-
-	local Mrdnik = Class:_new("Mrdnik", nil, Bitmap, Menu)
-	function Mrdnik:_init()
-		coroutine.yield()
-	end
-
-	local mrdnik = Mrdnik:_new()
-	assert(check_list(Mrdnik.__superclasses, {Menu, Bitmap}))
-	local mrdnikclass = assert(mrdnik:_class())
-	assert(check_list((mrdnik:_class()).__superclasses, {Menu, Bitmap}))
-	assert(mrdnik:is_bitmap())
-	assert(mrdnik:is_menu())
-	assert(type(mrdnik.handle_event == "function"))
-	assert(mrdnik.bitmap_init)
-	assert(mrdnik.menu_init)
-
-	assert("X"..Class == "X[class Class]")
-	assert("X"..Object == "X[class Object]")
-	assert("X"..object == "X[Object instance]")
-	assert("X"..Bitmap == "X[class Bitmap]")
-	assert("X"..AnotherBitmap == "X[class AnotherBitmap]")
-	assert("X"..Mrdnik == "X[class Mrdnik]")
-	assert("X"..mrdnik == "X[Mrdnik instance]")
-	Class:_delete(mrdnik)
-	local Anonym = Class:_new(nil,nil, Bitmap)
-	assert("X"..Anonym == "X[anonymous class]")
-	assert("X"..(Anonym:_new()) == "X[anonymous class instance]")
 end
 
 load_classes{
