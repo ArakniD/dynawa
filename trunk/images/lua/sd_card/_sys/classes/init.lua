@@ -7,6 +7,7 @@ local function load_classes(classes)
 		local class = dofile(filename)
 		assert(class, "Class file "..filename.." returned nothing")
 		assert(class:_is_class(), "Class file "..filename.." did not return a class")
+		assert(class:_name() == classname)
 		if dynawa.debug and dynawa.debug.pc_classinfo then
 			dynawa.debug.pc_classinfo(class)
 		end
@@ -14,16 +15,17 @@ local function load_classes(classes)
 end
 
 local function tch_init()
-	dynawa.tch = {}
-	dynawa.tch.superman = self
 	dynawa.tch.devices = {}
 	--#todo DeviceNodes
 	dynawa.tch.devices.buttons = {}
 	local DeviceButton = Class:get_by_name("DeviceButton")
+	dynawa.tch.button_manager = Class:get_by_name("ButtonManager")()
 	for i = 0, 4 do
-		local obj = DeviceButton(i)
-		dynawa.tch.devices.buttons[obj.name] = obj
+		local button = DeviceButton(i)
+		dynawa.tch.devices.buttons[button.name] = button
+		button.event_source:register_for_events(dynawa.tch.button_manager)
 	end
+	dynawa.tch.devices.display = {width = 160, height = 128, flipped = false}
 end
 
 local function class_check()
@@ -86,14 +88,14 @@ load_classes{
 	"EventSource",
 	"Device",
 	"DeviceButton",
+	"VirtualButton",
+	"InputManager",
 	"SuperMan",
 }
 
 if dynawa.debug then
 	class_check()
 end
-
-tch_init()
 
 Class:get_by_name("SuperMan"):_new()
 

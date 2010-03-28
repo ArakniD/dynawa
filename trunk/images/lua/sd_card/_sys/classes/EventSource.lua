@@ -4,7 +4,8 @@ local Object = Class:get_by_name("Object")
 
 local class = Class:_new("EventSource",nil,Object)
 
-function class:_init()
+function class:_init(name)
+	self.name = name
 	Object._init(self)
 	self._event_listeners = {}
 	--setmetatable(self._event_listeners,{__mode = "k"})
@@ -12,10 +13,13 @@ end
 
 function class:generate_event(event)
 	assert(type(event)=="table")
+	event.type = event.type or self.name
 	for object, filter in pairs(self._event_listeners) do
 		if (filter == true) or (filter(event)) then
 			event.source = self
-			listener.object:handle_event(event)
+			assert(not object.__deleted)
+			log(self..": '"..event.type.."' -> "..object)
+			object:handle_event(event)
 		end
 	end
 end

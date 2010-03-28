@@ -78,6 +78,11 @@ dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 --Classes
 dynawa.dofile(dynawa.dir.sys.."classes/init.lua")
 
+dynawa.tch = {}
+dynawa.dofile(dynawa.dir.sys.."tch1.lua") --Create dynawa.tch.devices
+
+--#todo Window manager, Font manager
+
 local hw_vectors = {}
 hw_vectors.button_down = function(event)
 	dynawa.tch.devices.buttons["button"..event.button]:handle_event(event)
@@ -96,6 +101,10 @@ _G.private_main_handler = function(hw_event)
 		log("No handler found for hw event "..hw_event.type..", ignored")
 	end
 end
+
+dynawa.tch.superman = Class:get_by_name("SuperMan")()
+
+dynawa.tch.superman:start()
 
 --[[
 
