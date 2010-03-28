@@ -5,6 +5,10 @@ local class = Class("Object")
 function class:_init()
 end
 
+function class:handle_event(ev)
+	error("Unhandled event of type '"..tostring((ev or {}).type).."' in "..self)
+end
+
 Class:add_public(class)
 
 return class

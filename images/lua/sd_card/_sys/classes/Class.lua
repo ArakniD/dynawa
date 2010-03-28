@@ -105,7 +105,7 @@ end
 
 function Class:get_by_name(name)
 	assert(self == Class, "get_by_name() can only be called on _G.Class")
-	return public_classes[assert(name)]
+	return assert(public_classes[name])
 end
 
 local anonymous_class_number = 1
