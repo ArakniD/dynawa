@@ -2,7 +2,7 @@
 
 
 local function tostring_default (self)
-	local fn = self.__tostring
+	local fn = rawget(self,"__tostring")
 	if fn and fn ~= tostring_default and type(fn)=="function" then
 		return tostring(fn(self))
 	end
@@ -11,7 +11,7 @@ local function tostring_default (self)
 	else --instance
 		local name = self.name
 		if not name and self.id then
-			name = "#"..id
+			name = "#"..self.id
 		end
 		local clsname = assert(self:_class():_name())
 		if name then

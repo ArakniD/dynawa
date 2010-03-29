@@ -4,6 +4,7 @@ local function load_classes(classes)
 	for i,classname in ipairs(classes) do
 		local filename = dynawa.dir.sys.."classes/"..classname..".lua"
 		dynawa.busy(i/#classes)
+		log("Compiling class "..classname.."...")
 		local class = dofile(filename)
 		assert(class, "Class file "..filename.." returned nothing")
 		assert(class:_is_class(), "Class file "..filename.." did not return a class")
@@ -88,8 +89,11 @@ load_classes{
 	"EventSource",
 	"Device",
 	"DeviceButton",
-	"VirtualButton",
 	"InputManager",
+	"Window",
+	"WindowManager",
+	"MenuItem",
+	"Menu",
 	"SuperMan",
 }
 

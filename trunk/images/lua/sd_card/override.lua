@@ -105,6 +105,7 @@ function dynawa.debug.send(data)
 end
 
 local errfunc=function(errtxt)
+	--if true then return("ERRRRR") end
 	local i = 1
 	local obj
 	repeat

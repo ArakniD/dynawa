@@ -5,30 +5,24 @@ local class = Class("InputManager",nil,Object)
 function class:_init()
 	Object._init(self)
 	
-	local blackhole = Object() --#todo PRYC
-	blackhole.name = "test_blackhole"
-	blackhole.handle_event = function() end
-
 	local EventSource = Class:get_by_name("EventSource")
 	
 	self.virtual_buttons = {}
 	for i, name in ipairs{"top","confirm","bottom","switch","cancel"} do
 		local v_button = EventSource(name)
-		v_button:register_for_events(blackhole) ---------------------------pryc
 		self.virtual_buttons[name] = v_button
 	end
 	
 	self.actions = {}
 	for i, name in ipairs{"switch","menu","superman"} do
 		local action = EventSource(name)
-		action:register_for_events(blackhole) --------------------------pryc
 		self.actions[name] = action
 	end
 	
 	for button = 0, 4 do
 		dynawa.tch.devices.buttons["button"..button].event_source:register_for_events(self)
 	end
-	
+
 	self.buttons_flip = {
 		[false]={[0]="top","confirm","bottom","switch","cancel"},
 		[true]={[0]="bottom","confirm","top","cancel","switch"},
