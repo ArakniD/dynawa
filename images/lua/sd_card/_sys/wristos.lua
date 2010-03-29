@@ -49,7 +49,7 @@ dynawa.unique_id = function(num)
 			return dynawa.unique_id(num+1)
 		end
 	end
-	local result = {}
+	local result = {":"}
 	for i,num in ipairs(nums) do 
 		table.insert(result,assert(chars[num]))
 	end
@@ -78,10 +78,19 @@ dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 --Classes
 dynawa.dofile(dynawa.dir.sys.."classes/init.lua")
 
+log("Initializing dynawa.tch.*")
 dynawa.tch = {}
 dynawa.dofile(dynawa.dir.sys.."tch1.lua") --Create dynawa.tch.devices
 
 --#todo Window manager, Font manager
+
+log("initializing WindowManager")
+dynawa.tch.window_manager = Class:get_by_name("WindowManager")()
+
+dynawa.tch.superman = Class:get_by_name("SuperMan")()
+log("Starting SuperMan")
+dynawa.tch.superman:start()
+log("Superman started")
 
 local hw_vectors = {}
 hw_vectors.button_down = function(event)
@@ -94,6 +103,7 @@ hw_vectors.button_hold = hw_vectors.button_down
 
 _G.private_main_handler = function(hw_event)
 	--log(tostring(hw_event.type))
+
 	local handler = hw_vectors[hw_event.type]
 	if handler then
 		handler(hw_event)
@@ -101,10 +111,6 @@ _G.private_main_handler = function(hw_event)
 		log("No handler found for hw event "..hw_event.type..", ignored")
 	end
 end
-
-dynawa.tch.superman = Class:get_by_name("SuperMan")()
-
-dynawa.tch.superman:start()
 
 --[[
 
