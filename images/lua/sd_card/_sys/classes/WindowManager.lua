@@ -1,8 +1,6 @@
-local Object = Class:get_by_name("Object")
-local class = Class("WindowManager",nil,Object)
+local class = Class("WindowManager")
 
 function class:_init()
-	Object._init(self)
 	self._windows = {}
 	self.front_window = false
 	self._last_displayed_window = false
@@ -36,18 +34,16 @@ function class:update_display()
 		return
 	end
 	if window.updates.full or self._last_displayed_window ~= window then
-		dynawa.bitmap.show(window.bitmap,dynawa.tch.devices.display.flipped)
+		dynawa.bitmap.show(window.bitmap,dynawa.devices.display.flipped)
 	else
 		for _, region in ipairs(window.updates.regions) do
 			dynawa.bitmap.show_partial(region.bitmap,region.x,region.y,region.w,region.h,region.x,region.y,
-					dynawa.tch.devices.display.flipped)
+					dynawa.devices.display.flipped)
 		end
 	end
 	window:allow_partial_update()
 	self._last_displayed_window = window
 end
-
-Class:add_public(class)
 
 return class
 

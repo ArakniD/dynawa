@@ -1,14 +1,10 @@
 --EventSource
 
-local Object = Class:get_by_name("Object")
-
-local class = Class:_new("EventSource",nil,Object)
+local class = Class("EventSource")
 
 function class:_init(name)
 	self.name = name
-	Object._init(self)
 	self._event_listeners = {}
-	--setmetatable(self._event_listeners,{__mode = "k"})
 end
 
 function class:generate_event(event)
@@ -18,7 +14,7 @@ function class:generate_event(event)
 		if (filter == true) or (filter(event)) then
 			event.source = self
 			assert(not object.__deleted)
-			log(self..": '"..event.type.."' -> "..object)
+			log(self..": '"..event.type.."' -> "..object) ------------------------- LOG
 			object:handle_event(event)
 		end
 	end
@@ -38,8 +34,6 @@ function class:unregister_for_events(object)
 	assert(self._event_listeners[object], "This object is not my listener")
 	self._event_listeners[object] = nil
 end
-
-Class:add_public(class)
 
 return class
 
