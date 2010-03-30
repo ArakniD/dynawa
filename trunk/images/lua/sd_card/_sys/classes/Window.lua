@@ -1,17 +1,15 @@
-local Object = Class:get_by_name("Object")
-local class = Class("Window",nil,Object)
+local class = Class("Window")
 
 function class:_init()
-	Object._init(self)
 	self.bitmap = false --#todo
 	self.id = dynawa.unique_id()
 	self:force_full_update()
-	dynawa.tch.window_manager:register_window(self)
-	self.size = assert(dynawa.tch.devices.display.size)
+	dynawa.window_manager:register_window(self)
+	self.size = assert(dynawa.devices.display.size)
 end
 
 function class:_del()
-	dynawa.tch.windowmanager:unregister_window(self)
+	dynawa.window_manager:unregister_window(self)
 	self.bitmap = false
 end
 
@@ -46,8 +44,6 @@ end
 function class:force_full_update()
 	self.updates = {full = true}
 end
-
-Class:add_public(class)
 
 return class
 

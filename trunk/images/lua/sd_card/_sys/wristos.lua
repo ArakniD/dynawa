@@ -1,5 +1,4 @@
 dynawa.version = {wristOS="0.1", settings_revision = 20100303}
-package.loaded.dynawa = dynawa
 
 local uid_last, uid_chars = {}, {}
 string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.)", function(ch)
@@ -36,24 +35,10 @@ dynawa.busy = function(percentage) --todo: Rewrite!
 	end
 end
 
-dynawa.unique_id = function(num)
-	num=num or 1
-	local nums=uid_last
-	local chars=uid_chars
-	if not nums[num] then
-		nums[num]=1
-	else
-		nums[num]=nums[num]+1
-		if not chars[nums[num]] then
-			nums[num]=1
-			return dynawa.unique_id(num+1)
-		end
-	end
-	local result = {":"}
-	for i,num in ipairs(nums) do 
-		table.insert(result,assert(chars[num]))
-	end
-	return table.concat(result)
+local _unique_id = 0
+dynawa.unique_id = function()
+	_unique_id = _unique_id + 1
+	return (":".._unique_id)
 end
 
 --FILE + serialization + global settings init
@@ -78,23 +63,23 @@ dynawa.dofile(dynawa.dir.sys.."bitmap.lua")
 --Classes
 dynawa.dofile(dynawa.dir.sys.."classes/init.lua")
 
-log("Initializing dynawa.tch.*")
-dynawa.tch = {}
-dynawa.dofile(dynawa.dir.sys.."tch1.lua") --Create dynawa.tch.devices
-
---#todo Window manager, Font manager
+dynawa.devices = {}
+--#todo DeviceNodes
+dynawa.devices.buttons = Class.Buttons()
+dynawa.devices.display = {size = {w = 160, h = 128}, flipped = false}
 
 log("initializing WindowManager")
-dynawa.tch.window_manager = Class:get_by_name("WindowManager")()
+dynawa.window_manager = Class.WindowManager()
 
-dynawa.tch.superman = Class:get_by_name("SuperMan")()
+dynawa.superman = Class.SuperMan()
 log("Starting SuperMan")
-dynawa.tch.superman:start()
+dynawa.superman:start()
 log("Superman started")
+
 
 local hw_vectors = {}
 hw_vectors.button_down = function(event)
-	dynawa.tch.devices.buttons["button"..event.button]:handle_event(event)
+	dynawa.devices.buttons.raw:generate_event(event)
 end
 
 hw_vectors.button_up = hw_vectors.button_down
@@ -108,9 +93,12 @@ _G.private_main_handler = function(hw_event)
 	if handler then
 		handler(hw_event)
 	else
-		log("No handler found for hw event "..hw_event.type..", ignored")
+		log("No handler found for hw event '"..hw_event.type.."', ignored")
 	end
+	dynawa.window_manager:update_display()
 end
+
+_G.handle_event{type="start"}
 
 --[[
 

@@ -1,10 +1,4 @@
-local Object = Class:get_by_name("Object")
-local class = Class("SuperMan",nil,Object)
-
-function class:_init()
-	Object._init(self)
-end
-
+local class = Class("SuperMan")
 
 function class:menu_test()
 	local menu_def = {
@@ -12,39 +6,36 @@ function class:menu_test()
 			text="Test menu with loooong title"
 			},
 		items = {
-			{text = "Menu line 1"},
-			{text = "Menu line 2"},
-			{text = "Menu line 3"},
-			{text = "Menu line 4"},
-			{text = "Menu line 5"},
-			{text = "Menu line 6"},
-			{text = "Menu line 7"},
-			{text = "Menu line 8"},
-			{text = "Menu line 9"},
-			{text = "Menu line 10"},
-			{text = "This is the eleventh line of this menu and it's longer!"},
-			{text = "Menu line 12"},
-			{text = "Menu line 13"},
-			{text = "Menu line 14"},
-			{text = "Menu line 15"},
-			{text = "Menu line 16"},
-			{text = "Menu line 17"},
-			{text = "Menu line 18"},
-			{text = "Menu line 19"},
-			{text = "Menu line 20"},
+			{text = "Menu item 1"},
+			{text = "Menu item 2"},
+			{text = "Menu item 3 is multiline because it's longer"},
+			{text = "Menu item 4"},
+			{text = "Menu item 5"},
+			{text = "Menu item 6"},
+			{text = "Menu item 7"},
+			{text = "Menu item 8"},
+			{text = "Menu item 9"},
+			{text = "Menu item 10"},
+			{text = "This is the eleventh item of this menu and it's longer!"},
+			{text = "Menu item 12"},
+			{text = "Menu item 13"},
+			{text = "Menu item 14"},
+			{text = "Menu item 15"},
+			{text = "Menu item 16"},
+			{text = "Menu item 17"},
+			{text = "Menu item 18"},
+			{text = "Menu item 19"},
+			{text = "Menu item 20"},
 		},
 	}
-	local menu = Class:get_by_name("Menu")(menu_def)
+	local menu = Class.Menu(menu_def)
 	menu:render()
-	dynawa.tch.window_manager:window_to_front(assert(menu.window))
-	dynawa.tch.window_manager:update_display()
+	dynawa.window_manager:window_to_front(assert(menu.window))
 end
 
 function class:start()
-	self.input_manager = Class:get_by_name("InputManager")()
 	self:menu_test()
 end
 
-Class:add_public(class)
 return class
 
