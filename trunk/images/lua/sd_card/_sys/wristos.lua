@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.1", settings_revision = 20100303}
+dynawa.version = {wristOS="0.1", settings_revision = 20100331}
 
 local uid_last, uid_chars = {}, {}
 string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.)", function(ch)

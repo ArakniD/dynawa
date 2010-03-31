@@ -29,8 +29,8 @@ function class:show_bitmap_at(bitmap,x,y)
 	end
 	local w,h = dynawa.bitmap.info(bitmap)
 	--Add region for show_partial
-	table.insert(self.updates.regions,{bitmap = bitmap, x = x, y = y, w = w, h = h})
-	self.updates.pixels_remain = self.updates.pixels_remain - x * y
+	table.insert(self.updates.regions,{x = x, y = y, w = w, h = h})
+	self.updates.pixels_remain = self.updates.pixels_remain - w * h
 	if #self.updates.regions >= self.updates.max_regions or self.updates.pixels_remain <= 0 then
 		self.updates.full = true
 	end
