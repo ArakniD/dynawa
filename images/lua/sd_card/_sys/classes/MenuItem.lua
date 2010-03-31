@@ -12,7 +12,7 @@ function class:render(args)
 end
 
 function class:selected()
-	return
+	log(self.." selected!")
 end
 
 return class

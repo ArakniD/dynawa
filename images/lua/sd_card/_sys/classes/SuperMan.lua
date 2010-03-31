@@ -30,6 +30,7 @@ function class:menu_test()
 	}
 	local menu = Class.Menu(menu_def)
 	menu:render()
+	menu:hook_button_events()
 	dynawa.window_manager:window_to_front(assert(menu.window))
 end
 

@@ -112,10 +112,6 @@ end
 
 local public_classes = {}
 
-function Class:handle_event(ev)
-	error("Unhandled event of type '"..tostring((ev or {}).type).."' in "..self)
-end
-
 metatable0.__tostring = tostring_default
 	
 metatable0.__concat = function (o1,o2)
@@ -133,5 +129,13 @@ metatable0.__call = function (self, ...)
 end
 
 add_metamethods(Class)
+
+function Class:handle_event(ev)
+	local fname = "handle_event_"..ev.type
+	if not self[fname] then
+		error("Unhandled event of type '"..tostring(ev.type).."' in "..self)
+	end
+	return self[fname](self, ev)
+end
 
 return Class

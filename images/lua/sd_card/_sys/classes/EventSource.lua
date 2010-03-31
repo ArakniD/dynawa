@@ -14,7 +14,7 @@ function class:generate_event(event)
 		if (filter == true) or (filter(event)) then
 			event.source = self
 			assert(not object.__deleted)
-			log(self..": '"..event.type.."' -> "..object) ------------------------- LOG
+--			log(self..": '"..event.type.."' -> "..object) ------------------------- LOG
 			object:handle_event(event)
 		end
 	end

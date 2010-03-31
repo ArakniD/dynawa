@@ -37,8 +37,9 @@ function class:update_display()
 		dynawa.bitmap.show(window.bitmap,dynawa.devices.display.flipped)
 	else
 		for _, region in ipairs(window.updates.regions) do
-			dynawa.bitmap.show_partial(region.bitmap,region.x,region.y,region.w,region.h,region.x,region.y,
+			dynawa.bitmap.show_partial(window.bitmap,region.x,region.y,region.w,region.h,region.x,region.y,
 					dynawa.devices.display.flipped)
+			--log("Display_update "..region.x..","..region.y..","..region.w..","..region.h)
 		end
 	end
 	window:allow_partial_update()
