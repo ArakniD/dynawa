@@ -108,18 +108,6 @@ function class:_render_inner()
 	end
 end
 
---[[function class:adjust_viewport()
-	local act_i = 1
-		while assert(self.items[act_i]) ~= self.active_item do
-			act_i + 1
-		end
-	end
-	local active_item_y = self.cache.active_item_y or 0
-	
-	local aitembmp = self:_bitmap_of_item(self.active_item)
-	local aw,ah = dynawa.bitmap.info(aitembmp)
-end]]
-
 function class:_bitmap_of_item(menuitem)
 	local bitmap = self.cache.items[assert(menuitem)]
 	if not bitmap then
@@ -175,7 +163,9 @@ function class:scroll(button)
 		end
 	end
 	self.active_item = self.items[ind]
+	--local t0 = dynawa.ticks()
 	self:_render_inner()
+	--log("Menu updated in "..dynawa.ticks() - t0)
 end
 
 function class:handle_event_button(event)
@@ -185,6 +175,21 @@ function class:handle_event_button(event)
 		elseif event.button == "confirm" then
 			self.active_item:selected()
 		end
+	elseif event.action == "button_hold" then
+		if event.button == "top" or event.button == "bottom" then
+			self._scroll = event.button
+			dynawa.devices.timers:timed_event{delay = 200, receiver = self, direction = event.button}
+			self:scroll(event.button)
+		end
+	elseif event.action == "button_up" then
+		self._scroll = nil
+	end
+end
+
+function class:handle_event_timed_event(event)
+	if self._scroll == event.direction then
+		dynawa.devices.timers:timed_event{delay = 200, receiver = self, direction = event.direction}
+		self:scroll(event.direction)
 	end
 end
 

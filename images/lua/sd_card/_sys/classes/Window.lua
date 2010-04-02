@@ -37,7 +37,7 @@ function class:show_bitmap_at(bitmap,x,y)
 end
 
 function class:allow_partial_update()
-	self.updates = {regions = {}, max_regions = 10, 
+	self.updates = {regions = {}, max_regions = 9, 
 			pixels_remain = math.floor(self.size.w * self.size.h * 0.95)}
 end
 
