@@ -68,14 +68,14 @@ dynawa.devices = {}
 dynawa.devices.buttons = Class.Buttons()
 dynawa.devices.display = {size = {w = 160, h = 128}, flipped = false}
 
-log("initializing WindowManager")
 dynawa.window_manager = Class.WindowManager()
 
+dynawa.devices.timers = Class.Timers()
+
 dynawa.superman = Class.SuperMan()
-log("Starting SuperMan")
+
 dynawa.superman:start()
 log("Superman started")
-
 
 local hw_vectors = {}
 hw_vectors.button_down = function(event)
@@ -85,6 +85,11 @@ end
 hw_vectors.button_up = hw_vectors.button_down
 
 hw_vectors.button_hold = hw_vectors.button_down
+
+hw_vectors.timer_fired = function (message)
+	local handle = assert(message.handle,"HW message of type timer_fired has no handle")
+	dynawa.devices.timers:dispatch_timed_event(handle)
+end
 
 _G.private_main_handler = function(hw_event)
 	--log(tostring(hw_event.type))

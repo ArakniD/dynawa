@@ -12,11 +12,9 @@ function _G.boot_init()
 	dynawa.debug = nil
 	
 	--release any timers which were active sice the last run
-	if dynawa.hardware_vectors then
-		for id, args in pairs(dynawa.hardware_vectors) do
-			if args.hardware == "timer" then
-				dynawa.timer.cancel(id)
-			end
+	if dynawa.devices and dynawa.devices.timers and dynawa.devices.timers.timer_vectors then
+		for k,v in pairs(dynawa.devices.timers.timer_vectors) do
+			dynawa.timer.cancel(k)
 		end
 	end
 	

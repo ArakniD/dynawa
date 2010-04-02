@@ -80,6 +80,7 @@ load_classes{
 	"WindowManager",
 	"MenuItem",
 	"Menu",
+	"Timers",
 	"SuperMan",
 --[["Device",
 	"DeviceButton",
