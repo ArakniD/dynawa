@@ -11,7 +11,7 @@ function class:_init(desc)
 		local menuitem = Class.MenuItem(item_desc)		
 		table.insert(self.items, menuitem)
 	end
-	self.active_item = self.items[5]
+	self.active_item = assert(self.items[1],"No items in menu")
 	self.window = Class.Window()
 end
 
@@ -37,31 +37,38 @@ function class:render()
 end
 
 function class:_show_bmp_inner_at(bmp, x, y)
-	self.window:show_bitmap_at(bmp, self.cache.inner_at.x + x, self.cache.inner_at.y + y)
+	dynawa.bitmap.combine(self.cache.inner_bmp, bmp, x, y)
 end
 
 function class:active_item_index()
+	return self:item_index(self.active_item)
+end
+
+function class:item_index(item)
 	local act_i = 1
-	while assert(self.items[act_i]) ~= self.active_item do
+	while assert(self.items[act_i]) ~= item do
 		act_i = act_i + 1
 	end
 	return act_i
 end
 
 function class:_render_inner()
+	self.cache.inner_bmp =  dynawa.bitmap.new(self.cache.inner_size.w, self.cache.inner_size.h, 0,0,0)
 	local margin = math.floor(dynawa.fonts[dynawa.settings.default_font].height / 2)
 	local act_i = self:active_item_index()
 	local aitembmp = self:_bitmap_of_item(self.active_item)
 	local aw,ah = dynawa.bitmap.info(aitembmp)
 	local above = self.cache.above_active or 0
+	--log("above0="..above)
+	--log("act_i="..act_i)
 	if act_i == 1 then
 		above = 0
 	elseif above < margin then
 		above = margin
 	end
 	local inner_size = assert(self.cache.inner_size)
-	if above + ah > inner_size.h - margin
-		then above = inner_size.h - ah - margin
+	if above + ah > inner_size.h - margin then
+		above = inner_size.h - ah - margin
 	end
 	self.cache.above_active = above
 	--log("above = "..above)
@@ -72,20 +79,19 @@ function class:_render_inner()
 	while self.items[i] and y < inner_size.h do
 		local bitmap = self:_bitmap_of_item(self.items[i])
 		local w,h = dynawa.bitmap.info(bitmap)
-		if y + h > inner_size.h then --Only top part of item is visible
+--[[		if y + h > inner_size.h then --Only top part of item is visible
 			h = inner_size.h - y
-		end
-		local bg = dynawa.bitmap.new(inner_size.w, h, 0,0,0)
-		dynawa.bitmap.combine(bg, bitmap, 0, 0)
-		self:_show_bmp_inner_at(bg, 0, y)
+		end]]
+		self:_show_bmp_inner_at(bitmap, 0, y)
 		y = y + h
 		i = i + 1
 	end
-	if y < inner_size.h then --empty bottom of screen
+--[[	if y < inner_size.h then --empty bottom of screen
 		local black = dynawa.bitmap.new(inner_size.w, inner_size.h-y, 0,0,0)
 		self:_show_bmp_inner_at(black, 0, y)
-	end
+	end]]
 	--Now the items ABOVE the active item
+	--log("above="..above)
 	if above > 0 then
 		i = act_i
 		local y = above
@@ -94,18 +100,19 @@ function class:_render_inner()
 			local bitmap = self:_bitmap_of_item(self.items[i])
 			local w,h = dynawa.bitmap.info(bitmap)
 			y = y - h
-			local realh = h
-			if y < 0 then --Only bottom part of item is visible
+--			local realh = h
+--[[			if y < 0 then --Only bottom part of item is visible
 				realh = realh + y
 				assert(realh > 0)
 				y = 0
-			end
+			end]]
 			--log("Drawing item "..i..", size "..inner_size.w.."x"..realh..", at y="..y)
-			local bg = dynawa.bitmap.new(inner_size.w, realh, 0,0,0)
-			dynawa.bitmap.combine(bg, bitmap, 0, realh-h)
-			self:_show_bmp_inner_at(bg, 0, y)
+--			local bg = dynawa.bitmap.new(inner_size.w, realh, 0,0,0)
+--			dynawa.bitmap.combine(bg, bitmap, 0, realh-h)
+			self:_show_bmp_inner_at(bitmap, 0, y)
 		until y <= 0
 	end
+	self.window:show_bitmap_at(self.cache.inner_bmp, self.cache.inner_at.x, self.cache.inner_at.y)
 end
 
 function class:_bitmap_of_item(menuitem)
@@ -149,6 +156,18 @@ function class:scroll(button)
 		if ind < 1 then
 			ind = #self.items
 			self.cache.above_active = 999
+			local above = 0
+			for i = 1, ind do
+				local w,h = dynawa.bitmap.info(self:_bitmap_of_item(self.items[i]))
+				if i == ind and above + h <= self.cache.inner_size.h then
+					self.cache.above_active = above
+					break
+				end
+				above = above + h
+				if above >= self.cache.inner_size.h then
+					break
+				end
+			end
 		else
 			local w,h = dynawa.bitmap.info(self:_bitmap_of_item(self.items[ind]))
 			self.cache.above_active = self.cache.above_active - h
