@@ -20,6 +20,7 @@ function class:unregister_window(window)
 end
 
 function class:window_to_front(window)
+	log("error") -------------------#todo
 	assert(window)
 	if self.front_window == window then
 		error(window.." is already in front")
@@ -29,7 +30,11 @@ function class:window_to_front(window)
 end
 
 function class:update_display()
-	local window = self.front_window
+	local app = dynawa.app_manager.app_in_front
+	if not app then
+		return
+	end
+	local window = app.window
 	if not window then
 		return
 	end

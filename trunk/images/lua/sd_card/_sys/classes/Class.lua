@@ -101,13 +101,13 @@ function Class:_name()
 	return self.__name
 end
 
-function Class:_delete(o)
-	assert(not o:_is_class(),"_delete() called on class")
-	if o._del then
-		o:_del()
+function Class:_delete()
+	assert(not self:_is_class(),"_delete() called on class")
+	if self._del then
+		self:_del()
 	end
-	o.__deleted = true
-	setmetatable(o,invalid_metatable)
+	self.__deleted = true
+	setmetatable(self,invalid_metatable)
 end
 
 local public_classes = {}
@@ -133,9 +133,10 @@ add_metamethods(Class)
 function Class:handle_event(ev)
 	local fname = "handle_event_"..ev.type
 	if not self[fname] then
-		error("Unhandled event of type '"..tostring(ev.type).."' in "..self)
+		log("Unhandled event of type '"..tostring(ev.type).."' in "..self)
+	else
+		return self[fname](self, ev)
 	end
-	return self[fname](self, ev)
 end
 
 return Class

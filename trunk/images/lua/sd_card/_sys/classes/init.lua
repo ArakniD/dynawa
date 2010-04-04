@@ -81,15 +81,8 @@ load_classes{
 	"MenuItem",
 	"Menu",
 	"Timers",
-	"SuperMan",
---[["Device",
-	"DeviceButton",
-	"InputManager",
-	"Window",
-	"WindowManager",
-	"MenuItem",
-	"Menu",
-	"SuperMan",]]
+	"App",
+	"AppManager",
 }
 
 if dynawa.debug then
