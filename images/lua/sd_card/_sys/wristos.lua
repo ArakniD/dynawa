@@ -72,10 +72,7 @@ dynawa.window_manager = Class.WindowManager()
 
 dynawa.devices.timers = Class.Timers()
 
-dynawa.superman = Class.SuperMan()
-
-dynawa.superman:start()
-log("Superman started")
+dynawa.app_manager = Class.AppManager()
 
 local hw_vectors = {}
 hw_vectors.button_down = function(event)
@@ -103,7 +100,10 @@ _G.private_main_handler = function(hw_event)
 	dynawa.window_manager:update_display()
 end
 
-_G.handle_event{type="start"}
+dynawa.superman = dynawa.app_manager:start_app(dynawa.dir.sys.."apps/superman/superman_app.lua")
+dynawa.app_manager:app_to_front(dynawa.superman)
+
+--_G.handle_event{type="start"}
 
 --[[
 

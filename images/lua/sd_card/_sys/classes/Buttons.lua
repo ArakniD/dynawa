@@ -3,7 +3,7 @@ local class = Class("Buttons", Class.EventSource)
 function class:_init()
 	Class.EventSource._init(self,"buttons")
 	self.raw = Class.EventSource("buttons.raw")
-	self.virtual = Class.EventSource("buttonss.virtual")
+	self.virtual = Class.EventSource("buttons.virtual")
 	self.flip_table = {
 		[false]={[0]="top","confirm","bottom","switch","cancel"},
 		[true]={[0]="bottom","confirm","top","cancel","switch"},
