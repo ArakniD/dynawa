@@ -1,17 +1,34 @@
-local class = Class("WindowManager")
+app.name = "Window Manager"
+app.id = "dynawa.window_manager"
 
-function class:_init()
+function app:start()
 	self._windows = {}
 	self.front_window = false
 	self._last_displayed_window = false
+	self.stack = {}
 end
 
-function class:register_window(window)
+function app:show_default()
+	dynawa.superman:open_menu_by_url("root")
+end
+
+function app:push(x)
+	assert(x.is_menu) --#todo
+	table.insert(self.stack,1,x)
+end
+
+function app:pop()
+	local x = assert(table.remove(self.stack[1]),"Nothing to pop from stack")
+	assert(x.is_menu) --#todo
+	
+end
+
+function app:register_window(window)
 	assert (not self._windows[window], "Window already registered")
 	self._windows[window] = true --#todo more info
 end
 
-function class:unregister_window(window)
+function app:unregister_window(window)
 	assert (self._windows[window], "Window not registered")
 	if window == self.front_window then
 		self.front_window = false
@@ -19,7 +36,7 @@ function class:unregister_window(window)
 	self._windows[window] = nil
 end
 
-function class:window_to_front(window)
+function app:window_to_front(window)
 	log("error") -------------------#todo
 	assert(window)
 	if self.front_window == window then
@@ -29,7 +46,7 @@ function class:window_to_front(window)
 	self.front_window = window
 end
 
-function class:update_display()
+function app:update_display()
 	local app = dynawa.app_manager.app_in_front
 	if not app then
 		return
@@ -51,5 +68,5 @@ function class:update_display()
 	self._last_displayed_window = window
 end
 
-return class
+return app
 

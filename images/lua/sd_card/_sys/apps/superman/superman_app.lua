@@ -1,6 +1,7 @@
-self.name = "SuperMan"
+app.name = "SuperMan"
+app.id = "dynawa.superman"
 
-function self:open_menu_by_url(url)
+function app:open_menu_by_url(url)
 	local url0, urlarg = url:match("(.+):(.*)")
 	if not urlarg then
 		url0 = url
@@ -18,17 +19,20 @@ function self:open_menu_by_url(url)
 	end
 	menu.app = self
 	menu.url = url
-	return self:open_menu(menu)
+	dynawa.app_manager:app_to_front(self)
+	self:open_menu(menu)
+	dynawa.window_manager:push(menu)
+	return menu
 end
 
-function self:open_menu(menu)
+function app:open_menu(menu)
 	self.showing_menu = menu
 	self.window = menu.window
 	menu:render()
 	return menu
 end
 
-function self:menu_item_selected(args)
+function app:menu_item_selected(args)
 	local menu = args.menu
 	assert (menu.app == self)
 	log("selected item "..args.item)
@@ -37,14 +41,14 @@ function self:menu_item_selected(args)
 		return
 	end
 	if on_select.go_to_url then
-		--menu:clear_cache()
+		menu:clear_cache()
 		local newmenu = self:open_menu_by_url(on_select.go_to_url)
 		newmenu.previous = menu
 		return
 	end
 end
 
-function self:do_cancel() --Go to previous menu
+function app:do_cancel() --Go to previous menu
 	local menu = assert(self.showing_menu)
 	local app = menu.app
 	local prevmenu = menu.previous
@@ -52,10 +56,10 @@ function self:do_cancel() --Go to previous menu
 	if prevmenu then
 		return self:open_menu(prevmenu)
 	end
-	error("Last SuperMan menu closed")
+	error("#todo Last SuperMan menu closed")
 end
 
-function self:handle_event_button(event)
+function app:handle_event_button(event)
 	assert(self.showing_menu)
 	if event.action == "button_down" and event.button == "cancel" then
 		return self:do_cancel()
@@ -63,20 +67,19 @@ function self:handle_event_button(event)
 	self.showing_menu:handle_event_button(event)
 end
 
-function self:virtual_button(button, app)
+function app:virtual_button(button, app)
 	local menu = self.showing_menu
 	assert(app.showing_menu == menu)
 	assert(menu.app == app)
 end
 
-function self:start()
+function app:start()
 	self.showing_menu = false
-	self:open_menu_by_url("root")
 end
 
-self.menu_builders = {}
+app.menu_builders = {}
 
-function self.menu_builders:root()
+function app.menu_builders:root()
 	local menu_def = {
 		banner = {
 			text="SuperMan root menu"
@@ -92,7 +95,7 @@ function self.menu_builders:root()
 	return menu_def
 end
 
-function self.menu_builders:file_browser(dir)
+function app.menu_builders:file_browser(dir)
 	if not dir then
 		dir = "/"
 	end
@@ -127,5 +130,5 @@ function self.menu_builders:file_browser(dir)
 	return menu
 end
 
-return self
+return app
 

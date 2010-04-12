@@ -77,7 +77,6 @@ load_classes{
 	"EventSource",
 	"Buttons",
 	"Window",
-	"WindowManager",
 	"MenuItem",
 	"Menu",
 	"Timers",

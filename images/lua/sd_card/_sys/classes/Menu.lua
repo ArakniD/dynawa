@@ -54,7 +54,7 @@ function class:_render_inner()
 	local act_i = self:active_item_index()
 	local aitembmp = self:_bitmap_of_item(self.active_item)
 	local aw,ah = dynawa.bitmap.info(aitembmp)
-	local above = self.cache.above_active or 0
+	local above = self.above_active or 0
 	if act_i == 1 then
 		above = 0
 	elseif above < margin then
@@ -64,7 +64,7 @@ function class:_render_inner()
 	if above + ah > inner_size.h - margin then
 		above = inner_size.h - ah - margin
 	end
-	self.cache.above_active = above
+	self.above_active = above
 	aitembmp = dynawa.bitmap.combine(dynawa.bitmap.new(inner_size.w,ah,0,0,99), aitembmp, 0, 0)
 	self:_show_bmp_inner_at(aitembmp, 0, above)
 	local y = above + ah
@@ -125,12 +125,12 @@ function class:scroll(button)
 		ind = ind - 1
 		if ind < 1 then
 			ind = #self.items
-			self.cache.above_active = 999
+			self.above_active = 999
 			local above = 0
 			for i = 1, ind do
 				local w,h = dynawa.bitmap.info(self:_bitmap_of_item(self.items[i]))
 				if i == ind and above + h <= self.cache.inner_size.h then
-					self.cache.above_active = above
+					self.above_active = above
 					break
 				end
 				above = above + h
@@ -140,15 +140,15 @@ function class:scroll(button)
 			end
 		else
 			local w,h = dynawa.bitmap.info(self:_bitmap_of_item(self.items[ind]))
-			self.cache.above_active = self.cache.above_active - h
+			self.above_active = self.above_active - h
 		end
 	else --bottom
 		local w,h = dynawa.bitmap.info(self:_bitmap_of_item(self.active_item))
-		self.cache.above_active = self.cache.above_active + h
+		self.above_active = self.above_active + h
 		ind = ind + 1
 		if ind > #self.items then
 			ind = 1
-			self.cache.above_active = 0
+			self.above_active = 0
 		end
 	end
 	self.active_item = self.items[ind]
