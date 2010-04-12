@@ -1,9 +1,4 @@
-dynawa.version = {wristOS="0.1", settings_revision = 20100331}
-
-local uid_last, uid_chars = {}, {}
-string.gsub("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz","(.)", function(ch)
-	table.insert(uid_chars,ch)
-end)
+dynawa.version = {wristOS="0.6", settings_revision = 20100412}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -68,8 +63,6 @@ dynawa.devices = {}
 dynawa.devices.buttons = Class.Buttons()
 dynawa.devices.display = {size = {w = 160, h = 128}, flipped = false}
 
-dynawa.window_manager = Class.WindowManager()
-
 dynawa.devices.timers = Class.Timers()
 
 dynawa.app_manager = Class.AppManager()
@@ -101,7 +94,8 @@ _G.private_main_handler = function(hw_event)
 end
 
 dynawa.superman = dynawa.app_manager:start_app(dynawa.dir.sys.."apps/superman/superman_app.lua")
-dynawa.app_manager:app_to_front(dynawa.superman)
+dynawa.window_manager = dynawa.app_manager:start_app(dynawa.dir.sys.."apps/core/window_manager_app.lua")
+dynawa.window_manager:show_default()
 
 --_G.handle_event{type="start"}
 
