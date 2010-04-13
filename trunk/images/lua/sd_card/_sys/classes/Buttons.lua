@@ -44,7 +44,7 @@ function class:handle_event(event)
 			end
 		elseif typ == "button_up" and event2.button == "switch" then
 			if (self.matrix.switch or -1) > 0 then
-				self.virtual:generate_action{type = "do_switch"}
+				self.virtual:generate_event{type = "do_switch"}
 			end
 		end
 		self:update_matrix(event2)

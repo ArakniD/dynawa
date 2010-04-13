@@ -1,6 +1,7 @@
 local class = Class("Window")
 
 function class:_init()
+	self.is_window = true
 	self.bitmap = false --#todo
 	self.id = dynawa.unique_id()
 	self:force_full_update()
@@ -10,6 +11,10 @@ end
 
 function class:_del()
 	dynawa.window_manager:unregister_window(self)
+	if self.menu  then
+		self.menu.window = false
+		self.menu:_delete()
+	end
 	self.bitmap = false
 end
 
@@ -38,11 +43,25 @@ end
 
 function class:allow_partial_update()
 	self.updates = {regions = {}, max_regions = 9, 
-			pixels_remain = math.floor(self.size.w * self.size.h * 0.95)}
+	pixels_remain = math.floor(self.size.w * self.size.h * 0.95)}
 end
 
 function class:force_full_update()
 	self.updates = {full = true}
+end
+
+function class:handle_event_button(ev)
+	if self.menu then
+		return self.menu:handle_event_button(ev)
+	end
+	assert(self.app)
+	self.app:handle_event_button(ev)
+end
+
+function class:you_are_now_in_front()
+	if self.menu then
+		self.menu:render()
+	end
 end
 
 return class

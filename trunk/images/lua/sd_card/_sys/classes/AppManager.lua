@@ -2,42 +2,6 @@ local class = Class("AppManager")
 
 function class:_init()
 	self.all_apps = {}
-	self.app_in_front = false
-	--#todo Button events should go thru Window Manager!
-	dynawa.devices.buttons:register_for_events(self)
-	dynawa.devices.buttons.virtual:register_for_events(self)
-end
-
-function class:app_to_front(app)
-	assert(app.is_app)
-	if self.app_in_front then
-		self.app_in_front.in_front = nil
-	end
-	self.app_in_front = app
-	app.in_front = true
-end
-
-function class:handle_event_button(event)
-	if self.app_in_front then
-		self.app_in_front:handle_event(event)
-	end
-end
-
-function class:handle_event_do_superman()
---[[	local app = self.app_in_front
-	if app then
-		if app.showing_menu then
-			dynawa.superman:virtual_button(assert(event.type), app)
-			return
-		end
-		--#todo not in menu
-	end]]
-end
-
-function class:handle_event_do_menu()
-end
-
-function class:handle_event_do_switch()
 end
 
 function class:start_app(filename)
@@ -56,6 +20,51 @@ end
 return class
 
 --[[
+Bynari_app.lua:
+
+function app:start()
+	init gfx
+end
+
+function app:my_window()
+	self.window = self:render()
+	return self.window
+end
+
+function app:my_menu(url)
+	assert(url == "root")
+	local def = {
+		banner = "Select color scheme",
+		items = {
+			{text = "Rainbow", result = {style = "rainbow"}},
+			{text = "Black & White", result = {style = "black_white"}},
+		}
+	}
+	return Class.MenuWindow(def)
+end
+------------------------------
+Remote BD controller.app
+
+function app:start()
+	dynawa.bt_manager.evetnts.unknown_device:register_for_events(self)
+end
+
+function handle_event_unknown_bt_device(args)
+	--analyze
+	dynawa.bt_manager:register_device(blabla)
+end
+
+app:my_window()
+	self.window = self:render()
+	return self.window
+end
+
+app:button_event()
+	--do something
+	self:update()
+end
+
+-------------------------------------
 Aplikace:
 Zobrazuje bitmapy, reaguje na tlacitka.
 
