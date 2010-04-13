@@ -15,7 +15,10 @@ function class:render(args)
 end
 
 function class:selected(args)
-	dynawa.superman:menu_item_selected(args)
+	local menu = assert(args.menu)
+	assert(menu.window, "Menu has no window")
+	assert(menu.window.app, "Menu's Window has no App")
+	menu.window.app:menu_item_selected(args)
 end
 
 return class

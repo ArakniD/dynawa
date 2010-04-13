@@ -17,24 +17,22 @@ function app:open_menu_by_url(url)
 	if not menu.is_menu then
 		menu = Class.Menu(menu)
 	end
-	menu.app = self
 	menu.url = url
-	dynawa.app_manager:app_to_front(self)
 	self:open_menu(menu)
-	dynawa.window_manager:push(menu)
 	return menu
 end
 
 function app:open_menu(menu)
-	self.showing_menu = menu
-	self.window = menu.window
-	menu:render()
+	--self.window = menu.window
+	menu.window.menu = menu
+	--menu:render()
+	self:push_window(menu.window)
 	return menu
 end
 
 function app:menu_item_selected(args)
 	local menu = args.menu
-	assert (menu.app == self)
+	assert (menu.window.app == self)
 	log("selected item "..args.item)
 	local on_select = args.item.on_select
 	if not on_select then
@@ -43,13 +41,13 @@ function app:menu_item_selected(args)
 	if on_select.go_to_url then
 		menu:clear_cache()
 		local newmenu = self:open_menu_by_url(on_select.go_to_url)
-		newmenu.previous = menu
 		return
 	end
 end
 
 function app:do_cancel() --Go to previous menu
-	local menu = assert(self.showing_menu)
+	error("#todo")
+	--local menu = assert(self.showing_menu)
 	local app = menu.app
 	local prevmenu = menu.previous
 	menu:_delete()
@@ -59,18 +57,11 @@ function app:do_cancel() --Go to previous menu
 	error("#todo Last SuperMan menu closed")
 end
 
-function app:handle_event_button(event)
-	assert(self.showing_menu)
-	if event.action == "button_down" and event.button == "cancel" then
-		return self:do_cancel()
-	end
-	self.showing_menu:handle_event_button(event)
-end
-
 function app:virtual_button(button, app)
 	local menu = self.showing_menu
 	assert(app.showing_menu == menu)
 	assert(menu.app == app)
+	--#todo ?
 end
 
 function app:start()

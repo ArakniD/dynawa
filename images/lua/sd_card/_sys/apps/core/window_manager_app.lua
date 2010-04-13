@@ -6,6 +6,8 @@ function app:start()
 	self.front_window = false
 	self._last_displayed_window = false
 	self.stack = {}
+	dynawa.devices.buttons:register_for_events(self)
+	dynawa.devices.buttons.virtual:register_for_events(self)
 end
 
 function app:show_default()
@@ -13,19 +15,32 @@ function app:show_default()
 end
 
 function app:push(x)
-	assert(x.is_menu) --#todo
+	assert(x.is_window)
+	for i,w in ipairs(self.stack) do
+		if w==x then
+			error(x.." is already present in window stack")
+		end
+	end
 	table.insert(self.stack,1,x)
+	self:window_to_front(x)
+	log("Pushed "..x)
 end
 
 function app:pop()
-	local x = assert(table.remove(self.stack[1]),"Nothing to pop from stack")
-	assert(x.is_menu) --#todo
-	
+	local x = assert(table.remove(self.stack,1),"Nothing to pop from stack")
+	assert(x.is_window)
+	if next(self.stack) then
+		self:window_to_front(self.stack[1])
+	else
+		self:show_default()
+	end
+	return x
 end
 
 function app:register_window(window)
 	assert (not self._windows[window], "Window already registered")
 	self._windows[window] = true --#todo more info
+	log("Registered "..window)
 end
 
 function app:unregister_window(window)
@@ -34,24 +49,20 @@ function app:unregister_window(window)
 		self.front_window = false
 	end
 	self._windows[window] = nil
+	log("Unregistered "..window)
 end
 
 function app:window_to_front(window)
-	log("error") -------------------#todo
-	assert(window)
+	assert(window.is_window)
 	if self.front_window == window then
 		error(window.." is already in front")
 	end
-	--#todo send Events
 	self.front_window = window
+	window:you_are_now_in_front()
 end
 
 function app:update_display()
-	local app = dynawa.app_manager.app_in_front
-	if not app then
-		return
-	end
-	local window = app.window
+	local window = self.front_window
 	if not window then
 		return
 	end
@@ -66,6 +77,29 @@ function app:update_display()
 	end
 	window:allow_partial_update()
 	self._last_displayed_window = window
+end
+
+function app:handle_event_button(event)
+	if self.front_window then
+		self.front_window:handle_event_button(event)
+	end
+end
+
+function app:handle_event_do_superman()
+--[[	local app = self.app_in_front
+	if app then
+		if app.showing_menu then
+			dynawa.superman:virtual_button(assert(event.type), app)
+			return
+		end
+		--#todo not in menu
+	end]]
+end
+
+function app:handle_event_do_menu()
+end
+
+function app:handle_event_do_switch()
 end
 
 return app

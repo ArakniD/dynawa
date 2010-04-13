@@ -21,6 +21,9 @@ end
 
 function class:clear_cache()
 	self.cache = {items = {}, outer_bitmap = false}
+	if self.window then
+		self.window.bitmap = false
+	end
 end
 
 function class:render()
@@ -163,6 +166,11 @@ function class:handle_event_button(event)
 			self:scroll(event.button)
 		elseif event.button == "confirm" then
 			self.active_item:selected({item_index = self:active_item_index(), menu = self, item = self.active_item})
+		elseif event.button == "cancel" then
+			local window = dynawa.window_manager:pop()
+			assert(window == self.window)
+			assert(window.menu == self)
+			self:_delete()
 		end
 	elseif event.action == "button_hold" then
 		if event.button == "top" or event.button == "bottom" then
@@ -184,7 +192,10 @@ end
 
 function class:_del()
 	self:clear_cache()
-	self.window:_delete()
+	if self.window then
+		self.window.menu = false
+		self.window:_delete()
+	end
 	for i, item in ipairs(self.items) do
 		item:_delete()
 	end
