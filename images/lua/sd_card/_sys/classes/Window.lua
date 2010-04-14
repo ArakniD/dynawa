@@ -58,9 +58,16 @@ function class:handle_event_button(ev)
 	self.app:handle_event_button(ev)
 end
 
+function class:to_front()
+	return dynawa.window_manager:window_to_front(self)
+end
+
 function class:you_are_now_in_front()
 	if self.menu then
 		self.menu:render()
+	end
+	if self.app then
+		return self.app:window_in_front(self)
 	end
 end
 

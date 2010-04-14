@@ -8,10 +8,28 @@ function app:start()
 	self.stack = {}
 	dynawa.devices.buttons:register_for_events(self)
 	dynawa.devices.buttons.virtual:register_for_events(self)
+	dynawa.settings.switchable = {"dynawa.clock_bynari"}
+	dynawa.app_manager:start_app(dynawa.dir.apps.."clock_bynari/bynari_app.lua")
+end
+
+function app:handle_event_do_switch()
+	self:pop_all()
+	local switchable = dynawa.settings.switchable
+	if #switchable <= 1 then
+		return self:show_default()
+	end
 end
 
 function app:show_default()
-	dynawa.superman:open_menu_by_url("root")
+	local app_id = dynawa.settings.switchable[1]
+	if not app_id then
+		dynawa.superman:open_menu_by_url("root")
+	else
+		local app = dynawa.app_manager:app_by_id(app_id)
+		assert(app, "This app is not running: "..app_id)
+		--log("Switching to front: "..app)
+		app:switched_to_front()
+	end
 end
 
 function app:push(x)
@@ -29,6 +47,7 @@ end
 function app:pop()
 	local x = assert(table.remove(self.stack,1),"Nothing to pop from stack")
 	assert(x.is_window)
+	log("Popped "..x)
 	if next(self.stack) then
 		self:window_to_front(self.stack[1])
 	else
@@ -37,10 +56,21 @@ function app:pop()
 	return x
 end
 
+function app:pop_all()
+	for i,window in ipairs(self.stack) do
+		if window.app == dynawa.superman then
+			window:_delete()
+		end
+	end
+	self.stack = {}
+	self.front_window = false
+	log("Popped all windows")
+end
+
 function app:register_window(window)
 	assert (not self._windows[window], "Window already registered")
 	self._windows[window] = true --#todo more info
-	log("Registered "..window)
+	--log("Registered "..window)
 end
 
 function app:unregister_window(window)
@@ -49,15 +79,19 @@ function app:unregister_window(window)
 		self.front_window = false
 	end
 	self._windows[window] = nil
-	log("Unregistered "..window)
+	--log("Unregistered "..window)
 end
 
 function app:window_to_front(window)
 	assert(window.is_window)
-	if self.front_window == window then
-		error(window.." is already in front")
+	if self.front_window then
+		if self.front_window == window then
+			error(window.." is already in front")
+		end
+		self.front_window.in_front = false
 	end
 	self.front_window = window
+	window.in_front = true
 	window:you_are_now_in_front()
 end
 
@@ -86,20 +120,11 @@ function app:handle_event_button(event)
 end
 
 function app:handle_event_do_superman()
---[[	local app = self.app_in_front
-	if app then
-		if app.showing_menu then
-			dynawa.superman:virtual_button(assert(event.type), app)
-			return
-		end
-		--#todo not in menu
-	end]]
+	self:pop_all()
+	dynawa.superman:open_menu_by_url("root")
 end
 
 function app:handle_event_do_menu()
-end
-
-function app:handle_event_do_switch()
 end
 
 return app
