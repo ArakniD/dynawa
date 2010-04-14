@@ -6,8 +6,13 @@ end
 
 function class:start_app(filename)
 	dynawa.busy()
+	local dir = filename:match("(.*/).*%.lua")
+	if not dir then
+		error("Cannot extract directory name from App filename: "..filename)
+	end
 	local chunk = assert(loadfile(filename))
 	local app = Class.App(filename)
+	app.dir = dir
 	rawset(_G, "app", app)
 	chunk()
 	rawset(_G, "app", nil)
@@ -15,6 +20,10 @@ function class:start_app(filename)
 	self.all_apps[app.id] = app
 	app:start(app)
 	return app
+end
+
+function class:app_by_id(id)
+	return self.all_apps[id]
 end
 
 return class

@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.6", settings_revision = 20100412}
+dynawa.version = {wristOS="0.6", settings_revision = 20100414}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -45,6 +45,7 @@ if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_rev
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
 		autostart = {},
+		switchable = {},
 		superman = {
 			shortcuts = {},
 		},

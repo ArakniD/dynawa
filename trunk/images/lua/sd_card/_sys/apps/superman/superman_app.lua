@@ -45,25 +45,6 @@ function app:menu_item_selected(args)
 	end
 end
 
-function app:do_cancel() --Go to previous menu
-	error("#todo")
-	--local menu = assert(self.showing_menu)
-	local app = menu.app
-	local prevmenu = menu.previous
-	menu:_delete()
-	if prevmenu then
-		return self:open_menu(prevmenu)
-	end
-	error("#todo Last SuperMan menu closed")
-end
-
-function app:virtual_button(button, app)
-	local menu = self.showing_menu
-	assert(app.showing_menu == menu)
-	assert(menu.app == app)
-	--#todo ?
-end
-
 function app:start()
 	self.showing_menu = false
 end

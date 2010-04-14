@@ -72,7 +72,9 @@ dynawa.bitmap.load_font = function (fname)
 			if char % 10 == 0 then
 				dynawa.busy()
 			end
-			if char > 128 or x > total_width then error("FUCK") end
+			if char > 128 or x > total_width then
+				error("Invalid # of chars in font bitmap")
+			end
 			r,g,b,a = dynawa.bitmap.pixel(bmap,x,1)
 			if r+g+b+a == 1020 then
 				done = true

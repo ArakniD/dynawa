@@ -52,6 +52,7 @@ function class:item_index(item)
 end
 
 function class:_render_inner()
+--	log("render inner menu")
 	self.cache.inner_bmp =  dynawa.bitmap.new(self.cache.inner_size.w, self.cache.inner_size.h, 0,0,0)
 	local margin = math.floor(dynawa.fonts[dynawa.settings.default_font].height / 2)
 	local act_i = self:active_item_index()
