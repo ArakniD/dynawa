@@ -14,8 +14,11 @@ function class:_init(desc)
 	for item_n, item_desc in ipairs(desc.items) do
 		local menuitem = Class.MenuItem(item_desc)
 		table.insert(self.items, menuitem)
+		if desc.selected_value and desc.selected_value == menuitem.value then
+			self.active_item = menuitem
+		end
 	end
-	self.active_item = assert(self.items[1],"No items in menu")
+	self.active_item = self.active_item or assert(self.items[1],"No items in menu")
 	self.window = Class.Window()
 end
 
@@ -168,10 +171,8 @@ function class:handle_event_button(event)
 		elseif event.button == "confirm" then
 			self.active_item:selected({item_index = self:active_item_index(), menu = self, item = self.active_item})
 		elseif event.button == "cancel" then
-			local window = dynawa.window_manager:pop()
-			assert(window == self.window)
-			assert(window.menu == self)
-			self:_delete()
+			local app = assert(self.window.app)
+			app:menu_cancelled(self)
 		end
 	elseif event.action == "button_hold" then
 		if event.button == "top" or event.button == "bottom" then

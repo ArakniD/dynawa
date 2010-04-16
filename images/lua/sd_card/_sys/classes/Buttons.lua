@@ -36,16 +36,16 @@ function class:handle_event(event)
 		local event2 = {type = "button", action = typ}
 		event2.button = self.flip_table[dynawa.devices.display.flipped][assert(event.button)]
 		self:generate_event(event2)
-		if typ == "button_down" then
-			if event2.button == "cancel" then
-				self.virtual:generate_event{type = "do_menu"}
-			end
-		elseif typ == "button_up" and event2.button == "switch" then
+		if typ == "button_up" and event2.button == "switch" then
 			if (self.matrix.switch or -1) > 0 then
 				self.virtual:generate_event{type = "do_switch"}
 			end
-		elseif typ == "button_hold" and event2.button == "switch" then
-			self.virtual:generate_event{type = "do_superman"}
+		elseif typ == "button_hold" then
+			if event2.button == "switch" then
+				self.virtual:generate_event{type = "do_superman"}
+			elseif event2.button == "cancel" then
+				self.virtual:generate_event{type = "do_menu"}
+			end
 		end
 		self:update_matrix(event2)
 	else

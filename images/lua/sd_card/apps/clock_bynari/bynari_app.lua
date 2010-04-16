@@ -108,14 +108,16 @@ function app:update_dots(time, status)
 end
 
 function app:tick(message)
-	if message.run_id ~= self.run_id or not self.window.in_front then
+	if message.run_id ~= self.run_id then
 		return
 	end
-	local time_raw, msec = dynawa.time.get()
-	local time = os.date("*t", time_raw)
-	time.raw = time_raw
-	self:update_dots(time,message.status)
-	self:text(time)
+	if self.window.in_front then
+		local time_raw, msec = dynawa.time.get()
+		local time = os.date("*t", time_raw)
+		time.raw = time_raw
+		self:update_dots(time,message.status)
+		self:text(time)
+	end
 	local sec, msec = dynawa.time.get()
 	local when = 1100 - msec
 	dynawa.devices.timers:timed_event{delay = when, receiver = self, run_id = message.run_id}
@@ -125,16 +127,12 @@ function app:handle_event_timed_event(event)
 	self:tick(event)
 end
 
-function app:switched_to_front(window)
+function app:switching_to_front()
 	if not self.window then
 		self.window = self:new_window()
 		self.window:show_bitmap(dynawa.bitmap.new(160,128))
 	end
-	self.window:to_front()
-end
-
-function app:window_in_front(window)
-	assert(window == self.window)
+	self.window:push()
 	self.run_id = dynawa.unique_id()
 	self:tick({run_id = self.run_id})
 end
@@ -182,91 +180,44 @@ end
 
 local after_select = {popup = "Color scheme changed", close_menu = true}
 
-function app:xxxxxxxxxxxxxxxxxmenu_result(message)
-	assert(message.value)
-	if self.prefs.style ~= message.value then
-		self.prefs.style = message.value
-		dynawa.file.save_data(self.prefs)
+function app:menu_item_selected(args)
+	local style = assert(args.item.value)
+	if self.prefs.style ~= style then
+		self.prefs.style = style
+		self:save_data(self.prefs)
 	end
+	args.menu.window:pop()
+	self:init_colors()
 end
 
-function app:xxxxxxxxxxxxyour_menu (message)
-	local menu = {
-		callback = menu_result,
+function app:handle_event_do_menu (message)
+	local menudef = {
 		banner = "Bynari color schemes",
-		active_value = assert(self.prefs.style),
+		selected_value = self.prefs.style,
 		items = {
 			{
-				text = "Rainbow", value = "default", after_select = after_select
+				text = "Rainbow", value = "default"
 			},
 			{
-				text = "Planet Earth", value = "blue/green", after_select = after_select
+				text = "Planet Earth", value = "blue/green"
 			},
 			{
-				text = "Pure snow", value = "white", after_select = after_select
+				text = "Pure snow", value = "white"
 			},
 			{
-				text = "Inferno", value = "red", after_select = after_select
+				text = "Inferno", value = "red"
 			},
-
-			{
-				text = "Rainbow", value = "default", after_select = after_select
-			},
-			{
-				text = "Planet Earth", value = "blue/green", after_select = after_select
-			},
-			{
-				text = "Pure snow", value = "white", after_select = after_select
-			},
-			{
-				text = "Inferno", value = "red", after_select = after_select
-			},
-			{
-				text = "Rainbow", value = "default", after_select = after_select
-			},
-			{
-				text = "Planet Earth", value = "blue/green", after_select = after_select
-			},
-			{
-				text = "Pure snow", value = "white", after_select = after_select
-			},
-			{
-				text = "Inferno", value = "red", after_select = after_select
-			},
-			{
-				text = "Rainbow"
-			},
-			{
-				text = "Planet Earth"
-			},
-			{
-				text = "Pure snow", value = "white", after_select = after_select
-			},
-			{
-				bitmap = dynawa.bitmap.new(99,25,255,0,0), value = "red", after_select = after_select
-			},
-			{
-				text = "Rainbow", value = "default", after_select = after_select
-			},
-			{
-				text = "Planet Earth", value = "blue/green", after_select = after_select
-			},
-			{
-				text = "Pure snow", value = "white", after_select = after_select
-			},
-			{
-				text = "Inferno", value = "red", after_select = after_select
-			},
-
 		},
 	}
-	return menu
+	local menuwin = self:new_menuwindow(menudef)
+	menuwin.menu:render()
+	menuwin:push()
 end
 
 function app:start()
-	self.prefs = dynawa.file.load_data(self)
-	if not self.prefs or self.prefs.revision < 2 then
-		self.prefs =  {style = "default", revision = 2}
+	self.prefs = self:load_data()
+	if not self.prefs then
+		self.prefs =  {style = "default"}
 	end
 	self:gfx_init()
 	self:init_colors()

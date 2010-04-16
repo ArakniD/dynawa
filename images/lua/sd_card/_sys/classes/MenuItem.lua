@@ -7,6 +7,9 @@ function class:_init(desc)
 	if desc.on_select then
 		self.on_select = desc.on_select
 	end
+	if desc.value then
+		self.value = desc.value
+	end
 end
 
 function class:render(args)

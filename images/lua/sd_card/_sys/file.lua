@@ -31,16 +31,7 @@ dynawa.file.serialize = function (neco)
 end
 
 
-local function data_filename(app)
-	assert(app.is_app)
-	--log("dir:"..app.dir)
-	return assert(app.dir)
-end
-
 dynawa.file.load_data = function(fname)
-	if type(fname) ~= "string" then
-		fname = data_filename(fname)
-	end
 	local fd, err = io.open(fname,"r")
 	if not fd then
 		return nil, err
@@ -56,9 +47,6 @@ end
 dynawa.file.save_data = function(data, fname)
 	assert(type(data) == "table", "Data is not a table but "..tostring(data))
 	local txt = dynawa.file.serialize(data)	
-	if not type(fname)~="string" then
-		fname = data_filename(fname)
-	end
 	local fd = assert(io.open(fname,"w"))
 	fd:write(txt)
 	fd:close()
