@@ -15,7 +15,7 @@ function app:open_menu_by_url(url)
 	end
 	local menu = builder(self,urlarg)
 	if not menu.is_menu then
-		menu = Class.Menu(menu)
+		menu = self:new_menuwindow(menu).menu
 	end
 	menu.url = url
 	self:open_menu(menu)
@@ -23,11 +23,30 @@ function app:open_menu_by_url(url)
 end
 
 function app:open_menu(menu)
-	--self.window = menu.window
-	menu.window.menu = menu
-	--menu:render()
+	assert(menu.window)
 	self:push_window(menu.window)
+	menu:render()
 	return menu
+end
+
+function app:menu_cancelled(menu)
+	local popwin = dynawa.window_manager:pop()
+	assert (popwin == menu.window)
+	popwin:_delete()
+	local window = dynawa.window_manager:peek()
+	if window then
+		window.menu:render()
+	else
+		dynawa.window_manager:show_default()
+	end
+end
+
+function app:switching_to_front()
+	self:open_menu_by_url("root")
+end
+
+function app:switching_to_back()
+	dynawa.window_manager:pop_and_delete_menuwindows()
 end
 
 function app:menu_item_selected(args)
