@@ -110,7 +110,6 @@ void SerialIsr_Handler( int index )
 */
 //#endif
     if( status & AT91C_US_RXBRK ) {
-        TRACE_SER("RXBRK\r\n");
         //Semaphore_giveFromISR(sp->txSem, &xTaskWokenByTx);
         //sp->uart->US_IDR = AT91C_US_TXBUFE; 
         sp->uart->US_CR = AT91C_US_RSTSTA; 

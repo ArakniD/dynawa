@@ -95,6 +95,17 @@ void bitmap_copy2(bitmap *dst_bmp, int16_t dst_x, int16_t dst_y, bitmap *src_bmp
     }
 }
 
+uint8_t bit_mask[] = {
+    0x80,
+    0x40,
+    0x20,
+    0x10,
+    0x08,
+    0x04,
+    0x02,
+    0x01,
+};
+
 void bitmap_op_combine(bitmap *dst_bmp, bitmap *src1_bmp, int16_t dst_x, int16_t dst_y, bitmap *src_bmp, int16_t src_x, int16_t src_y, uint16_t width, uint16_t height) {
     TRACE_BMP("bitmap_op_combine dst %x %x [%d %d] src %x [%d %d] %d %d\r\n", dst_bmp, src1_bmp, dst_x, dst_y, src_bmp, src_x, src_y, width, height);
 
@@ -109,30 +120,69 @@ void bitmap_op_combine(bitmap *dst_bmp, bitmap *src1_bmp, int16_t dst_x, int16_t
         return;
 
 
-    uint32_t *dst_pixels = (uint32_t*)((uint8_t*)dst_bmp + sizeof(bitmap_header));
-    uint32_t *src1_pixels = (uint32_t*)((uint8_t*)src1_bmp + sizeof(bitmap_header));
-    uint32_t *src_pixels = (uint32_t*)((uint8_t*)src_bmp + sizeof(bitmap_header));
 
-    int src_index = src_y * src_bmp->header.width + src_x;
-    int src_delta = src_bmp->header.width - width;
+    if (0) {
+        uint32_t *dst_pixels = (uint32_t*)((uint8_t*)dst_bmp + sizeof(bitmap_header));
+        uint32_t *src1_pixels = (uint32_t*)((uint8_t*)src1_bmp + sizeof(bitmap_header));
+        uint8_t *src_pixels = ((uint8_t*)src_bmp + sizeof(bitmap_header));
 
-    int dst_index = dst_y * dst_bmp->header.width + dst_x;
-    int dst_delta = dst_bmp->header.width - width;
+        uint32_t fg_rgba = 0xffffffff;
+        uint32_t bg_rgba = 0xff000000;
 
-    int i;
-    for (i = 0; i < height; i++) {
-        int j;
-        for (j = 0; j < width; j++) {
-            uint32_t src_pixel = src_pixels[src_index];
-            uint8_t src_alpha = BITMAP_RGBA_A(src_pixel);
+        int src_index = (src_y * src_bmp->header.width + src_x) / 8;
+        int src_delta = (src_bmp->header.width - width) / 8 + ((width % 8) > 0);
+        int src_bit = src_x % 8;
 
-            // TODO : alpha blending
-            dst_pixels[dst_index] = src_alpha ? src_pixel : src1_pixels[dst_index];
-            src_index++;
-            dst_index++;
+        int dst_index = dst_y * dst_bmp->header.width + dst_x;
+        int dst_delta = dst_bmp->header.width - width;
+
+        int i;
+        for (i = 0; i < height; i++) {
+            int j;
+            int bit = src_bit;
+            uint8_t src_byte = src_pixels[src_index];
+            for (j = 0; j < width; j++) {
+                //bool src_opaque = src_byte & (1 << (7 - bit_offset));
+                bool src_opaque = src_byte & bit_mask[bit];
+
+                // TODO : alpha blending
+                dst_pixels[dst_index] = src_opaque ? fg_rgba : src1_pixels[dst_index];
+                //dst_pixels[dst_index] = src_opaque ? fg_rgba : bg_rgba;
+                bit++;
+                if (bit > 7) {
+                    bit = 0;
+                    src_byte = src_pixels[++src_index];
+                }
+                dst_index++;
+            }
+            src_index += src_delta;
+            dst_index += dst_delta;
         }
-        src_index += src_delta;
-        dst_index += dst_delta;
+    } else {
+        uint32_t *dst_pixels = (uint32_t*)((uint8_t*)dst_bmp + sizeof(bitmap_header));
+        uint32_t *src1_pixels = (uint32_t*)((uint8_t*)src1_bmp + sizeof(bitmap_header));
+        uint32_t *src_pixels = (uint32_t*)((uint8_t*)src_bmp + sizeof(bitmap_header));
+        int src_index = src_y * src_bmp->header.width + src_x;
+        int src_delta = src_bmp->header.width - width;
+
+        int dst_index = dst_y * dst_bmp->header.width + dst_x;
+        int dst_delta = dst_bmp->header.width - width;
+
+        int i;
+        for (i = 0; i < height; i++) {
+            int j;
+            for (j = 0; j < width; j++) {
+                uint32_t src_pixel = src_pixels[src_index];
+                uint8_t src_alpha = BITMAP_RGBA_A(src_pixel);
+
+                // TODO : alpha blending
+                dst_pixels[dst_index] = src_alpha ? src_pixel : src1_pixels[dst_index];
+                src_index++;
+                dst_index++;
+            }
+            src_index += src_delta;
+            dst_index += dst_delta;
+        }
     }
 }
 
