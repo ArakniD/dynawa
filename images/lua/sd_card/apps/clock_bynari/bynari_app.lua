@@ -127,6 +127,11 @@ function app:handle_event_timed_event(event)
 	self:tick(event)
 end
 
+function app:switching_to_back()
+	self.run_id = nil
+	Class.App.switching_to_back(self)
+end
+
 function app:switching_to_front()
 	if not self.window then
 		self.window = self:new_window()
@@ -187,13 +192,15 @@ function app:menu_item_selected(args)
 		self:save_data(self.prefs)
 	end
 	args.menu.window:pop()
+	args.menu.window:_delete()
 	self:init_colors()
+	--sdynawa.popup:open{text="Color scheme succesfully changed."}
 end
 
 function app:handle_event_do_menu (message)
 	local menudef = {
 		banner = "Bynari color schemes",
-		selected_value = self.prefs.style,
+		active_value = self.prefs.style,
 		items = {
 			{
 				text = "Rainbow", value = "default"

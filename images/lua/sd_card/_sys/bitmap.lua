@@ -1,8 +1,8 @@
 --BITMAP system init (also printing)
 
-dynawa.display={flipped=false}
-dynawa.display.size={width=160,height=128}
-dynawa.bitmap.dummy_screen=dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, 255, 0, 0)
+--dynawa.display={flipped=false}
+--dynawa.display.size={width=160,height=128}
+--dynawa.bitmap.dummy_screen=dynawa.bitmap.new(dynawa.display.size.width, dynawa.display.size.height, 255, 0, 0)
 dynawa.fonts = {}
 
 dynawa.bitmap.info = function(bmap)
@@ -126,7 +126,7 @@ end
 
 function dynawa.bitmap.text_lines(args)
 	local words = {}
-	args.width = args.width or dynawa.display.size.width - 4
+	args.width = args.width or dynawa.devices.display.size.w - 4
 	assert(args.width >= 40, "Width is less than 40")
 	local text = assert(args.text, "No text supplied")
 	string.gsub(text.." ","(.-) ", function(word)
@@ -211,8 +211,8 @@ function dynawa.bitmap.text_lines(args)
 	return bitmap, width, height
 end
 
-local screen = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,0,0,99)
-dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines{text=
+local screen = dynawa.bitmap.new(160,128,0,0,99)
+dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines{width = 156, text=
 		"WristOS "..dynawa.version.wristOS.."; settings rev. "..dynawa.version.settings_revision.."; main.bin: ???"
 		},2,2)
 dynawa.bitmap.show(screen)

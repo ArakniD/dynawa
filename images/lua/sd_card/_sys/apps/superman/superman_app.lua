@@ -65,7 +65,7 @@ function app:menu_item_selected(args)
 end
 
 function app:start()
-	self.showing_menu = false
+	dynawa.superman = self
 end
 
 app.menu_builders = {}
@@ -116,6 +116,68 @@ function app.menu_builders:file_browser(dir)
 			end)
 		else
 			table.insert(menu.items,{text="[Empty directory]"})
+		end
+	end
+	return menu
+end
+
+local adjust_time_selected = function(self,args)
+	log("selected")
+	local menu = args.menu
+	local value = assert(self.value)
+
+	local date = assert(os.date("*t"))
+	date[value.what] = value.number
+	if value.what == "min" then
+		date.sec = 0
+	end
+	local secs = assert(os.time(date))
+	dynawa.time.set(secs)
+	
+	menu.window:pop()
+	menu:_delete()
+	local win = dynawa.window_manager:pop()
+	win:_delete()
+	dynawa.superman:open_menu_by_url("adjust_time_date")
+	local msg = "Adjusted "..value.name
+	if value.what == "min" then
+		msg = msg.." and set seconds to zero."
+	else
+		msg = msg.."."
+	end
+	dynawa.popup:open{text = msg}
+end
+
+function app.menu_builders:adjust_time_date(what)
+	local date = assert(os.date("*t"))
+	--log("what = "..tostring(what))
+	if not what then
+		local menu = {banner = "Adjust time & date"}
+		menu.items = {
+			{text = "Day of month: "..date.day, on_select = {go_to_url="adjust_time_date:day"}},
+			{text = "Month: "..date.month, on_select = {go_to_url="adjust_time_date:month"}},
+			{text = "Year: "..date.year, on_select = {go_to_url="adjust_time_date:year"}},			
+			{text = "Hours: "..date.hour, on_select = {go_to_url="adjust_time_date:hour"}},
+			{text = "Minutes: "..date.min, on_select = {go_to_url="adjust_time_date:min"}},			
+		}
+		return menu
+	end
+	local limit = {from=2001, to=2060, name = "year"} --year
+	if what=="month" then
+		limit = {from = 1, to = 12, name = "month"}
+	elseif what=="day" then
+		limit = {from = 1, to = 31, name = "day of month"}
+	elseif what == "hour" then
+		limit = {from = 0, to = 23, name = "hours"}
+	elseif what == "min" then
+		limit = {from = 0, to = 59, name = "minutes"}
+	end
+	local menu = {banner = "Please adjust the "..limit.name.." value", items = {}}
+	for i = limit.from, limit.to do
+		local item = {text = tostring(i), value = {what = what, number = i, name = limit.name}, selected = adjust_time_selected}
+		table.insert(menu.items,item)
+		if i == date[what] then
+			menu.active_value = item.value
 		end
 	end
 	return menu

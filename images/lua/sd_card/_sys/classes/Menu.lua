@@ -1,7 +1,8 @@
 local class = Class("Menu")
+class.scroll_delay = 150
+class.is_menu = true
 
 function class:_init(desc)
-	self.is_menu = true
 	self.banner = assert(desc.banner)
 	if type(self.banner) == "string" then
 		self.banner = {text = self.banner}
@@ -13,8 +14,12 @@ function class:_init(desc)
 	self:clear_cache()
 	for item_n, item_desc in ipairs(desc.items) do
 		local menuitem = Class.MenuItem(item_desc)
+		if item_desc.selected then
+			assert(type(item_desc.selected) == "function", "'selected' attribute is not a function")
+			menuitem.selected = item_desc.selected
+		end
 		table.insert(self.items, menuitem)
-		if desc.selected_value and desc.selected_value == menuitem.value then
+		if desc.active_value and desc.active_value == menuitem.value then
 			self.active_item = menuitem
 		end
 	end
@@ -54,46 +59,81 @@ function class:item_index(item)
 	return act_i
 end
 
+function class:_add_above(items)
+	local i = items.first - 1
+	assert (i >= 1)
+	local bmp, w, h = self:_bitmap_of_item(self.items[i])
+	items[i] = {y = items[i+1].y - h, bitmap = bmp, h = h}
+	items.first = i
+end
+
+function class:_add_below(items)
+	local i = items.last + 1
+	assert (i <= #self.items)
+	local bmp, w, h = self:_bitmap_of_item(self.items[i])
+	items[i] = {y = items[i-1].y + items[i-1].h, bitmap = bmp, h = h}
+	items.last = i
+end
+
+function class:_add_above_and_below(items)
+	local off = items.offset
+	while items.first > 1 and items[items.first].y + off > 0 do
+		self:_add_above(items)
+	end
+	while items.last < #self.items and items[items.last].y + items[items.last].h + off < items.inner_height do
+		self:_add_below(items)
+	end
+end
+
 function class:_render_inner()
---	log("render inner menu")
 	self.cache.inner_bmp =  dynawa.bitmap.new(self.cache.inner_size.w, self.cache.inner_size.h, 0,0,0)
 	local margin = math.floor(dynawa.fonts[dynawa.settings.default_font].height / 2)
 	local act_i = self:active_item_index()
+	local above = self.above_active or 0
+	local inner_size = assert(self.cache.inner_size)
+
 	local aitembmp = self:_bitmap_of_item(self.active_item)
 	local aw,ah = dynawa.bitmap.info(aitembmp)
-	local above = self.above_active or 0
+	aitembmp = dynawa.bitmap.combine(dynawa.bitmap.new(inner_size.w,ah,0,0,99), aitembmp, 0, 0)
+	local items = {first = act_i, last = act_i, offset = 0, inner_height = inner_size.h}
+
+	if act_i == #self.items then
+		above = inner_size.h - ah
+	elseif above + ah + margin > inner_size.h then
+		above = inner_size.h - margin - ah
+	end
+	
 	if act_i == 1 then
 		above = 0
 	elseif above < margin then
 		above = margin
 	end
-	local inner_size = assert(self.cache.inner_size)
-	if above + ah > inner_size.h - margin then
-		above = inner_size.h - ah - margin
+	
+	items[act_i] = {bitmap = aitembmp, y = above, h = ah}
+	
+	self:_add_above_and_below(items)
+
+	local space_bottom = inner_size.h - (items[items.last].y + items[items.last].h + items.offset)
+	if space_bottom > 0 then
+		items.offset = items.offset + space_bottom
+		self:_add_above_and_below(items)
 	end
-	self.above_active = above
-	aitembmp = dynawa.bitmap.combine(dynawa.bitmap.new(inner_size.w,ah,0,0,99), aitembmp, 0, 0)
-	self:_show_bmp_inner_at(aitembmp, 0, above)
-	local y = above + ah
-	local i = act_i + 1
-	while self.items[i] and y < inner_size.h do
-		local bitmap = self:_bitmap_of_item(self.items[i])
-		local w,h = dynawa.bitmap.info(bitmap)
-		self:_show_bmp_inner_at(bitmap, 0, y)
-		y = y + h
-		i = i + 1
+
+	--log("space above = "..items[items.first].y + items.offset)
+	if items[items.first].y + items.offset > 0 then
+		items.offset = 0 - items[items.first].y
+		self:_add_above_and_below(items)
 	end
-	if above > 0 then
-		i = act_i
-		local y = above
-		repeat
-			i = i - 1
-			local bitmap = self:_bitmap_of_item(self.items[i])
-			local w,h = dynawa.bitmap.info(bitmap)
-			y = y - h
-			self:_show_bmp_inner_at(bitmap, 0, y)
-		until y <= 0
+
+	local offset = items.offset
+	for i = items.first, items.last do
+		local item = items[i]
+		if item.y + offset < inner_size.h or item.y + item.h + offset > 0 then
+			self:_show_bmp_inner_at(item.bitmap, 0, item.y + offset)
+		end
 	end
+
+	self.above_active = above + offset
 	self.window:show_bitmap_at(self.cache.inner_bmp, self.cache.inner_at.x, self.cache.inner_at.y)
 end
 
@@ -107,8 +147,9 @@ function class:_bitmap_of_item(menuitem)
 			error("MenuItem bitmap too large: "..w.."x"..h)
 		end
 		self.cache.items[menuitem] = bitmap
+		menuitem._w, menuitem._h = w,h
 	end
-	return bitmap
+	return bitmap, menuitem._w, menuitem._h
 end
 
 --render outer menu border and banner
@@ -177,8 +218,8 @@ function class:handle_event_button(event)
 	elseif event.action == "button_hold" then
 		if event.button == "top" or event.button == "bottom" then
 			self._scroll = event.button
-			dynawa.devices.timers:timed_event{delay = 200, receiver = self, direction = event.button}
 			self:scroll(event.button)
+			dynawa.devices.timers:timed_event{delay = self.scroll_delay, receiver = self, direction = event.button}
 		end
 	elseif event.action == "button_up" then
 		self._scroll = nil
@@ -187,7 +228,7 @@ end
 
 function class:handle_event_timed_event(event)
 	if self._scroll == event.direction then
-		dynawa.devices.timers:timed_event{delay = 200, receiver = self, direction = event.direction}
+		dynawa.devices.timers:timed_event{delay = self.scroll_delay, receiver = self, direction = event.direction}
 		self:scroll(event.direction)
 	end
 end

@@ -106,7 +106,7 @@ function app:remove_dots(message)
 end
 
 function app:tick(message)
-	if (self.run_id ~= message.run_id) or (not self.window.in_front) then
+	if (self.run_id ~= message.run_id) then
 		return
 	end
 	local sec,msec = dynawa.time.get()
@@ -128,6 +128,11 @@ end
 
 function app:handle_event_timed_event(event)
 	self[event.method](self,event)
+end
+
+function app:switching_to_back()
+	self.run_id = nil
+	Class.App.switching_to_back(self)
 end
 
 function app:switching_to_front()
