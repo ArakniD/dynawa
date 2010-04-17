@@ -35,7 +35,7 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "debug/trace.h"
 
 
-#define SET_HOST_WAKE       1
+#define SET_HOST_WAKE       0
 
 #define SET_TX_POWER        0
 #define TX_POWER            2
@@ -47,8 +47,6 @@ static Task bt_task_handle;
 static xQueueHandle command_queue;
 
 static unsigned int bt_open_count = 0;
-
-/* -------------------- Command line args processing -------------------- */
 
 static unsigned long baudRate = 460800;
 //static unsigned long baudRate = 115200;
@@ -77,6 +75,54 @@ static unsigned long baudRate = 460800;
 #define USART_BAUDRATE_CD    0x0ebf
 #endif
 
+static ps_setrq_count;
+static struct bccmd_index_value {
+    uint16_t index, value;
+} ps_setrq[] = {
+    {0, 9},
+    {5, PSKEY_ANAFREQ},
+    {6, 1},
+    {8, 0x6590},
+
+    {0, 9},
+    {1, 9},
+    {5, PSKEY_BAUDRATE},
+    {6, 1},
+    {8, USART_BAUDRATE_CD},
+
+#if SET_HOST_WAKE
+    {0, 9},
+    {5, PSKEY_UART_HOST_WAKE_SIGNAL},
+    {6, 1},
+    {8, 3}, // enable
+
+    {0, 12},
+    {5, PSKEY_UART_HOST_WAKE},
+    {6, 4},
+    {8, 0x0001},    // enable
+    {9, 0x01f4},    // sleep timeout = 500ms
+    {10, 0x0005},   // break len = 5ms
+    {11, 0x0020},   // pause length = 32ms
+#endif
+
+#if SET_TX_POWER
+    {0, 9},
+    {5, PSKEY_LC_MAX_TX_POWER},
+    {6, 1},
+    {8, TX_POWER},
+
+    {0, 9},
+    {5, PSKEY_LC_DEFAULT_TX_POWER},
+    {6, 1},
+    {8, TX_POWER},
+
+    {0, 9},
+    {5, PSKEY_LC_MAX_TX_POWER_NO_RSSI},
+    {6, 1},
+    {8, TX_POWER},
+#endif
+    {0, 0}
+};
 
 /* -------------------- The task -------------------- */
 
@@ -345,175 +391,71 @@ static void u_bt_task(bt_command *cmd)
 
 	if (NumberOfHciCommands > 0)
 	{
+        uint16_t *bccmd;
+
 		NumberOfHciCommands--;
 
-        if (bc_state == BC_STATE_READY) {
-            readBdAddr = malloc(3);
-            readBdAddr[0] = (unsigned char) ((HCI_COMMAND_READ_BD_ADDR) & 0x00FF);
-            readBdAddr[1] = (unsigned char) (((HCI_COMMAND_READ_BD_ADDR) >> 8) & 0x00FF);
-            readBdAddr[2] = 0;
-            queueMessage(HCI_COMMAND_CHANNEL, 1, 3, readBdAddr);
-        } else if (bc_state == BC_STATE_STARTED) {
-// PS_ANAFREQ
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 1;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_ANAFREQ;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            cmd[8] = 0x6590;    // value
-            TRACE_INFO("SETTING ANAFREQ\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-        } else if (bc_state == BC_STATE_ANAFREQ_SET) {
-// PS_BAUDRATE
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 2;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_BAUDRATE;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            //cmd[8] = 0x9d;    // value (divider 38400);
-            //cmd[8] = 0x01d8;    // value (divider 115200);
-            //cmd[8] = 0x03b0;    // value (divider 230400);
-            //cmd[8] = x075f;    // value (divider 460800);
-            //cmd[8] = 0x0ebf;    // value (divider 921600);
-            cmd[8] = USART_BAUDRATE_CD;    // value (divider);
-            TRACE_INFO("SETTING BAUDRATE %d\r\n", USART_BAUDRATE);
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-#if SET_HOST_WAKE
-        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
-// PS_UART_HOST_WAKE_SIGNAL 
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 2;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_UART_HOST_WAKE_SIGNAL;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            //cmd[8] = 3;       // enabled
-            cmd[8] = 0;         // disabled
-            TRACE_INFO("SETTING UART_HOST_WAKE_SIGNAL\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-        } else if (bc_state == BC_STATE_UART_HOST_WAKE_SIGNAL) {
-// PS_UART_HOST_WAKE
-            uint16 *cmd = malloc(sizeof(uint16) * 12);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 12;         // number of uint16s in PDU
-            cmd[2] = 2;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_UART_HOST_WAKE;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            cmd[8] = 0x0001;         // enable
-            cmd[9] = 0x01f4;    // sleep timeout = 500ms
-            cmd[10] = 0x0005;   // break len = 5ms
-            cmd[11] = 0x0020;   // pause length = 32ms
-            TRACE_INFO("SETTING UART_HOST_WAKE\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 12, cmd);
-        } else if (bc_state == BC_STATE_UART_HOST_WAKE) {
-#else
-        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
-#endif
-/*
-#if SET_TX_POWER
-        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
-// PS_LC_MAX_TX_POWER
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 2;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_LC_MAX_TX_POWER;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            cmd[8] = TX_POWER;
-            TRACE_INFO("SETTING LC_MAX_TX_POWER\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-        } else if (bc_state == BC_STATE_LC_MAX_TX_POWER) {
-// PS_LC_DEFAULT_TX_POWER
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 2;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_LC_DEFAULT_TX_POWER;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            cmd[8] = TX_POWER;
-            TRACE_INFO("SETTING LC_DEFAULT_TX_POWER\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-        } else if (bc_state == BC_STATE_LC_DEFAULT_TX_POWER) {
-// PS_LC_MAX_TX_POWER_NO_RSSI
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 2;    // value choosen by host
-            cmd[3] = BCCMDVARID_PS;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = PSKEY_LC_MAX_TX_POWER_NO_RSSI;
-            cmd[6] = 1;         // length
-            cmd[7] = 0;         // default store
-            cmd[8] = TX_POWER;
-            TRACE_INFO("SETTING LC_MAX_TX_POWER_NO_RSSI\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-        } else if (bc_state == BC_STATE_LC_MAX_TX_POWER_NO_RSSI) {
-#else
-        } else if (bc_state == BC_STATE_BAUDRATE_SET) {
-#endif
-*/
-// warm reset
-            uint16 *cmd = malloc(sizeof(uint16) * 9);
-            //cmd[0] = 0;         // BCCMDPDU_GETREQ
-            cmd[0] = BCCMDPDU_SETREQ;
-            cmd[1] = 9;         // number of uint16s in PDU
-            cmd[2] = 3;    // value choosen by host
-            //cmd[3] = BCCMDVARID_CHIPVER;
-            cmd[3] = BCCMDVARID_WARM_RESET;
-            cmd[4] = BCCMDPDU_STAT_OK;
-            cmd[5] = 0;         // emty
-            // cmd[6-8]         // ignored, zero padding
-            bc_state = BC_STATE_RESTARTING;
-            TRACE_INFO("RESTARTING BC\r\n");
-            queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, cmd);
-            StartTimer(250000, restartHandler);
+        switch(bc_state) {
+            case BC_STATE_READY:
+                readBdAddr = malloc(3);
+                readBdAddr[0] = (unsigned char) ((HCI_COMMAND_READ_BD_ADDR) & 0x00FF);
+                readBdAddr[1] = (unsigned char) (((HCI_COMMAND_READ_BD_ADDR) >> 8) & 0x00FF);
+                readBdAddr[2] = 0;
+                queueMessage(HCI_COMMAND_CHANNEL, 1, 3, readBdAddr);
+                break;
+            case BC_STATE_STARTED:
+                {
+                    uint16 *bccmd = NULL;
+                    uint16_t len, size;
+                    while(1) {
+                        struct bccmd_index_value *ps_setrq_value = &ps_setrq[ps_setrq_count];        
+                        if (ps_setrq_value->index) {
+                            bccmd[ps_setrq_value->index] = ps_setrq_value->value;
+                            ps_setrq_count++;
+                        } else if (bccmd) {
+                            queueMessage(BCCMD_CHANNEL, 1, size, bccmd);
+                            break;
+                        } else { 
+                            len = ps_setrq_value->value;
+                            size = sizeof(uint16_t) * len;
+                            bccmd = malloc(size);
+                            if (bccmd == NULL) {
+                                panic();
+                            }
+                            memset(bccmd, 0, size);
+
+                            bccmd[0] = BCCMDPDU_SETREQ;
+                            bccmd[1] = len;         // number of uint16s in PDU
+                            bccmd[2] = ps_setrq_count;    // value choosen by host
+                            bccmd[3] = BCCMDVARID_PS;
+                            bccmd[4] = BCCMDPDU_STAT_OK;
+
+                            ps_setrq_count++;
+                        }
+                    }
+                }
+                break;
+            case BC_STATE_PS_SET:
+                bccmd = malloc(sizeof(uint16) * 9);
+                //bccmd[0] = 0;         // BCCMDPDU_GETREQ
+                bccmd[0] = BCCMDPDU_SETREQ;
+                bccmd[1] = 9;         // number of uint16s in PDU
+                bccmd[2] = 3;    // value choosen by host
+                //bccmd[3] = BCCMDVARID_CHIPVER;
+                bccmd[3] = BCCMDVARID_WARM_RESET;
+                bccmd[4] = BCCMDPDU_STAT_OK;
+                bccmd[5] = 0;         // emty
+                // bccmd[6-8]         // ignored, zero padding
+                bc_state = BC_STATE_RESTARTING;
+                TRACE_INFO("RESTARTING BC\r\n");
+                queueMessage(BCCMD_CHANNEL, 1, sizeof(uint16) * 9, bccmd);
+                StartTimer(250000, restartHandler);
+                break;
+            default:
+                panic();
         }
 	}
     TRACE_BT("u_bt_task end\r\n");
-}
-
-
-/* -------------------- The keyboard handler -------------------- */
-
-#define KEYBOARD_SCAN_INTERVAL	250000
-#define ESC_KEY					0x1B
-
-static void keyboardHandler(void)
-{
-	if (_kbhit())
-	{
-		switch (getch())
-		{
-			case ESC_KEY:
-				printf("\nUser exit...\n");
-				TerminateMicroSched();
-				break;
-
-			default:
-				break;
-		}
-	}
-	StartTimer(KEYBOARD_SCAN_INTERVAL, keyboardHandler);
 }
 
 static void pumpHandler(void)
@@ -732,6 +674,9 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     //TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
 
     Task_sleep(10);
+
+    ps_setrq_count = 0;
+
     bc_state = BC_STATE_STARTED;
 
     TRACE_BT("BC restarted\r\n");
@@ -788,6 +733,11 @@ void trace_bytes(char *text, uint8_t *bytes, int len) {
     for (i = 0; i < len; i++) {
         TRACE_INFO("%s[%d] = %02x\r\n", text, i, bytes[i]);
     }
+}
+
+bool bt_is_ps_set(void) {
+    struct bccmd_index_value *ps_setrq_value = &ps_setrq[ps_setrq_count];
+    return !ps_setrq_value->index && !ps_setrq_value->value;
 }
 
 // commands 

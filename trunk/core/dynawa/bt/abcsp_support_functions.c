@@ -66,71 +66,8 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
             TRACE_BT("%x\r\n", cmd[i]);
         }
         if (cmd[0] == BCCMDPDU_GETRESP) {
-            if (bc_state == BC_STATE_STARTED) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_ANAFREQ_SET;
-                        TRACE_INFO("BC_STATE_ANAFREQ_SET\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_ANAFREQ_SET failed\r\n");
-                    }
-                }
-            } else if (bc_state == BC_STATE_ANAFREQ_SET) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_BAUDRATE_SET;
-                        TRACE_INFO("BC_STATE_BAUDRATE_SET\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_BAUDRATE_SET failed\r\n");
-                    }
-                }
-            } else if (bc_state == BC_STATE_BAUDRATE_SET) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_UART_HOST_WAKE_SIGNAL;
-                        TRACE_INFO("BC_STATE_UART_HOST_WAKE_SIGNAL\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_UART_HOST_WAKE_SIGNAL failed\r\n");
-                    }
-                }
-            } else if (bc_state == BC_STATE_UART_HOST_WAKE_SIGNAL) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_UART_HOST_WAKE;
-                        TRACE_INFO("BC_STATE_UART_HOST_WAKE\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_UART_HOST_WAKE failed\r\n");
-                    }
-                }
-/*
-            } else if (bc_state == BC_STATE_BAUDRATE_SET) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_LC_MAX_TX_POWER;
-                        TRACE_INFO("BC_STATE_LC_MAX_TX_POWER\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_LC_MAX_TX_POWER failed\r\n");
-                    }
-                }
-            } else if (bc_state == BC_STATE_LC_MAX_TX_POWER) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_LC_DEFAULT_TX_POWER;
-                        TRACE_INFO("BC_STATE_LC_DEFAULT_TX_POWER\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_LC_DEFAULT_TX_POWER failed\r\n");
-                    }
-                }
-            } else if (bc_state == BC_STATE_LC_DEFAULT_TX_POWER) {
-                if (cmd[3] == BCCMDVARID_PS) {
-                    if (cmd[4] == BCCMDPDU_STAT_OK) {
-                        bc_state = BC_STATE_LC_MAX_TX_POWER_NO_RSSI;
-                        TRACE_INFO("BC_STATE_LC_MAX_TX_POWER_NO_RSSI\r\n");
-                    } else {
-                        TRACE_ERROR("BC_STATE_LC_MAX_TX_POWER_NO_RSSI failed\r\n");
-                    }
-                }
-*/
+            if (bt_is_ps_set()) {      
+                bc_state = BC_STATE_PS_SET;
             }
         }
         NumberOfHciCommands = 1;
