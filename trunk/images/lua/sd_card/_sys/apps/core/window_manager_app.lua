@@ -2,6 +2,7 @@ app.name = "Window Manager"
 app.id = "dynawa.window_manager"
 
 function app:start()
+	dynawa.window_manager = self
 	self._windows = {}
 	self.front_window = false
 	self._last_displayed_window = false
@@ -11,6 +12,7 @@ function app:start()
 	dynawa.settings.switchable = {"dynawa.clock", "dynawa.clock_bynari"}
 	dynawa.app_manager:start_app(dynawa.dir.apps.."clock_bynari/bynari_app.lua")
 	dynawa.app_manager:start_app(dynawa.dir.sys.."apps/clock/clock_app.lua")
+	dynawa.app_manager:start_app(dynawa.dir.sys.."apps/popup/popup_app.lua")
 end
 
 function app:show_default()
@@ -39,9 +41,6 @@ function app:push(x)
 	--self:window_to_front(x)
 	x.in_front = true
 	log("Pushed "..x)
-	if x.id == ":7" then
-		error("halt")
-	end
 end
 
 function app:pop()
@@ -58,7 +57,7 @@ end
 
 --This is a powerful but potentially dangerous method that pops all menuwindows from top of the stack
 --and automatically deletes all of them (i.e. they should not be referenced from anywhere else at this point!).
---It stops at first window with no menu and returns this window.
+--It stops at first window with no menu and returns this window (or nil, if there is no such window).
 function app:pop_and_delete_menuwindows()
 	while true do
 		local window = self:peek()
@@ -90,7 +89,7 @@ end
 
 function app:register_window(window)
 	assert (not self._windows[window], "Window already registered")
-	self._windows[window] = true --#todo more info
+	self._windows[window] = window.id or true
 	--log("Registered "..window)
 end
 
@@ -122,7 +121,7 @@ function app:update_display()
 	if window.updates.full or self._last_displayed_window ~= window then
 		--log("showing window "..window)
 		if not window.bitmap then
-			window.bitmap = dynawa.bitmap.new(dynawa.display.size.width,dynawa.display.size.height,255,0,0)
+			window.bitmap = dynawa.bitmap.new(dynawa.devices.display.size.w,dynawa.devices.display.size.h,255,0,0)
 			dynawa.bitmap.combine(window.bitmap, dynawa.bitmap.text_lines{text=window.." has no bitmap!"},1,20)
 		end
 		dynawa.bitmap.show(window.bitmap,dynawa.devices.display.flipped)
@@ -146,12 +145,7 @@ end
 
 function app:handle_event_do_switch()
 	local win0 = self:peek()
-	if win0 then
-		win0.app:switching_to_back(win0)
-		if self:peek() then
-			error(win0.app.." did not clear WindowStack, "..self:peek().." is on top")
-		end
-	end
+	self:stack_cleanup()
 	local switchable = dynawa.settings.switchable
 	if not win0 or #switchable <= 1 then
 		return self:show_default()
@@ -178,14 +172,24 @@ function app:handle_event_do_switch()
 end
 
 function app:handle_event_do_superman()
-	local win0 = self:peek()
-	if win0 then
-		win0.app:switching_to_back(win0)
-		if self:peek() then
-			error(win0.app.." did not clear WindowStack, "..self:peek().." is on top")
-		end
-	end	
+	self:stack_cleanup()
 	dynawa.superman:switching_to_front()
+end
+
+--Calls 'switching_to_back' on all apps referenced in stack, effectively clearing the stack.
+function app:stack_cleanup()
+	local last = "?"
+	while true do
+		local peekwin = self:peek()
+		if not peekwin then
+			return
+		end
+		if peekwin.app == last then
+			error(peekwin.app.." did not remove all its windows from stack during 'switching_to_back', "..peekwin.." is on top")
+		end
+		last = peekwin.app
+		last:switching_to_back(peekwin)
+	end
 end
 
 function app:handle_event_do_menu()

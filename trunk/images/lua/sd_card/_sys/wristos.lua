@@ -94,8 +94,8 @@ _G.private_main_handler = function(hw_event)
 	dynawa.window_manager:update_display()
 end
 
-dynawa.superman = dynawa.app_manager:start_app(dynawa.dir.sys.."apps/superman/superman_app.lua")
-dynawa.window_manager = dynawa.app_manager:start_app(dynawa.dir.sys.."apps/core/window_manager_app.lua")
+dynawa.app_manager:start_app(dynawa.dir.sys.."apps/superman/superman_app.lua")
+dynawa.app_manager:start_app(dynawa.dir.sys.."apps/core/window_manager_app.lua")
 dynawa.window_manager:show_default()
 
 --_G.handle_event{type="start"}

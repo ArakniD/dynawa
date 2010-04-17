@@ -1,8 +1,8 @@
 local class = Class("App")
+class.is_app = true
 
 function class:_init(id)
 	self.id = assert(id)
-	self.is_app = true
 end
 
 function class:start(id)
@@ -42,7 +42,9 @@ end
 
 function class:switching_to_back()
 	local win = dynawa.window_manager:pop_and_delete_menuwindows()
-	assert(win:pop().app == self, "The first popped non-menu window does not belong to me")
+	assert(win:pop().app == self, "The first popped non-menu window does not belong to this app.")
+	local peek = dynawa.window_manager:peek()
+	assert (not peek or peek.app ~= self, "After popping one non-menu window, there are still other windows of mine on stack")
 end
 
 function class:handle_event_button()

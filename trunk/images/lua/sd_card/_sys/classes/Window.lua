@@ -1,8 +1,8 @@
 local class = Class("Window")
+class.is_window = true
+class.bitmap = false
 
 function class:_init()
-	self.is_window = true
-	self.bitmap = false --#todo
 	self.id = dynawa.unique_id()
 	self:force_full_update()
 	dynawa.window_manager:register_window(self)
