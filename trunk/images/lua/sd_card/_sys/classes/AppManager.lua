@@ -5,7 +5,7 @@ function class:_init()
 end
 
 function class:start_app(filename)
-	dynawa.busy()
+	--dynawa.busy()
 	local dir = filename:match("(.*/).*%.lua")
 	if not dir then
 		error("Cannot extract directory name from App filename: "..filename)
@@ -24,6 +24,25 @@ end
 
 function class:app_by_id(id)
 	return self.all_apps[id]
+end
+
+function class:start_everything()
+	local apps = {
+		"/_sys/apps/window_manager/window_manager_app.lua",
+		"/_sys/apps/superman/superman_app.lua",
+		"/_sys/apps/popup/popup_app.lua",
+	}
+	
+	for i,app in ipairs(dynawa.settings.autostart) do
+		table.insert(apps, app)
+	end
+	
+	for i, app in ipairs(apps) do
+		dynawa.busy(i / 2 / #apps + 0.5)
+		self:start_app(app)
+	end
+
+	dynawa.window_manager:show_default()
 end
 
 return class

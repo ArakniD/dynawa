@@ -12,6 +12,10 @@ function class:_init(desc)
 	end
 	self.items = {}
 	self:clear_cache()
+	if desc.item_selected then
+		assert(type(desc.item_selected) == "function", "'item_selected' attribute is not a function")
+		self.item_selected = desc.item_selected
+	end
 	for item_n, item_desc in ipairs(desc.items) do
 		local menuitem = Class.MenuItem(item_desc)
 		if item_desc.selected then
@@ -224,6 +228,12 @@ function class:handle_event_button(event)
 	elseif event.action == "button_up" then
 		self._scroll = nil
 	end
+end
+
+function class:item_selected(args)
+	assert(args.menu == self)
+	assert(args.menu.window, "Menu has no window")
+	return assert(args.menu.window.app, "Menu's Window has no App"):menu_item_selected(args)
 end
 
 function class:handle_event_timed_event(event)

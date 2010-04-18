@@ -3,7 +3,7 @@
 local function load_classes(classes)
 	for i,classname in ipairs(classes) do
 		local filename = dynawa.dir.sys.."classes/"..classname..".lua"
-		dynawa.busy(i/#classes)
+		dynawa.busy(i/2/#classes)
 		log("Compiling class "..classname.."...")
 		local class = dofile(filename)
 		assert(class, "Class file "..filename.." returned nothing")

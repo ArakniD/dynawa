@@ -9,10 +9,6 @@ function app:start()
 	self.stack = {}
 	dynawa.devices.buttons:register_for_events(self)
 	dynawa.devices.buttons.virtual:register_for_events(self)
-	dynawa.settings.switchable = {"dynawa.clock", "dynawa.clock_bynari"}
-	dynawa.app_manager:start_app(dynawa.dir.apps.."clock_bynari/bynari_app.lua")
-	dynawa.app_manager:start_app(dynawa.dir.sys.."apps/clock/clock_app.lua")
-	dynawa.app_manager:start_app(dynawa.dir.sys.."apps/popup/popup_app.lua")
 end
 
 function app:show_default()

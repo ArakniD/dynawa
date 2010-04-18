@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.6", settings_revision = 20100414}
+dynawa.version = {wristOS="0.6", settings_revision = 20100419}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -13,20 +13,20 @@ for i = 0,3 do
 end
 busy_count = 0
 dynawa.busy = function(percentage) --todo: Rewrite!
-	dynawa.is_busy = true
 	local ticks = dynawa.ticks()
 	if ticks - busy_last > 200 then
+		dynawa.is_busy = true
 		busy_count = (busy_count + 1) % 4
 		busy_last = ticks
-	end
-	--start + 4, wide 46, high 8
-	dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,53,48)	
-	if percentage then
-		local prog1 = math.floor(percentage * 46)
-		if prog1 == 0 then
-			prog1 = 1
+		--start + 4, wide 46, high 8
+		dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,53,48)	
+		if percentage then
+			local prog1 = math.floor(percentage * 46)
+			if prog1 == 0 then
+				prog1 = 1
+			end
+			dynawa.bitmap.show_partial(dynawa.bitmap.new(prog1,8,0,255,0),nil,nil,nil,nil,57,69)
 		end
-		dynawa.bitmap.show_partial(dynawa.bitmap.new(prog1,8,0,255,0),nil,nil,nil,nil,57,69)
 	end
 end
 
@@ -44,8 +44,8 @@ if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_rev
 	dynawa.settings = {
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
-		autostart = {},
-		switchable = {},
+		autostart = {"/_sys/apps/clock/clock_app.lua"},
+		switchable = {"dynawa.clock"},
 		superman = {
 			shortcuts = {},
 		},
@@ -94,11 +94,7 @@ _G.private_main_handler = function(hw_event)
 	dynawa.window_manager:update_display()
 end
 
-dynawa.app_manager:start_app(dynawa.dir.sys.."apps/superman/superman_app.lua")
-dynawa.app_manager:start_app(dynawa.dir.sys.."apps/core/window_manager_app.lua")
-dynawa.window_manager:show_default()
-
---_G.handle_event{type="start"}
+dynawa.app_manager:start_everything()
 
 --[[
 
@@ -136,71 +132,6 @@ tbl.bluetooth = function (message)
 end
 
 tbl=nil
------------------------------------------------------------
------------------------------------------------------------
+--]]
 
-
-
---SCHEDULER (apps + tasks + messages) init
-dynawa.dofile(dynawa.dir.sys.."scheduler.lua")
-
---This table maps the 5 buttons from integers to strings, according to watch rotation
-local buttons_flip = {
-	[false]={[0]="TOP","CONFIRM","BOTTOM","SWITCH","CANCEL"},
-	[true]={[0]="BOTTOM","CONFIRM","TOP","CANCEL","SWITCH"}
-}
-
---Called immediately after any button message is received from system
-function dynawa.button_message(message)
-	local button=buttons_flip[dynawa.display.flipped][assert(message.button)]
-	assert(button)
-	local receiver = dynawa.app.in_front
-	dynawa.message.send {type=message.type, button = button, receiver=receiver} --Send to app in front
-	dynawa.message.send {type=message.type, button = button, receiver=assert(dynawa.apps["/_sys/apps/core/"])} --Send to core app
-end
-
--- Handle all messages in queue, including those new messages that are generated during the handling of the original messages!
-local function dispatch_queue()
-	local queue = assert(dynawa.message.queue)
-	local sanity = 999
-	assert(not _G.my,"There should be no active task at the start of dispatch_queue()")
-	while #queue > 0 do
-		sanity = sanity - 1
-		assert(sanity>0,"Unable to purge message queue - probably infinite loop")
-		local message=table.remove(queue,1)
-		dynawa.message.dispatch(message)
-	end
-end
-
---This is the "real" main handler for incoming hardware messages
-_G.private_main_handler = function(message)
-	--rawset(_G,"my",nil) --At this time it already should be nil in ANY non-error state
-	local typ = assert(message.type, "Message has no type")
-	local vector = assert(dynawa.message_vectors[typ],"Unknown hardware message type: "..tostring(typ))
-	if vector then
-		local result = vector(message) --handle the conversion of incoming raw message to Lua message
-	else
-		log("Unknown message type: "..typ)
-	end
-	dispatch_queue()
-	local app = dynawa.app.in_front
-	if not app then --No app in front
-		return
-	end
-	assert(app.screen, "App in front ("..app.name..") has no display")
-	if app.screen_updates.full or dynawa.is_busy then
-		--log("Updating full screen of "..app.name)
-		dynawa.is_busy = nil
-		dynawa.bitmap.show(app.screen,dynawa.display.flipped)
-	else
-		for i, params in ipairs(app.screen_updates) do
-			--log("Partial render: "..table.concat(params,","))
-			dynawa.bitmap.show_partial(app.screen,params[1],params[2],params[3],params[4],params[1],params[2],dynawa.display.flipped)
-		end
-		--dynawa.bitmap.show(app.screen,dynawa.display.flipped) --REMOVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	end
-	app.screen_updates = {pixels = 0}
-end
-
-dynawa.app.start("/_sys/apps/core/")]]
 

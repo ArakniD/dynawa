@@ -52,7 +52,7 @@ end
 function app:menu_item_selected(args)
 	local menu = args.menu
 	assert (menu.window.app == self)
-	log("selected item "..args.item)
+--	log("selected item "..args.item)
 	local on_select = args.item.on_select
 	if not on_select then
 		return
@@ -122,9 +122,9 @@ function app.menu_builders:file_browser(dir)
 end
 
 local adjust_time_selected = function(self,args)
-	log("selected")
 	local menu = args.menu
-	local value = assert(self.value)
+	assert(menu == self)
+	local value = assert(args.item.value)
 
 	local date = assert(os.date("*t"))
 	date[value.what] = value.number
@@ -172,9 +172,9 @@ function app.menu_builders:adjust_time_date(what)
 	elseif what == "min" then
 		limit = {from = 0, to = 59, name = "minutes"}
 	end
-	local menu = {banner = "Please adjust the "..limit.name.." value", items = {}}
+	local menu = {banner = "Please adjust the "..limit.name.." value", items = {}, item_selected = adjust_time_selected}
 	for i = limit.from, limit.to do
-		local item = {text = tostring(i), value = {what = what, number = i, name = limit.name}, selected = adjust_time_selected}
+		local item = {text = tostring(i), value = {what = what, number = i, name = limit.name}}
 		table.insert(menu.items,item)
 		if i == date[what] then
 			menu.active_value = item.value
