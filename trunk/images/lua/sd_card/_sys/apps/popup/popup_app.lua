@@ -10,7 +10,7 @@ function app:open(args)
 	local his_win = dynawa.window_manager:peek()
 	local his_bmp = (his_win or {}).bitmap
 	if not his_bmp then
-		his_bmp = dynawa.bitmap.new(dynawa.devices.display.w, dynawa.devices.display.h, 0,0,0)
+		his_bmp = dynawa.bitmap.new(dynawa.devices.display.size.w, dynawa.devices.display.size.h, 0,0,0)
 	end
 	local bgcolor = {0,40,0}
 	if args.style == "error" then

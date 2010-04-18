@@ -6,7 +6,7 @@ function class:_init(id)
 end
 
 function class:start(id)
-	log("Start method not defined for "..self)
+	error("Start method not defined for "..self)
 end
 
 function class:new_window()
@@ -38,6 +38,7 @@ end
 end]]
 
 function class:switching_to_front()
+	dynawa.popup:open{text=self.." generated no graphical output. You must override its 'switching_to_front' method.",style="warning"}
 end
 
 function class:switching_to_back()
