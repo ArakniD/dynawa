@@ -1,7 +1,8 @@
 app.name = "Bluetooth Manager"
-app.id = "dynawa.bluetooth"
+app.id = "dynawa.bluetooth_manager"
 
 function app:start()
+	dynawa.devices.bluetooth:register_for_events(self)
 end
 
 function app:switching_to_front()
@@ -46,6 +47,10 @@ end
 function app:menu_action_bt_off_on(args)
 	self:menu_action_bt_off(args)
 	self:menu_action_bt_on(args)
+end
+
+function app:handle_event_bluetooth(event)
+	log("subtype:"..tostring(event.subtype))
 end
 
 --[[

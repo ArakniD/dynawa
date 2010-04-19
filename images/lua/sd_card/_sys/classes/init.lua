@@ -75,6 +75,7 @@ end
 load_classes{
 	"Class",
 	"EventSource",
+	"Bluetooth",
 	"Buttons",
 	"Window",
 	"MenuItem",
