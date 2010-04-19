@@ -43,7 +43,9 @@ end
 
 function class:switching_to_back()
 	local win = dynawa.window_manager:pop_and_delete_menuwindows()
-	assert(win:pop().app == self, "The first popped non-menu window does not belong to this app.")
+	if win then
+		assert(win:pop().app == self, "The first popped non-menu window does not belong to this app.")
+	end
 	local peek = dynawa.window_manager:peek()
 	assert (not peek or peek.app ~= self, "After popping one non-menu window, there are still other windows of mine on stack")
 end
