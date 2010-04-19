@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.6", settings_revision = 20100419.1}
+dynawa.version = {wristOS="0.6", settings_revision = 20100419.2}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -45,7 +45,7 @@ if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_rev
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
 		autostart = {"/_sys/apps/clock/clock_app.lua"},
-		switchable = {"dynawa.clock","dynawa.bluetooth"},
+		switchable = {"dynawa.clock","dynawa.bluetooth_manager"},
 		superman = {
 			shortcuts = {},
 		},
@@ -66,6 +66,8 @@ dynawa.devices.display = {size = {w = 160, h = 128}, flipped = false}
 
 dynawa.devices.timers = Class.Timers()
 
+dynawa.devices.bluetooth = Class.Bluetooth()
+
 dynawa.app_manager = Class.AppManager()
 
 local hw_vectors = {}
@@ -77,9 +79,13 @@ hw_vectors.button_up = hw_vectors.button_down
 
 hw_vectors.button_hold = hw_vectors.button_down
 
-hw_vectors.timer_fired = function (message)
-	local handle = assert(message.handle,"HW message of type timer_fired has no handle")
+hw_vectors.timer_fired = function (event)
+	local handle = assert(event.handle,"HW message of type timer_fired has no handle")
 	dynawa.devices.timers:dispatch_timed_event(handle)
+end
+
+hw_vectors.bluetooth = function (event)
+	dynawa.devices.bluetooth:handle_hw_event(event)
 end
 
 _G.private_main_handler = function(hw_event)
