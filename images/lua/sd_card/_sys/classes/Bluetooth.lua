@@ -3,17 +3,17 @@ local class = Class("Bluetooth", Class.EventSource)
 function class:_init()
 	Class.EventSource._init(self,"bluetooth")
 	local cmd = {
-		OPEN = 1,
-		CLOSE = 2,
-		SET_LINK_KEY = 3,
-		INQUIRY = 4,
-		SOCKET_NEW = 100,
-		SOCKET_CLOSE = 101,
-		SOCKET_BIND = 102,
-		FIND_SERVICE = 200,
-		LISTEN = 300,
-		CONNECT = 301,
-		SEND = 400,
+		open = 1,
+		close = 2,
+		set_link_key = 3,
+		inquiry = 4,
+		socket_new = 100,
+		socket_close = 101,
+		socket_bind = 102,
+		find_service = 200,
+		listen = 300,
+		connect = 301,
+		send = 400,
 	}
 	self.cmd = {}
 	for key, val in pairs(cmd) do
@@ -24,16 +24,16 @@ function class:_init()
 end
 
 local events = {
-    [1] = "STARTED",
-    [5] = "STOPPED",
-    [10] = "LINK_KEY_NOT",
-    [11] = "LINK_KEY_REQ",
-    [15] = "CONNECTED",
-    [16] = "DISCONNECTED",
-    [17] = "ACCEPTED",
-    [20] = "DATA",
-    [30] = "FIND_SERVICE_RESULT",
-    [100] = "ERROR",
+    [1] = "started",
+    [5] = "stopped",
+    [10] = "link_key_not",
+    [11] = "link_key_req",
+    [15] = "connected",
+    [16] = "disconnected",
+    [17] = "accepted",
+    [20] = "data",
+    [30] = "find_service_result",
+    [100] = "error",
 }
 
 function class:handle_hw_event(event)

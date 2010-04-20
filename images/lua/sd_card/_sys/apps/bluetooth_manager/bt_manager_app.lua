@@ -7,29 +7,35 @@ function app:start()
 end
 
 function app:switching_to_front()
-    local menu = {
-        banner = "Bluetooth debug menu",
-        items = {
-            {
-                text = "BT on", value = {jump = "bt_on"},
-            },
-            {
-                text = "BT off/on", value = {jump = "bt_off_on"},
-            },
-            {
-                text = "BT off", value = {jump = "bt_off"},
-            },
-            {
-                text = "Pairing", value = {jump = "pairing"},
-            },
-            {
-                text = "Something else", value = {jump = "something_else"},
-            },
-        },
-    }
-    local menuwin = self:new_menuwindow(menu)
-    menuwin.menu:render()
-    menuwin:push()
+	local menu = {
+		banner = "Bluetooth debug menu",
+		items = {
+			{
+				text = "Bluetooth apps", value = {jump = "bt_apps"},
+			},
+			{
+				text = "Known connections", value = {jump = "bt_connections"},
+			},
+			{
+				text = "BT on", value = {jump = "bt_on"},
+			},
+			{
+				text = "BT off/on", value = {jump = "bt_off_on"},
+			},
+			{
+				text = "BT off", value = {jump = "bt_off"},
+			},
+			{
+				text = "Pairing", value = {jump = "pairing"},
+			},
+			{
+				text = "Something else", value = {jump = "something_else"},
+			},
+		},
+	}
+	local menuwin = self:new_menuwindow(menu)
+	menuwin.menu:render()
+	menuwin:push()
 end
 
 function app:menu_item_selected(args)
@@ -38,11 +44,11 @@ function app:menu_item_selected(args)
 end
 
 function app:menu_action_bt_on(args)
-	self.hw.cmd:OPEN()
+	self.hw.cmd:open()
 end
 
 function app:menu_action_bt_off(args)
-	self.hw.cmd:CLOSE()
+	self.hw.cmd:close()
 end
 
 function app:menu_action_bt_off_on(args)
