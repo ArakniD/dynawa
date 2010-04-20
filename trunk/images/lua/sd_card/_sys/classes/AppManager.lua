@@ -31,7 +31,7 @@ function class:start_everything()
 		"/_sys/apps/window_manager/window_manager_app.lua",
 		"/_sys/apps/superman/superman_app.lua",
 		"/_sys/apps/popup/popup_app.lua",
-		"/_sys/apps/bluetooth/bt_app.lua",
+		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
 	}
 	
 	for i,app in ipairs(dynawa.settings.autostart) do

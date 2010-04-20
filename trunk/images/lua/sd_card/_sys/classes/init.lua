@@ -81,7 +81,9 @@ load_classes{
 	"MenuItem",
 	"Menu",
 	"Timers",
+	"BluetoothSocket",
 	"App",
+	"BluetoothApp",
 	"AppManager",
 }
 
