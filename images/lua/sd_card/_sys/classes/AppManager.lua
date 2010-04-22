@@ -6,12 +6,17 @@ end
 
 function class:start_app(filename)
 	--dynawa.busy()
-	local dir = filename:match("(.*/).*%.lua")
+	local dir = filename:match("(.*/).*%.lua$")
 	if not dir then
 		error("Cannot extract directory name from App filename: "..filename)
 	end
 	local chunk = assert(loadfile(filename))
-	local app = Class.App(filename)
+	local app
+	if filename:match("_bt_app%.lua$") then
+		app = Class.BluetoothApp(filename)
+	else
+		app = Class.App(filename)
+	end
 	app.dir = dir
 	rawset(_G, "app", app)
 	chunk()

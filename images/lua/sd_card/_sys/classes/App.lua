@@ -6,7 +6,6 @@ function class:_init(id)
 end
 
 function class:start(id)
-	error("Start method not defined for "..self)
 end
 
 function class:new_window()

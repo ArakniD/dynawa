@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.6", settings_revision = 20100421}
+dynawa.version = {wristOS="0.6", settings_revision = 20100422}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -25,7 +25,7 @@ dynawa.busy = function(percentage) --todo: Rewrite!
 			if prog1 == 0 then
 				prog1 = 1
 			end
-			dynawa.bitmap.show_partial(dynawa.bitmap.new(prog1,8,0,255,0),nil,nil,nil,nil,57,69)
+			dynawa.bitmap.show_partial(dynawa.bitmap.new(prog1,8,0,255,0),nil,nil,nil,nil,57,68)
 		end
 	end
 end
@@ -44,7 +44,7 @@ if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_rev
 	dynawa.settings = {
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
-		autostart = {"/_sys/apps/clock/clock_app.lua"},
+		autostart = {"/_sys/apps/clock/clock_app.lua","/apps/bt/mbw150_bt_app.lua","/apps/bt/echo_bt_app.lua"},
 		switchable = {"dynawa.bluetooth_manager","dynawa.clock"},
 		superman = {
 			shortcuts = {},
