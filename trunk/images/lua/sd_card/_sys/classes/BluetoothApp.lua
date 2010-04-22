@@ -1,7 +1,7 @@
 local class = Class("BluetoothApp", Class.App)
-class.is_bluetooth_app = true
 
-function class:_init()
+function class:_init(...)
+	Class.App._init(self,...)
 end
 
 --[[function class:handle_event_bluetooth(event)
