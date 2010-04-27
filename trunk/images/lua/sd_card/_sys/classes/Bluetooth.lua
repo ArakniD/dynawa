@@ -28,17 +28,24 @@ local events = {
     [5] = "stopped",
     [10] = "link_key_not",
     [11] = "link_key_req",
-    [15] = "connected",
-    [16] = "disconnected",
-    [17] = "accepted",
-    [20] = "data",
-    [30] = "find_service_result",
-    [100] = "error",
+    [15] = "connected", --sock
+    [16] = "disconnected", --sock
+    [17] = "accepted", --sock
+    [20] = "data", --sock
+    [30] = "find_service_result", --sock
+    [100] = "error", --sock
 }
+
+local socket_events = {connected = true, disconnected = true, accepted = true, data = true, find_service_result = true, error = true}
 
 function class:handle_hw_event(event)
 	event.subtype = assert(events[event.subtype],"Unknown BT event: "..event.subtype)
-	self:generate_event(event)
+	if socket_events[event.subtype] then --Handled by BluetoothSocket instance
+		log("BT sending event "..event.subtype.." to "..event.socket)
+		event.socket["handle_bt_event_"..event.subtype](event.socket,event)
+	else
+		self:generate_event(event) --Handled by BT manager
+	end
 end
 
 return class

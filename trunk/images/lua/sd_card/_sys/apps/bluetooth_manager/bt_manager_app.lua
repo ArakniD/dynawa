@@ -2,16 +2,20 @@ app.name = "Bluetooth Manager"
 app.id = "dynawa.bluetooth_manager"
 
 function app:start()
+	dynawa.bluetooth_manager = self
+	self.prefs = self:load_data() or {devices = {}}
+	self.devices = assert(self.prefs.devices)
 	self.hw = assert(dynawa.devices.bluetooth)
 	self.hw:register_for_events(self)
+	self.hw_status = "off"
 end
 
 local function all_bt_apps_iterator(apps, key0)
-	log("iterating")
+	--log("iterating")
 	local key, app = next(apps,key0)
 	if key then
 		if app:_class() == Class.BluetoothApp then
-			log("matches:"..key)
+			--log("matches:"..key)
 			return key, app
 		else
 			return all_bt_apps_iterator(apps, key)
@@ -52,7 +56,7 @@ function app:switching_to_front()
 				text = "BT on", value = {jump = "bt_on"},
 			},
 			{
-				text = "BT off/on", value = {jump = "bt_off_on"},
+				text = "BT restart", value = {jump = "bt_restart"},
 			},
 			{
 				text = "BT off", value = {jump = "bt_off"},
@@ -76,19 +80,85 @@ function app:menu_item_selected(args)
 end
 
 function app:menu_action_bt_on(args)
+	if self.hw_status ~= "off" then
+		return
+	end
+	self.hw_status = "opening"
 	self.hw.cmd:open()
 end
 
 function app:menu_action_bt_off(args)
+	if self.hw_status ~= "on" then
+		return
+	end
+	self.hw_status = "closing"
 	self.hw.cmd:close()
 end
 
-function app:menu_action_bt_off_on(args)
-	self:menu_action_bt_off(args)
-	self:menu_action_bt_on(args)
+function app:menu_action_bt_restart(args)
+	if self.hw_status == "on" then
+		self.hw_status = "restarting"
+		self.hw.cmd:close()
+	elseif self.hw_status == "off" then
+		self.hw_status = "opening"
+		self.hw.cmd:open()
+	elseif self.hw_status == "closing" then
+		self.hw_status = "restarting"
+	else
+		error("Invalid hw_status: "..self.hw_status)
+	end
 end
 
 function app:handle_event_bluetooth(event)
-	log("subtype:"..tostring(event.subtype))
+	log("---BT event received:")
+	for k,v in pairs(event) do
+		if k ~= "source" and k ~= "type" then
+			log(tostring(k).." = "..tostring(v))
+		end
+	end
+	self["handle_bt_event_"..event.subtype](self,event)
 end
 
+function app:handle_bt_event_started(event)
+	self.hw_status = "on"
+	log("BT on")
+	for app_id, app in self:all_bt_apps() do
+		app:handle_bt_event_turned_on()
+	end
+end
+
+function app:handle_bt_event_stopped(event)
+	if self.hw_status == "restarting" then
+		self.hw_status = "opening"
+		self.hw.cmd:open()
+		return
+	end
+	self.hw_status = "off"
+	log("BT off")
+end
+	
+function app:handle_bt_event_link_key_req(event)
+	local bdaddr = assert(message.bdaddr)
+	local link_key
+	if self.prefs.devices[bdaddr] then
+		link_key = self.prefs.devices[bdaddr].link_key
+	end
+	if bdaddr then
+		self.hw.cmd:set_link_key(bdaddr, link_key)
+	else
+		error("I don't have the link key!")
+	end
+end
+
+function app:handle_bt_event_link_key_not(event)
+	local bdaddr = assert(event.bdaddr)
+	local link_key = assert(event.link_key)
+	if not self.prefs.devices[bdaddr] then
+		local name = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
+		self.prefs.devices[bdaddr] = {name = name}
+	end
+	if self.prefs.devices[bdaddr].link_key ~= link_key then
+		self.prefs.devices[bdaddr].link_key = link_key
+		self:save_data(self.prefs)
+	end
+end
