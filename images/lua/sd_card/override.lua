@@ -168,6 +168,7 @@ function dynawa.debug.main_handler(msg)
 	if msg.type == "button_hold" and msg.button == 1 then --update files and restart WristOS]
 		dynawa.debug.update_files()
 		dynawa.debug.send_raw("RESTARTING")
+		dynawa.bt.cmd(2) --BT off
 		boot_init()
 		return
 	end
