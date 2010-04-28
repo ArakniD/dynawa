@@ -50,11 +50,15 @@ function class:handle_event_socket_connected(socket)
 end
 
 function class:handle_event_socket_data(socket,data)
-	log(socket.." got "..#data.." bytes of data: "..tostring(data))
+	log(string.format("%s got %s bytes of data: '%q'", tostring(socket), #data, data))
 end
 
 function class:handle_event_socket_disconnected(socket)
 	log(socket.." disconnected")
+end
+
+function class:handle_event_socket_find_service_result(socket,channel)
+	log ("Find_service_result channel = "..tostring(channel))
 end
 
 function class:handle_bt_event_turned_on()
