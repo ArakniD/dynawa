@@ -11,8 +11,10 @@ function class:_init(protocol)
 end
 
 function class:close()
+	local dbgtxt = "Closed and deleted "..self
 	dynawa.devices.bluetooth.cmd:socket_close(self._c)
 	self:_delete()
+	log(dbgtxt)
 end
 
 function class:connect(bdaddr, channel)

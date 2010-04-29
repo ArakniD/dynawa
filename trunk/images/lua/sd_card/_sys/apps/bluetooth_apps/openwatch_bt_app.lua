@@ -1,13 +1,14 @@
-app.name = "Bluetooth MBW150"
+app.name = "OpenWatch"
 
 function app:handle_bt_event_turned_on()
-	--#todo Select only devices that are mine
+	--#todo
+	--currently, all activities are created and deletes with BT on/off, for each paired device!
 	for bdaddr,device in pairs(dynawa.bluetooth_manager.devices) do
 		log("Connecting to "..device.name)
 		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
 		local act = self:new_activity()
 		act.bdaddr = bdaddr
-		act.name = device.name
+		act.name = device.name.." "..act.id
 		self:activity_start(act)
 	end
 end
@@ -15,7 +16,10 @@ end
 function app:handle_bt_event_turning_off()
 	for id, activity in pairs(self.activities) do
 		if activity.socket then
-			socket:close()
+			log("Trying to close "..activity.socket)
+			activity.socket:close()
+			activity.socket = nil
+			self:delete_activity(activity)
 		end
 	end
 end
@@ -105,14 +109,16 @@ function app:handle_event_socket_data(socket, data_in)
 				-- state handler
 				if transition[4] then
 					activity.status = "connected"
+					activity.reconnect_delay = false
 					transition[4](activity, data_in)
+					log("Memory used: "..(collectgarbage("count")*1024))
 				end
 				break
 			end
 		end
 	end
 	if data_out then
-		log(activity.name.." sending:" .. #data_out.." bytes of data")
+		log(activity.name.." sending " .. #data_out.." bytes of data")
 		socket:send(data_out)
 	end
 end
@@ -125,12 +131,42 @@ function app:handle_event_socket_connected(socket)
 	socket:send(data_out)
 end
 
+function app:handle_event_socket_disconnected(socket)
+	log(socket.." disconnected")
+	local activity = socket.activity
+	activity.socket = nil
+	socket:delete()
+	self:should_reconnect(activity)
+end
+
+function app:should_reconnect(activity)
+	assert(not activity.__deleted)
+	activity.status = "waiting_for_reconnect"
+	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 15000)
+	log("Waiting "..activity.reconnect_delay.." ms before trying to reconnect "..activity.name)
+	dynawa.devices.timers:timed_event{delay = activity.reconnect_delay, receiver = self, what = "attempt_reconnect", activity = activity}
+end
+
+function app:handle_event_timed_event(message)
+	assert(message.what == "attempt_reconnect")
+	local activity = assert(message.activity)
+	if activity.__deleted then
+		return
+	end
+	if activity.status ~= "waiting_for_reconnect" then
+		return
+	end
+	log("Trying to reconnect "..activity.name)
+	self:activity_start(activity)
+end
+
 function app:handle_event_socket_find_service_result(sock0,channel)
 	log ("Find_service_result channel = "..tostring(channel))
-	if channel == 0 then
-		error("No remote listening RFCOMM - "..self)
-	end
 	local activity = sock0.activity
+	if channel == 0 then
+		self:should_reconnect(activity)
+		return
+	end
 	activity.channel = channel
 	local socket = self:new_socket("rfcomm")
 	activity.socket = socket

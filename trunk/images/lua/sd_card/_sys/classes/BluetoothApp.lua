@@ -16,6 +16,7 @@ function class:new_activity(id)
 		error("Activity '"..id.."' already registered for "..self)
 	end
 	self.activities[conn.id] = conn
+	log("New activity id: "..conn.id)
 	return conn
 end
 
@@ -24,7 +25,8 @@ function class:delete_activity(id)
 		id = assert(id.id)
 		assert(type(id) == "string")
 	end
-	assert(self.activities[id],"Unknown connection "..id)
+	assert(self.activities[id],"Unknown activity "..id)
+	log("Deleting "..(self.activities[id].name) or ("activity "..id))
 	self.activities[id] = nil
 end
 

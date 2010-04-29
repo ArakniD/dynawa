@@ -145,12 +145,6 @@ function app:switching_to_front()
 	self:tick{run_id = self.run_id, full_render = true}
 end
 
-function app:you_are_now_in_frontXXXXXXXXXXXXXXX()
-	self.run_id = WristOS.unique_id()
-	self:display_bitmap(WristOS.bitmap.new{})
-	self:tick{run_id = self.run_id, full_render = true}
-end
-
 function app:font_init()
 	local bmap = assert(dynawa.bitmap.from_png_file(self.dir.."digits.png"))
 	fonts={small={},medium={},large={}}
