@@ -84,12 +84,17 @@ function app:menu_action_bt_on(args)
 		return
 	end
 	self.hw_status = "opening"
+	log("Opening BT hardware NOW")
 	self.hw.cmd:open()
+	log("Opened BT hardware")
 end
 
 function app:menu_action_bt_off(args)
 	if self.hw_status ~= "on" then
 		return
+	end
+	for app_id, app in self:all_bt_apps() do
+		app:handle_bt_event_turning_off()
 	end
 	self.hw_status = "closing"
 	self.hw.cmd:close()
@@ -97,6 +102,9 @@ end
 
 function app:menu_action_bt_restart(args)
 	if self.hw_status == "on" then
+		for app_id, app in self:all_bt_apps() do
+			app:handle_bt_event_turning_off()
+		end
 		self.hw_status = "restarting"
 		self.hw.cmd:close()
 	elseif self.hw_status == "off" then
