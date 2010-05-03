@@ -111,6 +111,7 @@ function app:handle_event_socket_data(socket, data_in)
 					activity.status = "connected"
 					activity.reconnect_delay = false
 					transition[4](activity, data_in)
+					dynawa.popup:open{autoclose = 9999, text = "Connected to Openwatch at "..socket.activity.name}
 					log("Memory used: "..(collectgarbage("count")*1024))
 				end
 				break
@@ -135,7 +136,7 @@ function app:handle_event_socket_disconnected(socket)
 	log(socket.." disconnected")
 	local activity = socket.activity
 	activity.socket = nil
-	socket:delete()
+	socket:_delete()
 	self:should_reconnect(activity)
 end
 
