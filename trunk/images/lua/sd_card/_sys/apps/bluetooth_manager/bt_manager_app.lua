@@ -74,6 +74,12 @@ function app:switching_to_front()
 	menuwin:push()
 end
 
+--[[
+function app:menu_cancelled(menu)
+	menu.window:pop()
+end
+]]
+
 function app:menu_item_selected(args)
 	local value = assert(args.item.value)
 	self["menu_action_"..value.jump](self,value)

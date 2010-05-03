@@ -6,6 +6,10 @@ function app:open(args)
 	if self.window then
 		self:switching_to_back()
 	end
+	local autoclose = args.autoclose
+	if autoclose and type(autoclose) ~= "number" then
+		autoclose = 5000 --Default autoclose interval
+	end
 	self.window = self:new_window()
 	local his_win = dynawa.window_manager:peek()
 	local his_bmp = (his_win or {}).bitmap
@@ -30,6 +34,16 @@ function app:open(args)
 	self.window:show_bitmap(screen)
 	self.window:push()
 	self.timestamp = dynawa.ticks()
+	if autoclose then 
+		dynawa.devices.timers:timed_event{delay = autoclose, receiver = self, window_id = assert(self.window.id)}
+	end
+end
+
+function app:handle_event_timed_event(event) --Autoclose still valid?
+	local window_id = assert(event.window_id)
+	if self.window and self.window.id == window_id then
+		self:switching_to_back()
+	end
 end
 
 function app:switching_to_front()

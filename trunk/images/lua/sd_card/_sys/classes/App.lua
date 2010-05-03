@@ -58,6 +58,9 @@ end
 function class:menu_cancelled(menu)
 	local win = menu.window:pop()
 	win:_delete()
+	if not dynawa.window_manager:peek() then
+		dynawa.window_manager:show_default()
+	end
 end
 
 function class:load_data()
