@@ -15,6 +15,9 @@ end
 
 function app:handle_bt_event_turning_off()
 	for id, activity in pairs(self.activities) do
+		if activity.socket.__deleted then
+			activity.socket = nil
+		end
 		if activity.socket then
 			log("Trying to close "..activity.socket)
 			activity.socket:close()
@@ -23,57 +26,6 @@ function app:handle_bt_event_turning_off()
 		end
 	end
 end
-
-app.parser_state_machine = {
-	[1] = {
-		{"%*SEAM", 2, "AT*SEAUDIO=0,0\r", nil},
-		{"OK", 2, "AT*SEAUDIO=0,0\r", nil},
-	},
-	[2] = {
-		{"ERR", 3, "AT+CIND=?\r", nil},
-	},
-	[3] = {
-		{"%+CIND:", 4, "AT+CIND?\r",  nil},
-	},
-	[4] = {
-		{"%+CIND:", 5, "AT+CMER=3,0,0,1\r", nil},
-	},
-	[5] = {
-		{"OK", 6, "AT+CCWA=1\r", nil},
-	},
-	[6] = {
-		{"OK", 7, "AT+CLIP=1\r", nil},
-	},
-	[7] = {
-		{"OK", 8, "AT+GCLIP=1\r", nil},
-	},
-	[8] = {
-		{"OK", 9, "AT+CSCS=\"UTF-8\"\r", nil},
-	},
-	[9] = {
-		{"OK", 10, "AT*SEMMIR=2\r", nil},
-	},
-	[10] = {
-		{"OK", 11, "AT*SEVOL?\r", nil},
-	},
-	[11] = {
-		{"SEVOL", 12, "ATE0\r", nil},
-	},
-	[12] = {
-		{"OK", 13, "AT+CCLK?\r", nil},
-	},
-	[13] = {
-		{"CCLK", 14, nil, 
-		function(activity, data)
-	-- example: +CCLK: "2010/03/11,23:45:14+00"
-			local year, month, day, hour, min, sec = string.match(data, "CCLK: \"(%d+)/(%d+)/(%d+),(%d+):(%d+):(%d+)")
-			local time = os.time({["year"]=year, ["month"]=month, ["day"]=day, ["hour"]=hour, ["min"]=min, ["sec"]=sec})
-			log("time " .. time)
-			dynawa.time.set(time)
-		end 
-		},
-	},
-}
 
 function app:activity_start(act)
 	assert(act)
@@ -89,34 +41,12 @@ end
 
 function app:handle_event_socket_data(socket, data_in)
 	assert(data_in)
-	log(socket.." got "..#data_in.." bytes of data")
-	local data_out
 	local activity = assert(socket.activity)
-	log(activity.name.." got data: ".. data_in)
-	local state_transitions = self.parser_state_machine[socket.parser_state]
-	if state_transitions then
-		for i, transition in ipairs(state_transitions) do
-			if string.match(data_in, transition[1]) then
-				-- next state
-				if transition[2] then
-					log(activity.name.. " state " .. socket.parser_state .. " -> " .. transition[2])
-					socket.parser_state = transition[2]
-				end
-				-- response string
-				if transition[3] then
-					data_out = transition[3]
-				end
-				-- state handler
-				if transition[4] then
-					activity.status = "connected"
-					activity.reconnect_delay = false
-					transition[4](activity, data_in)
-					dynawa.popup:open{autoclose = 9999, text = "Connected to Openwatch at "..socket.activity.name}
-					log("Memory used: "..(collectgarbage("count")*1024))
-				end
-				break
-			end
-		end
+	--log(socket.." got "..#data_in.." bytes of data")
+	local data_out
+	log("Got: "..data_in)
+	if data_in:match("%+SENDING") then
+		data_out = "+RECEIVING\r"
 	end
 	if data_out then
 		log(activity.name.." sending " .. #data_out.." bytes of data")
@@ -126,10 +56,7 @@ end
 
 function app:handle_event_socket_connected(socket)
 	log(self.." socket connected: "..socket)
-	socket.parser_state = 1
-	local data_out = "AT*SEAM=\"MBW-150\",13\r"
-	socket.activity.status = "negotiating"
-	socket:send(data_out)
+	socket.activity.status = "connected"
 end
 
 function app:handle_event_socket_disconnected(socket)
