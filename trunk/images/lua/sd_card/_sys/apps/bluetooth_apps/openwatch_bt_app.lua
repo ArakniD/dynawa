@@ -44,9 +44,9 @@ function app:handle_event_socket_data(socket, data_in)
 	local activity = assert(socket.activity)
 	--log(socket.." got "..#data_in.." bytes of data")
 	local data_out
-	log("Got: "..data_in)
-	if data_in:match("%+SENDING") then
-		data_out = "+RECEIVING\r"
+	log("Got "..#data_in.." bytes of data: "..data_in)
+	if data_in:match("%+RECEIVING") then
+		data_out = "#69\r"
 	end
 	if data_out then
 		log(activity.name.." sending " .. #data_out.." bytes of data")
@@ -56,6 +56,7 @@ end
 
 function app:handle_event_socket_connected(socket)
 	log(self.." socket connected: "..socket)
+	--socket:send("+SENDING 98765\r")
 	socket.activity.status = "connected"
 end
 
