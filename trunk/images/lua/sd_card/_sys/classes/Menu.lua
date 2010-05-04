@@ -47,6 +47,11 @@ function class:render()
 	self:_render_inner()
 end
 
+function class:re_render()
+	self:clear_cache()
+	self:render()
+end
+
 function class:_show_bmp_inner_at(bmp, x, y)
 	dynawa.bitmap.combine(self.cache.inner_bmp, bmp, x, y)
 end

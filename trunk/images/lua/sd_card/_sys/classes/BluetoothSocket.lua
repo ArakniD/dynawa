@@ -27,7 +27,7 @@ function class:listen(channel)
 end
 
 function class:send(data)
-	log(self.." sending data: "..tostring(data))
+	log(self.." sending data: "..string.format("%q",tostring(data)))
 	dynawa.devices.bluetooth.cmd:send(self._c, data)
 end
 
@@ -46,7 +46,11 @@ function class:handle_bt_event_accepted(event)
 end
 
 function class:handle_bt_event_data(event)
-	self.app:handle_event_socket_data(self, assert(event.data))
+	if event.data then
+		self.app:handle_event_socket_data(self, assert(event.data))
+	else
+		log("!!!Socket incoming data event's data is nil!!!")
+	end
 end
 
 function class:handle_bt_event_find_service_result(event)

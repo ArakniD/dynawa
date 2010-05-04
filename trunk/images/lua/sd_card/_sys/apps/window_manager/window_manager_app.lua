@@ -52,7 +52,7 @@ function app:pop()
 end
 
 --This is a powerful but potentially dangerous method that pops all menuwindows from top of the stack
---and automatically deletes all of them (i.e. they should not be referenced from anywhere else at this point!).
+--and automatically deletes (invalidates!) all of them (i.e. they should not be referenced from anywhere else at this point!).
 --It stops at first window with no menu and returns this window (or nil, if there is no such window).
 function app:pop_and_delete_menuwindows()
 	while true do
@@ -72,7 +72,7 @@ function app:peek()
 	return (self.stack[1])
 end
 
-function app:pop_allXXXXXXXXXXXXXX()
+function app:pop_allXXXXXXXXXXXXXX() --#todo?
 	for i,window in ipairs(self.stack) do
 		if window.app == dynawa.superman then
 			window:_delete()

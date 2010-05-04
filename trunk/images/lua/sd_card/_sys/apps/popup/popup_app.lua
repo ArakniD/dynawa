@@ -1,6 +1,16 @@
 app.name = "Popup"
 app.id = "dynawa.popup"
 
+function app:error(text)
+	assert(type(text)=="string")
+	self:open{style="error", text=text}
+end
+
+function app:info(text)
+	assert(type(text)=="string")
+	self:open{text=text}
+end
+
 function app:open(args)
 	--text, style
 	if self.window then
