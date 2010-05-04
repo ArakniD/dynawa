@@ -56,16 +56,16 @@ function app:switching_to_front()
 				text = "BT on", value = {jump = "bt_on"},
 			},
 			{
-				text = "BT restart", value = {jump = "bt_restart"},
-			},
-			{
 				text = "BT off", value = {jump = "bt_off"},
 			},
 			{
-				text = "Pairing", value = {jump = "pairing"},
+				text = "Send #12345", value = {jump = "send_openwatch_12345"},
 			},
 			{
-				text = "Something else", value = {jump = "something_else"},
+				text = "Send Hello World", value = {jump = "send_openwatch_helloworld"},
+			},
+			{
+				text = "Send complex hash", value = {jump = "send_openwatch_hash1"},
 			},
 		},
 	}
@@ -80,6 +80,25 @@ function app:menu_cancelled(menu)
 end
 ]]
 
+function app:send_openwatch(args)
+	local data = assert(args.data)
+	local app = dynawa.app_manager:app_by_id("dynawa.bt.openwatch")
+	app:send_data_test(args)
+end
+
+function app:menu_action_send_openwatch_hash1()
+	local data = {string = "Hello world", number = 666, TRUE = true, FALSE = false, array = {1,2,"three",4,5}, 
+			subhash = {key1 = "val1", key2 = "val2"}}
+	self:send_openwatch{data=data}
+end
+function app:menu_action_send_openwatch_12345()
+	self:send_openwatch{data=12345}
+end
+
+function app:menu_action_send_openwatch_helloworld()
+	self:send_openwatch{data="Hello World"}
+end
+
 function app:menu_item_selected(args)
 	local value = assert(args.item.value)
 	self["menu_action_"..value.jump](self,value)
@@ -87,6 +106,7 @@ end
 
 function app:menu_action_bt_on(args)
 	if self.hw_status ~= "off" then
+		dynawa.popup:open({style="error", text="Bluetooth is currently not OFF so it cannot be turned ON"})
 		return
 	end
 	self.hw_status = "opening"
@@ -97,6 +117,7 @@ end
 
 function app:menu_action_bt_off(args)
 	if self.hw_status ~= "on" then
+		dynawa.popup:open({style="error", text="Bluetooth is currently not ON so it cannot be turned OFF"})
 		return
 	end
 	for app_id, app in self:all_bt_apps() do
@@ -104,23 +125,6 @@ function app:menu_action_bt_off(args)
 	end
 	self.hw_status = "closing"
 	self.hw.cmd:close()
-end
-
-function app:menu_action_bt_restart(args)
-	if self.hw_status == "on" then
-		for app_id, app in self:all_bt_apps() do
-			app:handle_bt_event_turning_off()
-		end
-		self.hw_status = "restarting"
-		self.hw.cmd:close()
-	elseif self.hw_status == "off" then
-		self.hw_status = "opening"
-		self.hw.cmd:open()
-	elseif self.hw_status == "closing" then
-		self.hw_status = "restarting"
-	else
-		error("Invalid hw_status: "..self.hw_status)
-	end
 end
 
 function app:handle_event_bluetooth(event)

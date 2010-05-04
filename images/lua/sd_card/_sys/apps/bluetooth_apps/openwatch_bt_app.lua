@@ -1,4 +1,5 @@
 app.name = "OpenWatch"
+app.id = "dynawa.bt.openwatch"
 
 function app:handle_bt_event_turned_on()
 	--#todo
@@ -24,6 +25,7 @@ function app:handle_bt_event_turning_off()
 			activity.socket = nil
 			self:delete_activity(activity)
 		end
+		activity.status = nil
 	end
 end
 
@@ -44,20 +46,74 @@ function app:handle_event_socket_data(socket, data_in)
 	local activity = assert(socket.activity)
 	--log(socket.." got "..#data_in.." bytes of data")
 	local data_out
-	log("Got "..#data_in.." bytes of data: "..data_in)
-	if data_in:match("%+RECEIVING") then
-		data_out = "#69\r"
+	log("Got "..#data_in.." bytes of data: "..string.format("%q",data_in))
+	if data_in:match("SENDING") then
+		data_out = "+RECEIVING\r"
 	end
 	if data_out then
-		log(activity.name.." sending " .. #data_out.." bytes of data")
 		socket:send(data_out)
 	end
 end
 
 function app:handle_event_socket_connected(socket)
 	log(self.." socket connected: "..socket)
-	--socket:send("+SENDING 98765\r")
+	socket:send("HELLO_FROM_TCH1\r")
 	socket.activity.status = "connected"
+	socket.activity.reconnect_delay = nil
+end
+
+function app:send_data_test(args)
+	local data = assert(args.data)
+	local id, activity = next(self.activities)
+	if not id then
+		dynawa.popup:error("Not connected (no Activity)")
+		return
+	end
+	if activity.status ~= "connected" then
+		dynawa.popup:error("Not connected - Activity status is '"..tostring(activity.status).."'")
+		return
+	end
+	self:send_data(data, activity)
+end
+
+function app:send_data(data, activity)
+	self:_send_line("+SENDING KockaLezeDirou", activity)
+	self:_send_data(data, activity)
+end
+
+function app:_send_data(data, activity)
+	local typ = type(data)
+	if typ == "boolean" or typ == "nil" then
+		self:_send_line("!"..tostring(data),activity)
+	elseif typ == "number" then
+		self:_send_line("#"..tostring(data),activity)
+	elseif typ == "string" then
+		self:_send_line("$"..#data, activity)
+		self:_send_line(data, activity)
+	elseif typ == "table" then
+		local items = {}
+		for k,v in pairs(data) do
+			table.insert(items,{k,v})
+		end
+		if #items == #data then --array - #todo ignore??? Too slow!
+			self:_send_line("@"..#data, activity)
+			for i = 1, #data do
+				self:_send_data(data[i], activity)
+			end
+		else --table
+			self:_send_line("*"..#items, activity)
+			for i, item in ipairs(items) do
+				self:_send_data(item[1], activity)
+				self:_send_data(item[2], activity)
+			end
+		end
+	else
+		error("Unable to serialize: "..tostring(data))
+	end
+end
+
+function app:_send_line(line, activity)
+	assert(activity.socket):send(line.."\r")
 end
 
 function app:handle_event_socket_disconnected(socket)
