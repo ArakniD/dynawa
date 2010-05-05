@@ -67,6 +67,9 @@ function app:switching_to_front()
 			{
 				text = "Send complex hash", value = {jump = "send_openwatch_hash1"},
 			},
+			{
+				text = "Delete all pairings", value = {jump = "delete_pairings"},
+			},
 		},
 	}
 	local menuwin = self:new_menuwindow(menu)
@@ -91,6 +94,7 @@ function app:menu_action_send_openwatch_hash1()
 			subhash = {key1 = "val1", key2 = "val2"}}
 	self:send_openwatch{data=data}
 end
+
 function app:menu_action_send_openwatch_12345()
 	self:send_openwatch{data=12345}
 end
@@ -102,6 +106,12 @@ end
 function app:menu_item_selected(args)
 	local value = assert(args.item.value)
 	self["menu_action_"..value.jump](self,value)
+end
+
+function app:menu_action_delete_pairings()
+	self.prefs.devices = {}
+	self:save_data(self.prefs)
+	dynawa.popup:info("All pairings deleted")
 end
 
 function app:menu_action_bt_on(args)

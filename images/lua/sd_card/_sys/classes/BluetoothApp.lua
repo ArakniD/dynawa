@@ -59,6 +59,10 @@ function class:handle_event_socket_disconnected(socket)
 	log(socket.." disconnected")
 end
 
+function class:handle_event_socket_error(socket,event)
+	error("BT error event '"..tostring(event.error).."' in "..socket)
+end
+
 function class:handle_event_socket_find_service_result(socket,channel)
 	log ("Find_service_result channel = "..tostring(channel))
 end
