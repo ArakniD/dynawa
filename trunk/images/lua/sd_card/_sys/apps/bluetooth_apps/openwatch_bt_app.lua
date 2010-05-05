@@ -145,6 +145,12 @@ function app:handle_event_timed_event(message)
 	self:activity_start(activity)
 end
 
+function app:handle_event_socket_error(socket,event)
+	log("BT error '"..tostring(event.error).."' in "..socket)
+	local activity = assert(socket.activity)
+	self:should_reconnect(activity)
+end
+
 function app:handle_event_socket_find_service_result(sock0,channel)
 	log ("Find_service_result channel = "..tostring(channel))
 	local activity = sock0.activity

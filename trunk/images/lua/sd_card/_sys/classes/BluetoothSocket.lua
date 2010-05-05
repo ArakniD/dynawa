@@ -49,7 +49,7 @@ function class:handle_bt_event_data(event)
 	if event.data then
 		self.app:handle_event_socket_data(self, assert(event.data))
 	else
-		log("!!!Socket incoming data event's data is nil!!!")
+		log("WARNING: Socket incoming data event's data is nil")
 	end
 end
 
@@ -61,7 +61,7 @@ function class:handle_bt_event_find_service_result(event)
 end
 
 function class:handle_bt_event_error(event)
-	error(self.." - error")
+	self.app:handle_event_socket_data(self, assert(self, event.data))
 end
 
 return class
