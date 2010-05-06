@@ -16,12 +16,11 @@ end
 
 function app:handle_bt_event_turning_off()
 	for id, activity in pairs(self.activities) do
-		if activity.socket.__deleted then
-			activity.socket = nil
-		end
 		if activity.socket then
-			log("Trying to close "..activity.socket)
-			activity.socket:close()
+			if not activity.socket.__deleted then
+				log("Trying to close "..activity.socket)
+				activity.socket:close()
+			end
 			activity.socket = nil
 			self:delete_activity(activity)
 		end
@@ -47,11 +46,37 @@ function app:handle_event_socket_data(socket, data_in)
 	--log(socket.." got "..#data_in.." bytes of data")
 	local data_out
 	log("Got "..#data_in.." bytes of data: "..string.format("%q",data_in))
-	if data_in:match("SENDING") then
+	--[[if data_in:match("^%+SENDING .+") then
 		data_out = "+RECEIVING\r"
+		else
+			activity.receiver = {}
+		end
+	end]]
+	local head, rest
+	socket.linebuffer = socket.linebuffer or {}
+	repeat
+		head,rest = data_in:match("(.-)\r(.*)")
+		if head then
+			table.insert(socket.linebuffer, head)
+			self:activity_line_received(activity,table.concat(socket.linebuffer))
+			socket.linebuffer = {}
+			data_in = rest
+		else --No endline
+			table.insert(socket.linebuffer,data_in)
+		end
+	until not rest
+end
+
+function app:activity_line_received(activity, line)
+	local receiver = activity.receiver
+	local socket = assert(activity.socket)
+	log("Line received:"..line)
+	if line:match("^%+SENDING (.+)$") then
+		socket:send("+RECEIVING\r")
+		return
 	end
-	if data_out then
-		socket:send(data_out)
+	if not receiver then
+	
 	end
 end
 

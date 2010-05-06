@@ -166,7 +166,7 @@ function app:handle_bt_event_stopped(event)
 end
 	
 function app:handle_bt_event_link_key_req(event)
-	local bdaddr = assert(message.bdaddr)
+	local bdaddr = assert(event.bdaddr)
 	local link_key
 	if self.prefs.devices[bdaddr] then
 		link_key = self.prefs.devices[bdaddr].link_key
