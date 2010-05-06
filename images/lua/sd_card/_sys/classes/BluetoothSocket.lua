@@ -61,7 +61,7 @@ function class:handle_bt_event_find_service_result(event)
 end
 
 function class:handle_bt_event_error(event)
-	self.app:handle_event_socket_data(self, assert(self, event.data))
+	self.app:handle_event_socket_error(self, event.error)
 end
 
 return class
