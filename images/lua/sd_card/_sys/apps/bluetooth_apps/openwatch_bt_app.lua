@@ -109,7 +109,7 @@ function app:activity_line_received(activity, line)
 		receiver.chars_remain = chars
 		receiver.chars_buffer = {}
 	else
-		log("Unknown first char '"..string.format("%q",first).."', ignoring")
+		log("Unknown first char "..string.format("%q",first)..", ignoring")
 	end
 end
 
