@@ -67,7 +67,7 @@ function app:switching_to_back()
 end
 
 function app:handle_event_button(event)
-	if assert(event.action) == "button_down" and dynawa.ticks() - self.timestamp > 999 then
+	if assert(event.action) == "button_down" and dynawa.ticks() - self.timestamp > 250 then
 		if event.button == "confirm" or event.button == "cancel" then
 			self:switching_to_back()
 		end

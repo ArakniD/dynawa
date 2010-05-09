@@ -27,7 +27,7 @@ function class:_init(desc)
 			self.active_item = menuitem
 		end
 	end
-	self.active_item = self.active_item or assert(self.items[1],"No items in menu")
+	self.active_item = self.active_item or self.items[1],"No items in menu" --can be nil if no items!
 	self.window = Class.Window()
 end
 
