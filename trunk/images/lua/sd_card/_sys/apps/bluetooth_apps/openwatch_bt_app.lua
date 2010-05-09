@@ -46,25 +46,27 @@ function app:handle_event_socket_data(socket, data_in)
 	--log(socket.." got "..#data_in.." bytes of data")
 	local data_out
 	log("Got "..#data_in.." bytes of data: "..string.format("%q",data_in))
-	--[[if data_in:match("^%+SENDING .+") then
-		data_out = "+RECEIVING\r"
-		else
-			activity.receiver = {}
-		end
-	end]]
-	local head, rest
-	socket.linebuffer = socket.linebuffer or {}
-	repeat
-		head,rest = data_in:match("(.-)\r(.*)")
-		if head then
-			table.insert(socket.linebuffer, head)
-			self:activity_line_received(activity,table.concat(socket.linebuffer))
-			socket.linebuffer = {}
-			data_in = rest
-		else --No endline
-			table.insert(socket.linebuffer,data_in)
-		end
-	until not rest
+
+	--------------------- Cut up to single characters for buffer testing
+	local datain0 = data_in
+	for i = 1, #data_in do
+		local data_in = datain0:sub(i,i)
+	
+		local head, rest
+		socket.linebuffer = socket.linebuffer or {}
+		repeat
+			head,rest = data_in:match("(.-)\r(.*)")
+			if head then
+				table.insert(socket.linebuffer, head)
+				self:activity_line_received(activity,table.concat(socket.linebuffer))
+				socket.linebuffer = {}
+				data_in = rest
+			else --No endline
+				table.insert(socket.linebuffer,data_in)
+			end
+		until not rest
+
+	end ---------- Cut up to single chars
 end
 
 function app:activity_line_received(activity, line)
@@ -73,11 +75,30 @@ function app:activity_line_received(activity, line)
 	log("Line received:"..line)
 	if line:match("^%+SENDING (.+)$") then
 		socket:send("+RECEIVING\r")
+		activity.receiver = {}
 		return
 	end
 	if not receiver then
-	
+		log("Ignoring, not in receiver mode")
+		return
 	end
+	local first, rest = line:match("(.)(.*)")
+	if first == "#" or first == "!" then
+		self:activity_got_item(activity, tostring(rest))
+	else
+		error("Unknown first char")
+	end
+end
+
+function app:activity_got_item(activity, item)
+	local receiver = activity.receiver
+	if not activity.receiver.struct then
+		log("RECEIVED DATA: "..tostring(item))
+	end
+end
+
+function app:activity_data_received(activity, data)
+	log("**********Data received OK")
 end
 
 function app:handle_event_socket_connected(socket)
@@ -87,8 +108,7 @@ function app:handle_event_socket_connected(socket)
 	socket.activity.reconnect_delay = nil
 end
 
-function app:send_data_test(args)
-	local data = assert(args.data)
+function app:send_data_test(data)
 	local id, activity = next(self.activities)
 	if not id then
 		dynawa.popup:error("Not connected (no Activity)")

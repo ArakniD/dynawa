@@ -86,7 +86,7 @@ end
 function app:send_openwatch(args)
 	local data = assert(args.data)
 	local app = dynawa.app_manager:app_by_id("dynawa.bt.openwatch")
-	app:send_data_test(args)
+	app:send_data_test({command = "echo", data=data})
 end
 
 function app:menu_action_send_openwatch_hash1()
