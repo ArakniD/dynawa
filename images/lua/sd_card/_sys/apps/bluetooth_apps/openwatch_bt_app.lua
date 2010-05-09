@@ -51,23 +51,21 @@ function app:handle_event_socket_data(socket, data_in)
 	local datain0 = data_in
 	for i = 1, #data_in do
 		local data_in = datain0:sub(i,i)
-		if data_in ~= string.char(0) then
 	
-			local head, rest
-			socket.linebuffer = socket.linebuffer or {}
-			repeat
-				head,rest = data_in:match("(.-)\r(.*)")
-				if head then
-					table.insert(socket.linebuffer, head)
-					self:activity_line_received(activity,table.concat(socket.linebuffer))
-					socket.linebuffer = {}
-					data_in = rest
-				else --No endline
-					table.insert(socket.linebuffer,data_in)
-				end
-			until not rest
+		local head, rest
+		socket.linebuffer = socket.linebuffer or {}
+		repeat
+			head,rest = data_in:match("(.-)\r(.*)")
+			if head then
+				table.insert(socket.linebuffer, head)
+				self:activity_line_received(activity,table.concat(socket.linebuffer))
+				socket.linebuffer = {}
+				data_in = rest
+			else --No endline
+				table.insert(socket.linebuffer,data_in)
+			end
+		until not rest
 			
-		end ---------- Cut up to single chars
 	end ---------- Cut up to single chars
 end
 
