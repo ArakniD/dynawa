@@ -122,8 +122,11 @@ function app:send_data_test(data)
 end
 
 function app:send_data(data, activity)
-	self:_send_line("+SENDING KockaLezeDirou", activity)
+	activity.socket:send("+SENDING KockaLezeDirou\r")
+	activity.out_buffer={}
 	self:_send_data(data, activity)
+	activity.socket:send(table.concat(activity.out_buffer))
+	activity.out_buffer={}
 end
 
 function app:_send_data(data, activity)
@@ -158,7 +161,8 @@ function app:_send_data(data, activity)
 end
 
 function app:_send_line(line, activity)
-	assert(activity.socket):send(line.."\r")
+	table.insert(activity.out_buffer, line.."\r")
+	--assert(activity.socket):send(line.."\r")
 end
 
 function app:handle_event_socket_disconnected(socket)
