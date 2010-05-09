@@ -8,7 +8,9 @@
 #include "bt/bt_socket.h"
 
 #define BC_STATE_STOPPED             0
+#define BC_STATE_STOPPING            1
 #define BC_STATE_STARTED             10
+#define BC_STATE_STARTING            11
 #define BC_STATE_ANAFREQ_SET         20
 #define BC_STATE_BAUDRATE_SET        30
 #define BC_STATE_UART_HOST_WAKE_SIGNAL      40

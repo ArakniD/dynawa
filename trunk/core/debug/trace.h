@@ -38,7 +38,7 @@
 #define TR_ERROR        
 #define TR_SCR  //screen
 //#define TR_FAT          
-//#define TR_BT          
+#define TR_BT          
 //#define TR_LUA          
 //#define TR_BMP          
 //#define TR_SYS          

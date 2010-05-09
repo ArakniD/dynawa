@@ -658,8 +658,8 @@ void rxThreadFunc(void)
                     break;
                 }
                 // TODO: Wait for DMA data
-                TRACE_BT("WAITTING\r\n");
-                if (0 || waitCount < 40) {
+                //TRACE_BT("WAITTING\r\n");
+                if (1 || waitCount < 40) {
                     Task_sleep(10);
                     waitCount++;
                 } else {

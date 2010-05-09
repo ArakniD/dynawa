@@ -750,6 +750,7 @@ int bt_init() {
 int bt_open() {
 
     if(!bt_open_count++) {
+        bc_state = BC_STATE_STARTING;
         command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
         //bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
         xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), TASK_BT_MAIN_PRI, NULL, &bt_task_handle);
@@ -763,6 +764,7 @@ int bt_close() {
     if(bt_open_count && --bt_open_count == 0) {
         bt_command cmd;
 
+        bc_state = BC_STATE_STOPPING;
         if (bt_task_handle == NULL) {
             return BT_OK;
         }

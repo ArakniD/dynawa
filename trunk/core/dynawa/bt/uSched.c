@@ -172,7 +172,7 @@ void * StartTimer(TIME delay, void (*fn) (void))
     TimedEventType * timedEvent = malloc(sizeof(TimedEventType));
 
 	when = time_add(GetTime(), delay);
-    TRACE_BT("StartTimer %d %d\r\n", delay, when);
+    //TRACE_BT("StartTimer %d %d\r\n", delay, when);
     timedEvent->when = when;
     timedEvent->eventFunction = fn;
 
@@ -340,7 +340,7 @@ void MicroSched(void)
                     //WaitForSingleObject(WakeUpEvent, time_sub(timedEvents->when, now) / 1000);
 // TODO calc timeout in ticks
                     uint16_t event;
-                    TRACE_BT("wakeup event in %dms\r\n", time_sub(timedEvents->when, now) / 1000);
+                    //TRACE_BT("wakeup event in %dms\r\n", time_sub(timedEvents->when, now) / 1000);
                     xQueueReceive(WakeUpEvent, &event, time_sub(timedEvents->when, now) / 1000); 
 				}
             }
