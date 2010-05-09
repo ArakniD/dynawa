@@ -51,28 +51,30 @@ function app:handle_event_socket_data(socket, data_in)
 	local datain0 = data_in
 	for i = 1, #data_in do
 		local data_in = datain0:sub(i,i)
+		if data_in ~= string.char(0) then
 	
-		local head, rest
-		socket.linebuffer = socket.linebuffer or {}
-		repeat
-			head,rest = data_in:match("(.-)\r(.*)")
-			if head then
-				table.insert(socket.linebuffer, head)
-				self:activity_line_received(activity,table.concat(socket.linebuffer))
-				socket.linebuffer = {}
-				data_in = rest
-			else --No endline
-				table.insert(socket.linebuffer,data_in)
-			end
-		until not rest
-
+			local head, rest
+			socket.linebuffer = socket.linebuffer or {}
+			repeat
+				head,rest = data_in:match("(.-)\r(.*)")
+				if head then
+					table.insert(socket.linebuffer, head)
+					self:activity_line_received(activity,table.concat(socket.linebuffer))
+					socket.linebuffer = {}
+					data_in = rest
+				else --No endline
+					table.insert(socket.linebuffer,data_in)
+				end
+			until not rest
+			
+		end ---------- Cut up to single chars
 	end ---------- Cut up to single chars
 end
 
 function app:activity_line_received(activity, line)
 	local receiver = activity.receiver
 	local socket = assert(activity.socket)
-	log("Line received:"..line)
+	log("Line received:"..string.format("%q",line))
 	if line:match("^%+SENDING (.+)$") then
 		socket:send("+RECEIVING\r")
 		activity.receiver = {}
@@ -82,18 +84,41 @@ function app:activity_line_received(activity, line)
 		log("Ignoring, not in receiver mode")
 		return
 	end
+	if receiver.chars_remain then
+		local remain = receiver.chars_remain
+		remain = remain - #line
+		assert(remain >= 0, (remain + #line).." chars expected but "..#line.." received")
+		table.insert(receiver.chars_buffer,line)
+		if remain == 0 then
+			local str = table.concat(receiver.chars_buffer)
+			receiver.chars_buffer, receiver.chars_remain = nil, nil
+			self:activity_got_item(activity, str)
+			return
+		end
+		if remain > 0 then
+			table.insert(receiver.chars_buffer,"\r")
+			receiver.chars_remain = remain - 1
+		end
+		return
+	end
 	local first, rest = line:match("(.)(.*)")
 	if first == "#" or first == "!" then
 		self:activity_got_item(activity, tostring(rest))
+	elseif first == "$" then
+		local chars = tonumber(rest)
+		assert(chars > 0, "Chars must be positive, is "..chars)
+		log("Now receiving string ("..chars.." bytes)")
+		receiver.chars_remain = chars
+		receiver.chars_buffer = {}
 	else
-		error("Unknown first char")
+		log("Unknown first char '"..string.format("%q",first).."', ignoring")
 	end
 end
 
 function app:activity_got_item(activity, item)
 	local receiver = activity.receiver
 	if not activity.receiver.struct then
-		log("RECEIVED DATA: "..tostring(item))
+		log("RECEIVED DATA: "..string.format("%q",item))
 	end
 end
 
