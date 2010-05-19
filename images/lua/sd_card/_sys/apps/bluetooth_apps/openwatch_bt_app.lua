@@ -78,6 +78,11 @@ function app:activity_line_received(activity, line)
 		activity.receiver = {}
 		return
 	end
+	if line:match("^%+RECEIVING") then
+		--#todo
+		--Ignore for now
+		return
+	end
 	if not receiver then
 		log("Ignoring, not in receiver mode")
 		return

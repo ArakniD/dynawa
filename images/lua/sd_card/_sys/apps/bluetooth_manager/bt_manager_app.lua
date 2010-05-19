@@ -62,7 +62,10 @@ function app:switching_to_front()
 				text = "Send #12345", value = {jump = "send_openwatch_12345"},
 			},
 			{
-				text = "Send 20x Hello World (multiline)", value = {jump = "send_openwatch_helloworld"},
+				text = "Send 20x Hello World (multiline)", value = {jump = "send_openwatch_helloworld20"},
+			},
+			{
+				text = "Send 50x Hello World (multiline)", value = {jump = "send_openwatch_helloworld50"},
 			},
 			{
 				text = "Send complex hash", value = {jump = "send_openwatch_hash1"},
@@ -99,9 +102,17 @@ function app:menu_action_send_openwatch_12345()
 	self:send_openwatch{data=12345}
 end
 
-function app:menu_action_send_openwatch_helloworld()
+function app:menu_action_send_openwatch_helloworld20()
 	local str = {}
 	for i = 1, 20 do 
+		table.insert(str,"Hello world "..i.."\r")
+	end
+	self:send_openwatch{data=table.concat(str)}
+end
+
+function app:menu_action_send_openwatch_helloworld50()
+	local str = {}
+	for i = 1, 50 do 
 		table.insert(str,"Hello world "..i.."\r")
 	end
 	self:send_openwatch{data=table.concat(str)}
