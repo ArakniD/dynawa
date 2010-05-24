@@ -59,17 +59,18 @@ function app:switching_to_front()
 				text = "BT off", value = {jump = "bt_off"},
 			},
 			{
-				text = "Send #12345", value = {jump = "send_openwatch_12345"},
+				text = "Send 'Hello'", value = {jump = "send_openwatch_hello"},
 			},
 			{
-				text = "Send 20x Hello World (multiline)", value = {jump = "send_openwatch_helloworld20"},
+				text = "Send 20x Hello World (long string)", value = {jump = "send_openwatch_helloworld20"},
 			},
 			{
-				text = "Send 50x Hello World (multiline)", value = {jump = "send_openwatch_helloworld50"},
+				text = "Send 50x Hello World (long string)", value = {jump = "send_openwatch_helloworld50"},
 			},
-			{
+--[[			{
 				text = "Send complex hash", value = {jump = "send_openwatch_hash1"},
 			},
+			]]
 			{
 				text = "Delete all pairings", value = {jump = "delete_pairings"},
 			},
@@ -89,7 +90,7 @@ end
 function app:send_openwatch(args)
 	local data = assert(args.data)
 	local app = dynawa.app_manager:app_by_id("dynawa.bt.openwatch")
-	app:send_data_test({command = "echo", data=data})
+	app:send_data_test(data)
 end
 
 function app:menu_action_send_openwatch_hash1()
@@ -98,24 +99,24 @@ function app:menu_action_send_openwatch_hash1()
 	self:send_openwatch{data=data}
 end
 
-function app:menu_action_send_openwatch_12345()
-	self:send_openwatch{data=12345}
+function app:menu_action_send_openwatch_hello()
+	self:send_openwatch{data="Hello"}
 end
 
 function app:menu_action_send_openwatch_helloworld20()
 	local str = {}
 	for i = 1, 20 do 
-		table.insert(str,"Hello world "..i.."\r")
+		table.insert(str,"Hello world "..i.."!")
 	end
-	self:send_openwatch{data=table.concat(str)}
+	self:send_openwatch{data=table.concat(str), " "}
 end
 
 function app:menu_action_send_openwatch_helloworld50()
 	local str = {}
 	for i = 1, 50 do 
-		table.insert(str,"Hello world "..i.."\r")
+		table.insert(str,"Hello world "..i.."!")
 	end
-	self:send_openwatch{data=table.concat(str)}
+	self:send_openwatch{data=table.concat(str), " "}
 end
 
 function app:menu_item_selected(args)
