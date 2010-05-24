@@ -1,6 +1,26 @@
 app.name = "OpenWatch"
 app.id = "dynawa.bt.openwatch"
 
+local function to_word(num) --Convert integer to 2 byte word
+	return string.char(math.floor(num / 256))..string.char(num%256)
+end
+
+local function from_word(bytes) --Convert 2 byte word to int
+	return (bytes:sub(1)):byte() * 256 + (bytes:sub(2)):byte()
+end
+
+local function safe_string(str)
+	local result = {}
+	for chr in str:gmatch(".") do
+		if chr >=" " and chr <= "~" then 
+			table.insert(result,chr)
+		else
+			table.insert(result,string.format("\\%03d",string.byte(chr)))
+		end
+	end
+	return table.concat(result)
+end
+
 function app:handle_bt_event_turned_on()
 	--#todo
 	--currently, all activities are created and deletes with BT on/off, for each paired device!
@@ -44,89 +64,58 @@ function app:handle_event_socket_data(socket, data_in)
 	assert(data_in)
 	local activity = assert(socket.activity)
 	--log(socket.." got "..#data_in.." bytes of data")
-	local data_out
-	log("Got "..#data_in.." bytes of data: "..string.format("%q",data_in))
-
-	--------------------- Cut up to single characters for buffer testing
-	local datain0 = data_in
-	for i = 1, #data_in do
-		local data_in = datain0:sub(i,i)
+	log("Got "..#data_in.." bytes of data: "..safe_string(data_in))
 	
-		local head, rest
-		socket.linebuffer = socket.linebuffer or {}
-		repeat
-			head,rest = data_in:match("(.-)\r(.*)")
-			if head then
-				table.insert(socket.linebuffer, head)
-				self:activity_line_received(activity,table.concat(socket.linebuffer))
-				socket.linebuffer = {}
-				data_in = rest
-			else --No endline
-				table.insert(socket.linebuffer,data_in)
-			end
-		until not rest
-			
-	end ---------- Cut up to single chars
+	while #data_in > 2 and (string.byte(data_in) < 180 or string.byte(data_in) > 183) do
+		data_in = data_in.sub(2)
+	end
+	if #data_in < 3 then
+		log("No chunk found in this data")
+		return
+	end
+	local len1,len2,data_in = data_in:match("(.)(.)(.*)")
+	assert(data_in, "Header mismatch")
+	local len = (len1:byte() % 4) * 256 + len2:byte()
+	assert(len > 0, "Zero length")
+	assert(len == #data_in, string.format("Chunk size is %s but should be %s according to its header.", #data_in, len))
+	self:activity_chunk_received(activity, data_in)
 end
 
-function app:activity_line_received(activity, line)
-	local receiver = activity.receiver
+function app:activity_chunk_received(activity, chunk)
 	local socket = assert(activity.socket)
-	log("Line received:"..string.format("%q",line))
-	if line:match("^%+SENDING (.+)$") then
-		socket:send("+RECEIVING\r")
-		activity.receiver = {}
-		return
-	end
-	if line:match("^%+RECEIVING") then
-		--#todo
-		--Ignore for now
-		return
-	end
-	if not receiver then
-		log("Ignoring, not in receiver mode")
-		return
-	end
-	if receiver.chars_remain then
-		local remain = receiver.chars_remain
-		remain = remain - #line
-		assert(remain >= 0, (remain + #line).." chars expected but "..#line.." received")
-		table.insert(receiver.chars_buffer,line)
-		if remain == 0 then
-			local str = table.concat(receiver.chars_buffer)
-			receiver.chars_buffer, receiver.chars_remain = nil, nil
-			self:activity_got_item(activity, str)
-			return
+	log("Chunk is "..#chunk.." bytes")
+	local file_id, piece_n_str, of_str, piece = chunk:match("^P(...)(..)(..)(.*)$")
+	if piece then --It's P chunk
+		local piece_n = from_word(piece_n_str)
+		local of = from_word(of_str)
+		if piece_n == 1 then
+			activity.receiver = {pieces = {piece}, file_id = file_id}
+		else
+			assert(activity.receiver.file_id == file_id, "Mismatched file_id for piece "..piece_n)
+			table.insert(activity.receiver.pieces, piece)
+			assert(#activity.receiver.pieces == piece_n, "Wrong piece_n: "..piece_n)
 		end
-		if remain > 0 then
-			table.insert(receiver.chars_buffer,"\r")
-			receiver.chars_remain = remain - 1
+		log("Acknowledging piece "..piece_n.." of "..of)
+		local ack = table.concat({"A",file_id,piece_n_str})
+		self:activity_send_chunk(activity, ack)
+		if piece_n == of then --binstring is complete
+			local binstring = table.concat(activity.receiver.pieces)
+			activity.receiver = nil
+			self:activity_got_binstring(activity, binstring)
 		end
 		return
 	end
-	local first, rest = line:match("(.)(.*)")
-	if first == "#" or first == "!" then
-		self:activity_got_item(activity, tostring(rest))
-	elseif first == "$" then
-		local chars = tonumber(rest)
-		assert(chars > 0, "Chars must be positive, is "..chars)
-		log("Now receiving string ("..chars.." bytes)")
-		receiver.chars_remain = chars
-		receiver.chars_buffer = {}
-	else
-		log("Unknown first char "..string.format("%q",first)..", ignoring")
+	assert(chunk:match("^A.....$"), "Not Ack chunk")
+	if not activity.sender or chunk ~= activity.sender.waiting_for_ack then
+		log("Unexpected Ack chunk received (ignored)")
+		return
 	end
+	activity.sender.waiting_for_ack = nil
+	self:activity_send_piece(activity)
 end
 
-function app:activity_got_item(activity, item)
-	local receiver = activity.receiver
-	if not activity.receiver.struct then
-		log("RECEIVED DATA: "..string.format("%q",item))
-	end
-end
-
-function app:activity_data_received(activity, data)
-	log("**********Data received OK")
+function app:activity_got_binstring(activity, binstring)
+	log("Complete binstring is: "..safe_string(binstring))
 end
 
 function app:handle_event_socket_connected(socket)
@@ -146,18 +135,47 @@ function app:send_data_test(data)
 		dynawa.popup:error("Not connected - Activity status is '"..tostring(activity.status).."'")
 		return
 	end
-	self:send_data(data, activity)
+	self:activity_send_data(activity, data)
 end
 
-function app:send_data(data, activity)
-	activity.socket:send("+SENDING KockaLezeDirou\r")
-	activity.out_buffer={}
-	self:_send_data(data, activity)
-	activity.socket:send(table.concat(activity.out_buffer))
-	activity.out_buffer={}
+function app:activity_send_data(activity, data)
+	assert(type(data)=="string")
+	data = "$"..#data..":"..data
+	if not activity.sender then
+		activity.sender = {pieces={}}
+	end
+	self:split_data(data, 100, activity.sender.pieces)
+	if not activity.sender.waiting_for_ack then
+		self:activity_send_piece(activity)
+	else
+		log("Cannot send piece - still waiting for Ack chunk for previous sent piece(s)")
+	end
 end
 
-function app:_send_data(data, activity)
+function app:activity_send_piece(activity)
+	assert(activity.sender.pieces)
+	local piece = table.remove(activity.sender.pieces, 1)
+	activity.sender.waiting_for_ack = "A"..piece:sub(2,6)
+	self:activity_send_chunk(activity, piece)
+end
+
+function app:split_data(data, piece_size, pieces)
+	local file_id = string.char(math.random(256)-1)..string.char(math.random(256)-1)..string.char(math.random(256)-1)
+	local size = #data
+	assert(size > 0, "Empty data")
+	local n_pieces = math.floor(size / piece_size) + 1
+	log("Split to "..n_pieces.." pieces...")
+	for n_piece = 1,n_pieces do
+		local f, t = (n_piece - 1) * piece_size + 1, n_piece * piece_size
+		local substr = data:sub(f,t)
+		substr = table.concat({"P",file_id,to_word(n_piece),to_word(n_pieces),substr})
+		--log(string.format("Piece %s: %s",n_piece, safe_string(substr)))
+		table.insert(pieces,substr)
+	end
+	return pieces
+end
+
+function app:_send_data(data, activity) ---------------------#todo
 	local typ = type(data)
 	if typ == "boolean" or typ == "nil" then
 		self:_send_line("!"..tostring(data),activity)
@@ -188,9 +206,12 @@ function app:_send_data(data, activity)
 	end
 end
 
-function app:_send_line(line, activity)
-	table.insert(activity.out_buffer, line.."\r")
-	--assert(activity.socket):send(line.."\r")
+function app:activity_send_chunk(activity, chunk)
+	assert (#chunk <= 1023 and #chunk > 0)
+	local header = to_word((180*256) + #chunk)
+	local data = header..chunk
+	log("Sending chunk with header: "..safe_string(data))
+	assert(activity.socket):send(data)
 end
 
 function app:handle_event_socket_disconnected(socket)
@@ -204,7 +225,7 @@ end
 function app:should_reconnect(activity)
 	assert(not activity.__deleted)
 	activity.status = "waiting_for_reconnect"
-	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 15000)
+	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 5000)
 	log("Waiting "..activity.reconnect_delay.." ms before trying to reconnect "..activity.name)
 	dynawa.devices.timers:timed_event{delay = activity.reconnect_delay, receiver = self, what = "attempt_reconnect", activity = activity}
 end
