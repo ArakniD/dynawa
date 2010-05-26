@@ -115,7 +115,56 @@ function app:activity_chunk_received(activity, chunk)
 end
 
 function app:activity_got_binstring(activity, binstring)
-	log("Complete binstring is: "..safe_string(binstring))
+	log("Parsing binstring: "..safe_string(binstring))
+	local value, rest = self:binstring_to_value(binstring)
+	assert (rest == "", #rest.." unconsumed bytes after binstring parsing")
+	log("PARSED RESULT VALUE: "..dynawa.file.serialize(value))
+end
+
+function app:binstring_to_value(binstring)
+	local typ = binstring:sub(1,1)
+	if typ == "T" then
+		return true, binstring:sub(2)
+	elseif typ == "F" then
+		return false, binstring:sub(2)
+	elseif typ == "$" then
+		local len, rest = binstring:match("^%$(%d*):(.*)$")
+		len = assert(tonumber(len), "String length is nil")
+		return rest:sub(1,len), rest:sub(len+1)
+	elseif typ == "#" then
+		local num,rest = binstring:match("^#(.-);(.*)$")
+		num = tonumber(num)
+		assert(num, "Expected a number but parsed string to nil")
+		return num, rest
+	elseif typ == "@" then
+		local array = {}
+		local rest = binstring:sub(2)
+		local item
+		while true do
+			if rest:sub(1,1) == ";" then
+				return array, rest:sub(2)
+			end
+			item, rest = self:binstring_to_value(rest)
+			table.insert(array, item)
+		end
+		error("WTF?")
+	elseif typ == "*" then
+		local hash = {}
+		local rest = binstring:sub(2)
+		local key, val
+		while true do
+			if rest:sub(1,1) == ";" then
+				return hash, rest:sub(2)
+			end
+			key, rest = self:binstring_to_value(rest)
+			assert(type(key)=="string", "Hash key is not string but "..tostring(key))
+			val, rest = self:binstring_to_value(rest)
+			hash[key] = val
+		end
+		error("WTF?")
+	else
+		error("Unknown value type: "..typ)
+	end
 end
 
 function app:handle_event_socket_connected(socket)
