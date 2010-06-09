@@ -197,7 +197,7 @@ function app:activity_send_data(activity, data)
 	if not activity.sender.waiting_for_ack then
 		self:activity_send_piece(activity)
 	else
-		log("Cannot send piece - still waiting for Ack chunk for previous sent piece(s)")
+		log("Cannot send piece - still waiting for Ack chunk for previous sent piece")
 	end
 end
 
@@ -222,37 +222,6 @@ function app:split_data(data, piece_size, pieces)
 		table.insert(pieces,substr)
 	end
 	return pieces
-end
-
-function app:_send_data(data, activity) ---------------------#todo
-	local typ = type(data)
-	if typ == "boolean" or typ == "nil" then
-		self:_send_line("!"..tostring(data),activity)
-	elseif typ == "number" then
-		self:_send_line("#"..tostring(data),activity)
-	elseif typ == "string" then
-		self:_send_line("$"..#data, activity)
-		self:_send_line(data, activity)
-	elseif typ == "table" then
-		local items = {}
-		for k,v in pairs(data) do
-			table.insert(items,{k,v})
-		end
-		if #items == #data then --array - #todo ignore??? Too slow!
-			self:_send_line("@"..#data, activity)
-			for i = 1, #data do
-				self:_send_data(data[i], activity)
-			end
-		else --table
-			self:_send_line("*"..#items, activity)
-			for i, item in ipairs(items) do
-				self:_send_data(item[1], activity)
-				self:_send_data(item[2], activity)
-			end
-		end
-	else
-		error("Unable to serialize: "..tostring(data))
-	end
 end
 
 function app:activity_send_chunk(activity, chunk)
