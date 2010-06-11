@@ -3,6 +3,7 @@ class.scroll_delay = 150
 class.is_menu = true
 
 function class:_init(desc)
+	self.flags = desc.flags or {}
 	self.banner = assert(desc.banner)
 	if type(self.banner) == "string" then
 		self.banner = {text = self.banner}

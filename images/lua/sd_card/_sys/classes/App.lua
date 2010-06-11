@@ -56,11 +56,13 @@ function class:handle_event_do_menu()
 end
 
 function class:menu_cancelled(menu)
+	local peek = dynawa.window_manager:peek()
+	assert (menu.window == peek, "Top menu window mismatch ("..menu.window.."/"..peek..")")
+	if #dynawa.window_manager.stack == 1 then --This is the ONLY window on stack
+		return
+	end
 	local win = menu.window:pop()
 	win:_delete()
-	if not dynawa.window_manager:peek() then
-		dynawa.window_manager:show_default()
-	end
 end
 
 function class:load_data()
