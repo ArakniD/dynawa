@@ -3,6 +3,7 @@ local class = Class("MenuItem")
 function class:_init(desc)
 	--#todo text-only so far
 	self.text = desc.text
+	self.textcolor = desc.textcolor
 	self.id = dynawa.unique_id()
 	if desc.on_select then
 		self.on_select = desc.on_select
@@ -13,7 +14,7 @@ function class:_init(desc)
 end
 
 function class:render(args)
-	local bitmap = dynawa.bitmap.text_lines{text=self.text, font = nil, width = assert(args.max_size.w)}
+	local bitmap = dynawa.bitmap.text_lines{text=self.text, font = nil, width = assert(args.max_size.w), color = self.textcolor}
 	return bitmap
 end
 
