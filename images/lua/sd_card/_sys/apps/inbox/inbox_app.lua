@@ -53,81 +53,115 @@ function app:display_root_menu()
 		items = {}
 	}
 	for i, id in ipairs(inbox_ids) do
-		local newstr, is_new = self:count_str(id)
-		local item = {text = inbox_names[id].." "..newstr, value = {inbox = id}}
-		if is_new then
-			item.textcolor = highlight_color
-		end
+		local item = {render = function(_self, args)
+			local newstr, is_new = self:count_str(id)
+			local color
+			if is_new then
+				color = highlight_color
+			end
+			local bitmap = dynawa.bitmap.text_lines{text=inbox_names[id].." "..newstr, color = color, width = assert(args.max_size.w)}
+			return bitmap
+		end}
+		item.value = {open_folder = id}
 		table.insert (menu.items, item)
 	end
-	table.insert(menu.items, {text = "Mark all as read", value = {action = "mark_all_read"}})
-	table.insert(menu.items, {text = "Delete all", value = {action = "delete_all"}})
+	table.insert(menu.items, {text = "Mark all as read", selected = function(_self,args)
+		for i,id in ipairs(inbox_ids) do
+			self:mark_all_read(id)
+		end
+		dynawa.popup:info("Contents of all folders marked as read.")
+		args.menu:invalidate()
+	end})
+	table.insert(menu.items, {text = "Delete all", selected = function(_self,args)
+		for i,id in ipairs(inbox_ids) do
+			self.prefs.storage[id] = {}
+		end
+		dynawa.popup:info("Contents of all folders deleted.")
+		args.menu:invalidate()
+	end})
 	local menuwin = self:new_menuwindow(menu)
 	menuwin.menu:render()
 	menuwin:push()
 end
 
-function app:menu_cancelled(menu)
-	if menu.flags.inbox then
-		menu.window:pop()
-		menu:_delete()
-		self:display_root_menu()
-	else
-		assert(menu.flags.root)
-	end
-end
-
 function app:menu_item_selected(args)
-	local value = assert(args.item.value)
-	--log(dynawa.file.serialize(value))
-	local menu = args.menu
-	if menu.flags.root then --Clicking anything in root menu usually results in change of its contents.
-							--So we simply destroy it right now and it gets redrawn later.
-		local win = menu.window:pop()
-		win:_delete()
-		if value.action then
-			if value.action == "mark_all_read" then
-				for i,id in ipairs(inbox_ids) do
-					self:mark_all_read(id)
-				end
-			else
-				assert(value.action == "delete_all")
-				for i,id in ipairs(inbox_ids) do
-					self.prefs.storage[id] = {}
+	local value = args.item.value
+	if not value then
+		return
+	end
+	if value.open_folder then
+		self:display_folder(value.open_folder)
+	elseif value.message then
+		local message = value.message
+		local menu = {flags = {parent = assert(args.menu)}, items = {}}
+		menu.banner = message.header
+		for i, line in ipairs(message.body) do
+			table.insert(menu.items, {text = line, textcolor = {255,255,0}})
+		end
+		if not message.read then
+			message.read = true
+			args.menu:invalidate()
+			args.menu.flags.parent:invalidate()
+		end
+		table.insert(menu.items, {text = "Delete this message", selected = function(_self,args)
+			local folder_id = assert(args.menu.flags.parent.flags.folder_id)
+			for i, msg_iter in ipairs(self.prefs.storage[folder_id]) do
+				if msg_iter == message then
+					table.remove(self.prefs.storage[folder_id],i)
+					break
 				end
 			end
-			self:display_root_menu()
-			dynawa.popup:info("Done!")
-		else
-			assert(value.inbox)
-			self:display_inbox(value.inbox)
-		end
-	elseif menu.flags.inbox then --We clicked something in one of the inboxes
-		local win = menu.window:pop()
-		win:_delete()
+			dynawa.window_manager:pop():_delete() --Pop the message menu
+			dynawa.window_manager:pop():_delete() --And the original folder menu
+			self:display_folder(folder_id)
+			dynawa.popup:info("Message deleted.")
+		end})
+		local menuwin = self:new_menuwindow(menu)
+		menuwin.menu:render()
+		menuwin:push()
 	end
-	--self["menu_action_"..value.jump](self,value) #todo
 end
 
-function app:display_inbox(box_id)
+function app:display_folder(folder_id)
+	local folder = self.prefs.storage[folder_id]
 	local menu = {
-		banner = "Inbox: "..inbox_names[box_id],
-		flags = {inbox = box_id},
-		items = {}
+		banner = "Inbox: "..assert(inbox_names[folder_id]),
+		flags = {parent = assert(dynawa.window_manager:peek().menu), folder_id = folder_id},
+		items = {},
 	}
-	for i, item in ipairs(self.prefs.storage[box_id]) do
-		local item = {text = item.header}
-		if not item.read then
-			item.textcolor = highlight_color
+
+	for i, item in ipairs(folder) do
+		local item = {value = {message = item}}
+		item.render = function(_self,args)
+			local color
+			if not _self.value.message.read then
+				color = highlight_color
+			end
+			local bitmap = dynawa.bitmap.text_lines{text="> ".._self.value.message.header, color = color, width = assert(args.max_size.w)}
+			return bitmap
 		end
 		table.insert (menu.items, item)
 	end
 	if not next(menu.items) then --No items in menu
-		table.insert (menu.items,{text="[No items in this inbox]", value = {action = "show_item", item = i}})
+		table.insert (menu.items,{text="[No messages in this folder]", textcolor = {255,255,0}})
 	else
-		table.insert(menu.items, {text = "Mark all as read", value = {action = "mark_all_read", inbox = box_id}})
-		table.insert(menu.items, {text = "Delete all", value = {action = "delete_all", box_id}})
+
+		table.insert(menu.items, {text = "Mark all as read", selected = function(_self,args)
+			self:mark_all_read(folder_id)
+			dynawa.popup:info("Contents of this folder marked as read.")
+			args.menu:invalidate()
+			args.menu.flags.parent:invalidate()
+		end})
+		
+		table.insert(menu.items, {text = "Delete all", selected = function(_self,args)
+			self.prefs.storage[folder_id] = {}
+			args.menu.flags.parent:invalidate()
+			args.menu.window:pop()
+			args.menu:_delete()
+			dynawa.popup:info("Contents of this folder deleted.")
+		end})
 	end
+
 	local menuwin = self:new_menuwindow(menu)
 	menuwin.menu:render()
 	menuwin:push()

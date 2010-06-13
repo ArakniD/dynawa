@@ -23,6 +23,10 @@ function class:_init(desc)
 			assert(type(item_desc.selected) == "function", "'selected' attribute is not a function")
 			menuitem.selected = item_desc.selected
 		end
+		if item_desc.render then
+			assert(type(item_desc.render) == "function", "'render' attribute is not a function")
+			menuitem.render = item_desc.render
+		end
 		table.insert(self.items, menuitem)
 		if desc.active_value and desc.active_value == menuitem.value then
 			self.active_item = menuitem
@@ -39,8 +43,12 @@ function class:clear_cache()
 	end
 end
 
+function class:invalidate()
+	self:clear_cache()
+end
+
 function class:render()
-	if not self.cache.outer_bitmap then
+	if self:requires_render() then
 		self:clear_cache()
 		self.window:show_bitmap(self:_render_outer())
 		self.cache.outer_bitmap = true
@@ -51,6 +59,10 @@ end
 function class:re_render()
 	self:clear_cache()
 	self:render()
+end
+
+function class:requires_render()
+	return not self.cache.outer_bitmap
 end
 
 function class:_show_bmp_inner_at(bmp, x, y)
@@ -68,6 +80,20 @@ function class:item_index(item)
 	end
 	return act_i
 end
+
+--[[function class:remove_item(item)
+	assert(item)
+	if self.active_item == item then
+		self.active_item = nil
+	end
+	for i, item0 in ipairs(self.items) do
+		if item0 == item then
+			table.remove(self.items, i)
+			break
+		end
+	end
+	self:invalidate()
+end]]
 
 function class:_add_above(items)
 	local i = items.first - 1
@@ -151,7 +177,7 @@ function class:_bitmap_of_item(menuitem)
 	local bitmap = self.cache.items[assert(menuitem)]
 	if not bitmap then
 		--log("Rendering menu item "..menuitem)
-		bitmap = menuitem:render{max_size = self.cache.inner_size}
+		bitmap = menuitem:render{max_size = assert(self.cache.inner_size)}
 		local w,h = dynawa.bitmap.info(bitmap)
 		if not (w <= self.cache.inner_size.w and h <= self.cache.inner_size.w) then
 			error("MenuItem bitmap too large: "..w.."x"..h)
