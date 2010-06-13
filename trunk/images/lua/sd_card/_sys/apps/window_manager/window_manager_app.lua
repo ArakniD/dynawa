@@ -21,6 +21,7 @@ function app:show_default()
 		--log("Switching to front: "..app)
 		app:switching_to_front()
 	end
+	assert(self:peek(), "Default app did not create graphical output")
 end
 
 function app:push(x)
@@ -112,7 +113,12 @@ end
 function app:update_display()
 	local window = self:peek()
 	if not window then --No windows in stack
-		return
+		self:show_default()
+		window = assert(self:peek())
+	end
+	if window.menu and window.menu:requires_render() then
+		log("Re-rendering menu")
+		window.menu:render()
 	end
 	if window.updates.full or self._last_displayed_window ~= window then
 		--log("showing window "..window)
