@@ -1,22 +1,7 @@
 app.name = "System Clock"
 app.id = "dynawa.clock"
 app.window = nil
-local fonts
-
---[[function self:tick(msg)
-	local counter = ((msg.counter or 0) + 10) % 160
-	log("Tick "..math.random())
-	local r,g,b = math.random(255),math.random(255),math.random(255)
-	local bmp = _dynawa.bitmap.new(10,10,r,g,b)
-	self:display_bitmap{bitmap = bmp, at = {counter, 50}}
-	self:delayed_call{delay = 500, receiver = self, method = "tick", counter = counter}
-end
-
-self:tick{}]]
-
----------------------------------------------------------------------------
----------------------------------------------------------------------------
-
+local fonts, icons
 
 function app:display(bitmap, x, y)
 	assert(bitmap)
@@ -140,12 +125,13 @@ function app:switching_to_front()
 	if not self.window then
 		self.window = self:new_window()
 		self.window:show_bitmap(dynawa.bitmap.new(160,128))
+		self.window:show_bitmap_at(icons,1,1) --#todo
 	end		
 	self.window:push()
 	self:tick{run_id = self.run_id, full_render = true}
 end
 
-function app:font_init()
+function app:gfx_init()
 	local bmap = assert(dynawa.bitmap.from_png_file(self.dir.."digits.png"))
 	fonts={small={},medium={},large={}}
 	local b_copy = dynawa.bitmap.copy
@@ -160,6 +146,9 @@ function app:font_init()
 	end
 	fonts.dot = b_copy(bmap,0,65,5,5)
 	fonts.black = b_copy(bmap,5,65,5,5)
+	local bmap = assert(dynawa.bitmap.from_png_file(self.dir.."notify_icons.png"))
+	--cut them up
+	icons = bmap
 end
 
 --[[local function overview()
@@ -193,7 +182,7 @@ end
 end]]
 
 function app:start()
-	self:font_init()
+	self:gfx_init()
 end
 --self:new_page()
 --self:receive_message_types{"you_are_now_in_front","you_are_now_in_back"}
