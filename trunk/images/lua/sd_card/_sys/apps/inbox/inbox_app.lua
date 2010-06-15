@@ -13,7 +13,7 @@ local inbox_ids = {"sms","email","calendar","call"}
 local highlight_color = {0,255,0}
 
 function app:start()
-	dynawa.bluetooth_manager = self
+	self.events = Class.EventSource("inbox")
 	self.prefs = self:load_data() or {storage = {email={},sms={},calendar={},call={}}}
 	table.insert(self.prefs.storage.email,{header = "We should meet [obama@whitehouse.gov]",
 			body={"From: Barack Obama <obama@whitehouse.gov>","Received 3 minutes ago","Dear Sir,","Please contact me, because we have to meet soon. The future","of the free world is currently at stake","Your truly, Barack"}})
@@ -22,9 +22,8 @@ function app:start()
 			body={"From: Ahmed Ahmed <ahmed@niger.net>","Received 1 hour ago","Dear Sir,","Please contact me, because we have to meet soon. You are the sole heir of","the great rich maharaja.","Your truly, Ahmed"}})	
 
 	table.insert(self.prefs.storage.calendar,{header = "Meet Vaclav Klaus [in 30 minutes]",
-			body={"Meet Vaclav Klaus","In 30 minutes","At Prague Castle"}})	
-
-	dynawa.devices.bluetooth.high_level:register_for_events(self) --#todo specify function for just "inbox" commands
+			body={"Meet Vaclav Klaus","In 30 minutes","At Prague Castle"}})
+	self:broadcast_update()
 end
 
 function app:count(typ)
@@ -71,6 +70,8 @@ function app:display_root_menu()
 		end
 		dynawa.popup:info("Contents of all folders marked as read.")
 		args.menu:invalidate()
+		self:save_data(self.prefs)
+		self:broadcast_update()
 	end})
 	table.insert(menu.items, {text = "Delete all", selected = function(_self,args)
 		for i,id in ipairs(inbox_ids) do
@@ -78,6 +79,8 @@ function app:display_root_menu()
 		end
 		dynawa.popup:info("Contents of all folders deleted.")
 		args.menu:invalidate()
+		self:save_data(self.prefs)
+		self:broadcast_update()
 	end})
 	local menuwin = self:new_menuwindow(menu)
 	menuwin.menu:render()
@@ -102,6 +105,8 @@ function app:menu_item_selected(args)
 			message.read = true
 			args.menu:invalidate()
 			args.menu.flags.parent:invalidate()
+			self:save_data(self.prefs)
+			self:broadcast_update()
 		end
 		table.insert(menu.items, {text = "Delete this message", selected = function(_self,args)
 			local folder_id = assert(args.menu.flags.parent.flags.folder_id)
@@ -115,6 +120,8 @@ function app:menu_item_selected(args)
 			dynawa.window_manager:pop():_delete() --And the original folder menu
 			self:display_folder(folder_id)
 			dynawa.popup:info("Message deleted.")
+			self:save_data(self.prefs)
+			self:broadcast_update()
 		end})
 		local menuwin = self:new_menuwindow(menu)
 		menuwin.menu:render()
@@ -151,6 +158,8 @@ function app:display_folder(folder_id)
 			dynawa.popup:info("Contents of this folder marked as read.")
 			args.menu:invalidate()
 			args.menu.flags.parent:invalidate()
+			self:save_data(self.prefs)
+			self:broadcast_update()
 		end})
 		
 		table.insert(menu.items, {text = "Delete all", selected = function(_self,args)
@@ -159,12 +168,18 @@ function app:display_folder(folder_id)
 			args.menu.window:pop()
 			args.menu:_delete()
 			dynawa.popup:info("Contents of this folder deleted.")
+			self:save_data(self.prefs)
+			self:broadcast_update()
 		end})
 	end
 
 	local menuwin = self:new_menuwindow(menu)
 	menuwin.menu:render()
 	menuwin:push()
+end
+
+function app:broadcast_update() --Broadcast the change
+	self.events:generate_event{type = "inbox_updated", folders = self.prefs.storage}
 end
 
 function app:mark_all_read(box_id)
