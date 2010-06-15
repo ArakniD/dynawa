@@ -127,7 +127,7 @@ end
 function dynawa.bitmap.text_lines(args)
 	local words = {}
 	args.width = args.width or dynawa.devices.display.size.w - 4
-	assert(args.width >= 40, "Width is less than 40")
+	assert(args.width >= 20, "Width is less than 20")
 	local text = assert(args.text, "No text supplied")
 	string.gsub(text.." ","(.-) ", function(word)
 		assert(#word > 0)

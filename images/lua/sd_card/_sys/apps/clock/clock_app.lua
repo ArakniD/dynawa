@@ -3,6 +3,10 @@ app.id = "dynawa.clock"
 app.window = nil
 local fonts, icons
 
+function app:start()
+	self:gfx_init()
+end
+
 function app:display(bitmap, x, y)
 	assert(bitmap)
 	assert(x)
@@ -109,6 +113,14 @@ function app:tick(message)
 	if when > 600 then
 		dynawa.devices.timers:timed_event{delay = 500, receiver = self, method = "remove_dots"}
 	end
+	if icons.waiting then --We must wait until Inbox app is initialized to receive its events
+		local inbox = dynawa.app_manager:app_by_id("dynawa.inbox")
+		if inbox then
+			icons.waiting = nil
+			inbox.events:register_for_events(self)
+			inbox:broadcast_update()
+		end
+	end
 end
 
 function app:handle_event_timed_event(event)
@@ -125,7 +137,6 @@ function app:switching_to_front()
 	if not self.window then
 		self.window = self:new_window()
 		self.window:show_bitmap(dynawa.bitmap.new(160,128))
-		self.window:show_bitmap_at(icons,1,1) --#todo
 	end		
 	self.window:push()
 	self:tick{run_id = self.run_id, full_render = true}
@@ -146,45 +157,47 @@ function app:gfx_init()
 	end
 	fonts.dot = b_copy(bmap,0,65,5,5)
 	fonts.black = b_copy(bmap,5,65,5,5)
-	local bmap = assert(dynawa.bitmap.from_png_file(self.dir.."notify_icons.png"))
-	--cut them up
-	icons = bmap
+	bmap = assert(dynawa.bitmap.from_png_file(self.dir.."notify_icons.png"))
+	icons = {bitmaps = {}, state = {}, waiting = true}
+	for i,id in ipairs {"email","sms","call","calendar"} do
+		icons.bitmaps[id] = b_copy(bmap, i*25 - 25, 0, 25, 25)
+		icons.state[id] = 0
+	end
 end
 
---[[local function overview()
-	local time = os.date("*t")
-	
-	local hour1 = math.floor(time.hour / 10)
-	local hour2 = time.hour % 10
-
-	local min1 = math.floor(time.min / 10)
-	local min2 = time.min % 10
-
-	local day1 = math.floor(time.day / 10)
-	local day2 = time.day % 10
-
-	local month1 = 0 --space
-	local month2 = time.month % 10
-	if time.month >= 10 then
-		month1 = 1
-	end
-	
-	local width, height = 13, 25
-	local chars = {hour1, hour2, -1, min1, min2, -1, day1, day2, 10, month1, month2}
-	local bg = dynawa.bitmap.new(156, height + 2, 0, 0, 0, 0)
-	local b_comb = dynawa.bitmap.combine
-	for i, char in ipairs(chars) do
-		if char >= 0 then
-			b_comb(bg, fonts.small[char], (i-1) * (width + 1) + 1, 1)
+function app:handle_event_inbox_updated(event)
+	local icon_width = 25
+	local folders = event.folders
+	local new_state = {}
+	local do_update = false
+	for i, id in ipairs {"call","sms","email","calendar"} do
+		local new = 0
+		for j, msg in ipairs(folders[id]) do
+			if not msg.read then
+				new = new + 1
+			end
+		end
+		new_state[id] = new
+		if new ~= icons.state[id] then
+			do_update = true
 		end
 	end
-	return bg
-end]]
-
-function app:start()
-	self:gfx_init()
+	if not do_update then
+		return
+	end
+	icons.state = new_state
+	local blank = dynawa.bitmap.new(160,40)
+	self.window:show_bitmap_at(blank,0,0)
+	local x_pos = 0
+	for i, id in ipairs {"sms","email","calendar","call"} do
+		if icons.state[id] > 0 then
+			self.window:show_bitmap_at(icons.bitmaps[id], x_pos, 0)
+			if icons.state[id] > 1 then
+				local number = dynawa.bitmap.text_lines{text = icons.state[id], font = "/_sys/fonts/default15.png", width = icon_width, center = true, color = {255,0,0}}
+				self.window:show_bitmap_at(number, x_pos, 25)
+			end
+			x_pos = x_pos + icon_width
+		end
+	end
 end
---self:new_page()
---self:receive_message_types{"you_are_now_in_front","you_are_now_in_back"}
---dynawa.message.receive {message="your_overview", callback=overview}
 
