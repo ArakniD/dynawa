@@ -4,26 +4,76 @@ app.id = "dynawa.inbox"
 local inbox_names = {
 	sms = "SMS messages",
 	email = "E-mails",
-	calendar = "Calendar events",
+	calendar = "Calendar",
 	call = "Voice calls",
 }
 
 local inbox_ids = {"sms","email","calendar","call"}
 
-local highlight_color = {0,255,0}
+local highlight_color = {0,226,240}
 
 function app:start()
+	local bmap = assert(dynawa.bitmap.from_png_file(self.dir.."gfx.png"))
+	self.gfx = {}
+	for i,id in ipairs {"email","sms","call","calendar"} do
+		self.gfx[id] = dynawa.bitmap.copy(bmap, i*25 - 25, 0, 25, 25)
+	end
 	self.events = Class.EventSource("inbox")
 	self.prefs = self:load_data() or {storage = {email={},sms={},calendar={},call={}}}
-	table.insert(self.prefs.storage.email,{header = "We should meet [obama@whitehouse.gov]",
-			body={"From: Barack Obama <obama@whitehouse.gov>","Received 3 minutes ago","Dear Sir,","Please contact me, because we have to meet soon. The future","of the free world is currently at stake","Your truly, Barack"}})
+	table.insert(self.prefs.storage.email,{header = "We should meet (obama@whitehouse.gov)",
+			body={"From: Barack Obama <obama@whitehouse.gov>",{"(Received %s)",os.time() - 300},"Dear Sir,","Please contact me, because we have to meet soon. The future","of the free world is currently at stake","Your truly, Barack"}})
 
-	table.insert(self.prefs.storage.email,{header = "You inherited $80,000,000 congratulations!! [ahmed@niger.net]",
-			body={"From: Ahmed Ahmed <ahmed@niger.net>","Received 1 hour ago","Dear Sir,","Please contact me, because we have to meet soon. You are the sole heir of","the great rich maharaja.","Your truly, Ahmed"}})	
+	table.insert(self.prefs.storage.email,{header = "You inherited $80,000,000 congratulations!! (ahmed@niger.net)",
+			body={"From: Ahmed Ahmed <ahmed@niger.net>",{"(Received %s)",os.time() - 60 * 60 * 12},"Dear Sir,","Please contact me, because we have to meet soon. You are the sole heir of","the great rich maharaja.","Your truly, Ahmed"}})	
 
-	table.insert(self.prefs.storage.calendar,{header = "Meet Vaclav Klaus [in 30 minutes]",
-			body={"Meet Vaclav Klaus","In 30 minutes","At Prague Castle"}})
+	table.insert(self.prefs.storage.calendar,{header = {"Meet Vaclav Klaus (%s)",os.time() + 60*60*24*7 + 1000},
+			body={"At Prague Castle"}})
 	self:broadcast_update()
+end
+
+function app:text_or_time(arg)
+	if type(arg)=="string" then
+		return arg
+	end
+	local t_mins = math.floor((arg[2] - os.time() + 30) / 60)
+	local result = "right now"
+	if t_mins ~= 0 then
+		result = {}
+		local future = t_mins > 0
+		t_mins = math.abs(t_mins)
+		local t_weeks = math.floor(t_mins / 60 / 24 / 7)
+		local t_days = math.floor(t_mins / 60 / 24) % 7
+		local t_hours = math.floor(t_mins / 60) % 24
+		t_mins = t_mins % 60
+		if t_weeks == 1 then
+			table.insert(result, "1 week")
+		elseif t_weeks > 1 then
+			table.insert(result, t_weeks.." weeks")
+		end
+		if t_days == 1 then
+			table.insert(result, "1 day")
+		elseif t_days > 1 then
+			table.insert(result, t_days.." days")
+		end
+		if t_hours == 1 then
+			table.insert(result, "1 hour")
+		elseif t_hours > 1 then
+			table.insert(result, t_hours.." hours")
+		end
+		if t_mins == 1 then
+			table.insert(result, "1 minute")
+		elseif t_mins > 1 then
+			table.insert(result, t_mins.." minutes")
+		end
+		result = table.concat(result, ", ")
+		if future then
+			result = "in " .. result
+		else
+			result = result .. " ago"
+		end
+		result = string.format(arg[1], result)
+	end
+	return result
 end
 
 function app:count(typ)
@@ -38,7 +88,7 @@ end
 
 function app:count_str(typ)
 	local unread, all = self:count(typ)
-	return "("..unread.."/"..all..")", (unread > 0)
+	return unread.."/"..all, (unread > 0)
 end
 
 function app:switching_to_front()
@@ -58,7 +108,13 @@ function app:display_root_menu()
 			if is_new then
 				color = highlight_color
 			end
-			local bitmap = dynawa.bitmap.text_lines{text=inbox_names[id].." "..newstr, color = color, width = assert(args.max_size.w)}
+			local width = args.max_size.w
+			local bitmap = dynawa.bitmap.new(width, 25,0,0,0,0)
+			dynawa.bitmap.combine(bitmap, self.gfx[id],width - 25, 0)
+			dynawa.bitmap.combine(bitmap, dynawa.bitmap.text_line(inbox_names[id]..":","/_sys/fonts/default10.png"), 0, 10)
+			dynawa.bitmap.combine(bitmap, dynawa.bitmap.text_line(newstr, "/_sys/fonts/default15.png", color),87,6)
+			
+			--dynawa.bitmap.combine(bitmap, dynawa.bitmap.text_lines{text=inbox_names[id].." "..newstr, color = color, width = assert(width - 25)}, 0, 0)
 			return bitmap
 		end}
 		item.value = {open_folder = id}
@@ -97,9 +153,9 @@ function app:menu_item_selected(args)
 	elseif value.message then
 		local message = value.message
 		local menu = {flags = {parent = assert(args.menu)}, items = {}}
-		menu.banner = message.header
+		menu.banner = self:text_or_time(message.header)
 		for i, line in ipairs(message.body) do
-			table.insert(menu.items, {text = line, textcolor = {255,255,0}})
+			table.insert(menu.items, {text = self:text_or_time(line), textcolor = {255,255,0}})
 		end
 		if not message.read then
 			message.read = true
@@ -144,7 +200,7 @@ function app:display_folder(folder_id)
 			if not _self.value.message.read then
 				color = highlight_color
 			end
-			local bitmap = dynawa.bitmap.text_lines{text="> ".._self.value.message.header, color = color, width = assert(args.max_size.w)}
+			local bitmap = dynawa.bitmap.text_lines{text="> "..self:text_or_time(_self.value.message.header), color = color, width = assert(args.max_size.w)}
 			return bitmap
 		end
 		table.insert (menu.items, item)
