@@ -129,6 +129,7 @@ end
 
 function app:switching_to_back()
 	self.run_id = nil
+	log("Clock switching to back")
 	Class.App.switching_to_back(self)
 end
 

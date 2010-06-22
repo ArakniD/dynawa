@@ -96,7 +96,7 @@ function app:unregister_window(window)
 	--log("Unregistered "..window)
 end
 
-function app:window_to_front(window)
+function app:XXXXXXXXXXXXXwindow_to_front(window)
 	error("to_front called")
 	assert(window.is_window)
 	if self.front_window then

@@ -1,4 +1,4 @@
-app.name = "Inbox"
+app.name = "Default Inbox"
 app.id = "dynawa.inbox"
 
 local inbox_names = {
@@ -139,7 +139,6 @@ function app:display_root_menu()
 		self:broadcast_update()
 	end})
 	local menuwin = self:new_menuwindow(menu)
-	menuwin.menu:render()
 	menuwin:push()
 end
 
@@ -180,7 +179,6 @@ function app:menu_item_selected(args)
 			self:broadcast_update()
 		end})
 		local menuwin = self:new_menuwindow(menu)
-		menuwin.menu:render()
 		menuwin:push()
 	end
 end
@@ -230,7 +228,6 @@ function app:display_folder(folder_id)
 	end
 
 	local menuwin = self:new_menuwindow(menu)
-	menuwin.menu:render()
 	menuwin:push()
 end
 

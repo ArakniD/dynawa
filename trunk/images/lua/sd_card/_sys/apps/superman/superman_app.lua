@@ -25,7 +25,6 @@ end
 function app:open_menu(menu)
 	assert(menu.window)
 	self:push_window(menu.window)
-	menu:render()
 	return menu
 end
 
@@ -35,7 +34,11 @@ function app:menu_cancelled(menu)
 	popwin:_delete()
 	local window = dynawa.window_manager:peek()
 	if window then
-		window.menu:render()
+		if window.menu:requires_render() then
+			log(window.menu .. "requires re-render")
+		else
+			log(window.menu .. "does not require re-render")
+		end
 	else
 		dynawa.window_manager:show_default()
 	end
@@ -53,13 +56,12 @@ function app:menu_item_selected(args)
 	local menu = args.menu
 	assert (menu.window.app == self)
 --	log("selected item "..args.item)
-	local on_select = args.item.on_select
-	if not on_select then
+	local value = args.item.value
+	if not value then
 		return
 	end
-	if on_select.go_to_url then
-		menu:clear_cache()
-		local newmenu = self:open_menu_by_url(on_select.go_to_url)
+	if value.go_to_url then
+		local newmenu = self:open_menu_by_url(value.go_to_url)
 		return
 	end
 end
@@ -76,11 +78,11 @@ function app.menu_builders:root()
 			text="SuperMan root menu"
 			},
 		items = {
-			{text = "Shortcuts", on_select = {go_to_url = "shortcuts"}},
-			{text = "Apps", on_select = {go_to_url = "apps"}},
-			{text = "File browser", on_select = {go_to_url = "file_browser"}},
-			{text = "Adjust time and date", on_select = {go_to_url = "adjust_time_date"}},
-			{text = "Default font size", on_select = {go_to_url = "default_font_size"}},
+			{text = "Shortcuts", value = {go_to_url = "shortcuts"}},
+			{text = "Apps", value = {go_to_url = "apps"}},
+			{text = "File browser", value = {go_to_url = "file_browser"}},
+			{text = "Adjust time and date", value = {go_to_url = "adjust_time_date"}},
+			{text = "Default font size", value = {go_to_url = "default_font_size"}},
 		},
 	}
 	return menu_def
@@ -130,7 +132,7 @@ function app.menu_builders:file_browser(dir)
 				if v == "dir" then
 					location = "file_browser:"..dir..k.."/"
 				end
-				table.insert(menu.items,{text = txt, sort = sort, on_select={go_to_url = location}})
+				table.insert(menu.items,{text = txt, sort = sort, value={go_to_url = location}})
 			end
 			table.sort(menu.items,function(it1,it2)
 				return it1.sort < it2.sort
@@ -175,11 +177,11 @@ function app.menu_builders:adjust_time_date(what)
 	if not what then
 		local menu = {banner = "Adjust time & date"}
 		menu.items = {
-			{text = "Day of month: "..date.day, on_select = {go_to_url="adjust_time_date:day"}},
-			{text = "Month: "..date.month, on_select = {go_to_url="adjust_time_date:month"}},
-			{text = "Year: "..date.year, on_select = {go_to_url="adjust_time_date:year"}},			
-			{text = "Hours: "..date.hour, on_select = {go_to_url="adjust_time_date:hour"}},
-			{text = "Minutes: "..date.min, on_select = {go_to_url="adjust_time_date:min"}},			
+			{text = "Day of month: "..date.day, value = {go_to_url="adjust_time_date:day"}},
+			{text = "Month: "..date.month, value = {go_to_url="adjust_time_date:month"}},
+			{text = "Year: "..date.year, value = {go_to_url="adjust_time_date:year"}},			
+			{text = "Hours: "..date.hour, value = {go_to_url="adjust_time_date:hour"}},
+			{text = "Minutes: "..date.min, value = {go_to_url="adjust_time_date:min"}},			
 		}
 		return menu
 	end
@@ -204,5 +206,45 @@ function app.menu_builders:adjust_time_date(what)
 	return menu
 end
 
-return app
+function app.menu_builders:default_font_size()
+	local menudesc = {banner = "Select default font size:", items = {}}
+	local font_sizes = {7,10,15}
+	for i, size in ipairs(font_sizes) do
+		table.insert(menudesc.items, {text = "Quick brown fox jumped over the lazy dog ("..size.." px)",
+				value = {font_size = size, font_name = "/_sys/fonts/default"..size..".png"}})
+	end
+	local menu = self:new_menuwindow(menudesc).menu
+	for i, item in ipairs(menu.items) do
+		item.render = function(self,args)
+			return dynawa.bitmap.text_lines{text = self.text, font = self.value.font_name, width = assert(args.max_size.w)}
+		end
+		item.selected = function(self,args)
+			dynawa.settings.default_font = args.item.value.font_name
+			dynawa.file.save_settings()
+			dynawa.popup:info("Default font changed to size "..args.item.value.font_size)
+		end
+	end
+	return menu
+end
+
+function app.menu_builders:apps()
+	local menudesc = {banner = "Running Apps", items = {}}
+	local apps = {}
+	for id, app in pairs(dynawa.app_manager.all_apps) do
+		local name = "> "..id
+		if app.name then
+			name = name.." ("..app.name..")"
+		end
+		table.insert(menudesc.items, {text = name, selected = function(args)
+			app:switching_to_front()
+		end})
+	end
+	table.sort(menudesc.items, function (a,b)
+		return (a.text < b.text)
+	end)
+	local menu = self:new_menuwindow(menudesc).menu
+	return menu
+end
+
+
 

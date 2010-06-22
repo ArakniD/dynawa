@@ -37,7 +37,7 @@ end
 end]]
 
 function class:switching_to_front()
-	dynawa.popup:open{text=self.." generated no graphical output. You must override its 'switching_to_front' method.",style="warning"}
+	dynawa.popup:error(self.." generated no graphical output. You must override its 'switching_to_front' method.")
 end
 
 function class:switching_to_back()
@@ -49,7 +49,10 @@ function class:switching_to_back()
 	assert (not peek or peek.app ~= self, "After popping one non-menu window, there are still other windows of mine on stack")
 end
 
-function class:handle_event_button()
+function class:handle_event_button(event)
+	if event.button == "cancel" then
+		self:switching_to_back()
+	end
 end
 
 function class:handle_event_do_menu()
