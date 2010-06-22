@@ -56,10 +56,6 @@ function app:handle_event_timed_event(event) --Autoclose still valid?
 	end
 end
 
-function app:switching_to_front()
-	error("Popup App is being switched to_front??? Something is very wrong")
-end
-
 function app:switching_to_back()
 	self.window:pop()
 	self.window:_delete()

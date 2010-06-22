@@ -18,6 +18,7 @@ function class:start_app(filename)
 		app = Class.App(filename)
 	end
 	app.dir = dir
+	app.filename = filename
 	rawset(_G, "app", app)
 	chunk()
 	rawset(_G, "app", nil)
