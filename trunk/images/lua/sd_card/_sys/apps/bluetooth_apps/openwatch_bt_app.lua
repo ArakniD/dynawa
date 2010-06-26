@@ -169,7 +169,7 @@ end
 
 function app:handle_event_socket_connected(socket)
 	log(self.." socket connected: "..socket)
-	socket:send("HELLO_FROM_TCH1\r")
+	--socket:send("HELLO_FROM_TCH1\r")
 	socket.activity.status = "connected"
 	socket.activity.reconnect_delay = nil
 end
