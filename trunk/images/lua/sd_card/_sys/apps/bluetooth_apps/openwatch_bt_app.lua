@@ -122,9 +122,16 @@ function app:activity_got_binstring(activity, binstring)
 	local value, rest = self:binstring_to_value(binstring)
 	assert (rest == "", #rest.." unconsumed bytes after binstring parsing")
 	log("PARSED RESULT VALUE: "..dynawa.file.serialize(value))
-	if type(value) == "table" and value.command == "echo" then
-		log("Echoing back...")
-		self:activity_send_data(activity,assert(value.data))
+	if type(value) == "table" and value.command then
+		if value.command == "echo" then
+			log("Echoing back...")
+			self:activity_send_data(activity,assert(value.data))
+		elseif value.command == "time_sync" then
+			local time = assert(value.time)
+			local t0 = os.time()
+			log (string.format("Time sync: %+d seconds",time - t0))
+			dynawa.time.set(time)
+		end
 	end
 end
 
