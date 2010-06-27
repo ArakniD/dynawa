@@ -67,10 +67,9 @@ function app:switching_to_front()
 			{
 				text = "Send 50x Hello World (long string)", value = {jump = "send_openwatch_helloworld50"},
 			},
---[[			{
-				text = "Send complex hash", value = {jump = "send_openwatch_hash1"},
+			{
+				text = "Send complex structure", value = {jump = "send_openwatch_struct"},
 			},
-			]]
 			{
 				text = "Delete all pairings", value = {jump = "delete_pairings"},
 			},
@@ -93,12 +92,6 @@ function app:send_openwatch(args)
 	app:send_data_test(data)
 end
 
-function app:menu_action_send_openwatch_hash1()
-	local data = {string = "Hello world", number = 666, TRUE = true, FALSE = false, array = {1,2,"three",4,5}, 
-			subhash = {key1 = "val1", key2 = "val2"}}
-	self:send_openwatch{data=data}
-end
-
 function app:menu_action_send_openwatch_hello()
 	self:send_openwatch{data="Hello"}
 end
@@ -117,6 +110,12 @@ function app:menu_action_send_openwatch_helloworld50()
 		table.insert(str,"Hello world "..i.."!")
 	end
 	self:send_openwatch{data=table.concat(str), " "}
+end
+
+function app:menu_action_send_openwatch_struct()
+	local data = {string = "Hello world", number = 666, TRUE = true, FALSE = false, array = {1,2,"three",4,5}, 
+			subhash = {key1 = "val1", key2 = "val2"}}
+	self:send_openwatch{data=data}
 end
 
 function app:menu_item_selected(args)
