@@ -872,18 +872,19 @@ void bt_find_service(bt_socket *sock, uint8_t *bdaddr) {
     return BT_OK;
 }
 
-int bt_rfcomm_send(bt_socket *sock, const char *data) {
+int bt_rfcomm_send(bt_socket *sock, const char *data, size_t len) {
     bt_command cmd;
     struct pbuf *p;
 
-    uint16_t len = strlen(data) + 1;
+    //uint16_t len = strlen(data) + 1;
     
     TRACE_INFO("bt_rfcomm_send %s %d\r\n", data, len);
     p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM);
     if (p == NULL) {
         return BT_ERR_MEM;
     }
-    strcpy(p->payload, data);
+    //strcpy(p->payload, data);
+    memcpy(p->payload, data, len);
 
     cmd.id = BT_COMMAND_SEND;
     cmd.sock = sock;
