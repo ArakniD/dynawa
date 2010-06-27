@@ -116,11 +116,12 @@ static int l_cmd (lua_State *L) {
             void *handle = lua_touserdata(L, 3);
             */
 
-            const char *data = luaL_checkstring(L, 3);
+            size_t len;
+            const char *data = luaL_checklstring(L, 3, &len);
 
-            TRACE_INFO("data %s\r\n", data);
+            TRACE_INFO("data %s %d\r\n", data, len);
 
-            bt_rfcomm_send((bt_socket*)sock, data);
+            bt_rfcomm_send((bt_socket*)sock, data, len);
         }
         break;
     }

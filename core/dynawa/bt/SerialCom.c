@@ -34,8 +34,8 @@ extern volatile portTickType xTickCount;
 extern void BgIntPump(void);
 
 #define	TX_BUF_MAX_SIZE				((uint16_t) 4096)	/* the buffer size for incoming and outgoing characters */
-//#define RX_BUF_MAX_SIZE				((uint16_t) 4096)
-#define RX_BUF_MAX_SIZE				((uint16_t) 1024)
+#define RX_BUF_MAX_SIZE				((uint16_t) 4096)
+//#define RX_BUF_MAX_SIZE				((uint16_t) 1024)
 
 /* the following number can be used to limit the number of bytes send at the time to the YABCSP libray.
 If not defined as many bytes as possible are send to the library */
