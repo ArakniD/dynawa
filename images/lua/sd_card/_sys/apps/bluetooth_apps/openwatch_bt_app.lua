@@ -110,8 +110,11 @@ function app:activity_chunk_received(activity, chunk)
 		log("Unexpected Ack chunk received (ignored)")
 		return
 	end
+	log("Ack OK")
 	activity.sender.waiting_for_ack = nil
-	self:activity_send_piece(activity)
+	if #activity.sender.pieces > 0 then
+		self:activity_send_piece(activity)
+	end
 end
 
 function app:activity_got_binstring(activity, binstring)
@@ -203,7 +206,7 @@ end
 
 function app:activity_send_piece(activity)
 	assert(activity.sender.pieces)
-	local piece = table.remove(activity.sender.pieces, 1)
+	local piece = assert(table.remove(activity.sender.pieces, 1))
 	activity.sender.waiting_for_ack = "A"..piece:sub(2,6)
 	self:activity_send_chunk(activity, piece)
 end
