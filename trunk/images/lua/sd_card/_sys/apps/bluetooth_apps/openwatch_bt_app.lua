@@ -122,6 +122,10 @@ function app:activity_got_binstring(activity, binstring)
 	local value, rest = self:binstring_to_value(binstring)
 	assert (rest == "", #rest.." unconsumed bytes after binstring parsing")
 	log("PARSED RESULT VALUE: "..dynawa.file.serialize(value))
+	if type(value) == "table" and value.command == "echo" then
+		log("Echoing back...")
+		self:activity_send_data(activity,assert(value.data))
+	end
 end
 
 function app:binstring_to_value(binstring)
@@ -191,8 +195,7 @@ function app:send_data_test(data)
 end
 
 function app:activity_send_data(activity, data)
-	assert(type(data)=="string")
-	data = "$"..#data..":"..data
+	data = table.concat(self:encode_data(data, {}))
 	if not activity.sender then
 		activity.sender = {pieces={}}
 	end
@@ -202,6 +205,41 @@ function app:activity_send_data(activity, data)
 	else
 		log("Cannot send piece - still waiting for Ack chunk for previous sent piece")
 	end
+end
+
+function app:encode_data(data, parts)
+	assert(parts)
+	local typ = type(data)
+	if typ == "string" then
+		table.insert(parts,"$"..#data..":")
+		table.insert(parts,data)
+	elseif typ == "boolean" then
+		if data then
+			table.insert(parts,"T")
+		else
+			table.insert(parts,"F")
+		end
+	elseif typ == "number" then
+		table.insert(parts, "#"..data..";")
+	elseif typ == "table" then
+		if type(next(data)) == "number" then --It's an array
+			table.insert(parts,"@")
+			for i,elem in ipairs(data) do
+				self:encode_data(elem,parts)
+			end
+		else --It's hash table
+			table.insert(parts,"*")
+			for key,elem in pairs(data) do
+				assert(type(key) == "string", "Hash table key is not string")
+				self:encode_data(key,parts)
+				self:encode_data(elem,parts)
+			end
+		end
+		table.insert(parts,";")
+	else
+		error("Unable to encode data type: "..typ)
+	end
+	return parts
 end
 
 function app:activity_send_piece(activity)
