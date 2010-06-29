@@ -26,12 +26,12 @@ function app:open(args)
 	if not his_bmp then
 		his_bmp = dynawa.bitmap.new(dynawa.devices.display.size.w, dynawa.devices.display.size.h, 0,0,0)
 	end
-	local bgcolor = {0,40,0}
+	local bgcolor = args.bgcolor or {0,40,0}
 	if args.style == "error" then
 		bgcolor = {128,0,0}
 	end
 	local dsize = dynawa.devices.display.size
-	local textbmp = dynawa.bitmap.text_lines{width = math.floor(dsize.w * 0.8), autoshrink = true, center = true, text = assert(args.text)}
+	local textbmp = dynawa.bitmap.text_lines{width = math.floor(dsize.w * 0.85), autoshrink = true, center = true, text = assert(args.text)}
 	local sw0,sh0 = dynawa.bitmap.info(textbmp)
 	local w,h = sw0+8, sh0+8
 	local bmp = dynawa.bitmap.new(w,h, unpack(bgcolor))

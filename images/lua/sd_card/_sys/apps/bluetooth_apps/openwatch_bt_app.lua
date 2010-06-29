@@ -131,6 +131,8 @@ function app:activity_got_binstring(activity, binstring)
 			local t0 = os.time()
 			log (string.format("Time sync: %+d seconds",time - t0))
 			dynawa.time.set(time)
+		else
+			self.events:generate_event{type = "from_watch", data = value}
 		end
 	end
 end
@@ -328,5 +330,9 @@ function app:handle_event_socket_find_service_result(sock0,channel)
 	socket.activity = activity
 	activity.status = "connecting"
 	socket:connect(activity.bdaddr, activity.channel)
+end
+
+function app:start()
+	self.events = Class.EventSource("openwatch")
 end
 

@@ -5,6 +5,12 @@ local fonts, icons
 
 function app:start()
 	self:gfx_init()
+	self.window = self:new_window()
+	self.window:show_bitmap(dynawa.bitmap.new(160,128))
+	dynawa.app_manager:after_app_start("dynawa.inbox", function(inbox)
+		inbox.events:register_for_events(self)
+		inbox:broadcast_update()
+	end)
 end
 
 function app:display(bitmap, x, y)
@@ -113,14 +119,6 @@ function app:tick(message)
 	if when > 600 then
 		dynawa.devices.timers:timed_event{delay = 500, receiver = self, method = "remove_dots"}
 	end
-	if icons.waiting then --We must wait until Inbox app is initialized to receive its events
-		local inbox = dynawa.app_manager:app_by_id("dynawa.inbox")
-		if inbox then
-			icons.waiting = nil
-			inbox.events:register_for_events(self)
-			inbox:broadcast_update()
-		end
-	end
 end
 
 function app:handle_event_timed_event(event)
@@ -135,10 +133,6 @@ end
 
 function app:switching_to_front()
 	self.run_id = dynawa.unique_id()
-	if not self.window then
-		self.window = self:new_window()
-		self.window:show_bitmap(dynawa.bitmap.new(160,128))
-	end		
 	self.window:push()
 	self:tick{run_id = self.run_id, full_render = true}
 end

@@ -28,7 +28,21 @@ function app:start()
 
 	table.insert(self.prefs.storage.calendar,{header = {"Meet Vaclav Klaus (%s)",os.time() + 60*60*24*7 + 1000},
 			body={"At Prague Castle"}})
-	self:broadcast_update()
+	local my_events
+	dynawa.app_manager:after_app_start("dynawa.bt.openwatch",function (openwatch)
+		openwatch.events:register_for_events(self, function(ev)
+			if not ev.type == "from_watch" then
+				return false
+			end
+			local com = ev.data.command
+			return (com == "incoming_sms" or com == "incoming_email" or com == "incoming_call" or com == "calendar_event")
+		end)
+	end)
+end
+
+function app:handle_event_from_watch(ev)
+	local data = assert(ev.data)
+	dynawa.popup:open{text = "from_watch: "..ev.data.command, autoclose=true, bgcolor = {0,0,200}}
 end
 
 function app:text_or_time(arg)
