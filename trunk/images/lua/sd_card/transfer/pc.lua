@@ -180,20 +180,32 @@ local function main_loop(fd_from)
 			local to_send={}
 			local msg = ""
 			local num=0
+			local is_error = false
 			local new_stats=get_files()
 			for k,v in pairs(new_stats) do
 				if old_stats[k] ~= v then
 					local fd=assert(io.open(local_dir..k))
 					local file=assert(fd:read("*a"))
 					fd:close()
+					local chunk,err = loadfile(local_dir..k)
+					if not chunk then
+						print("*************** SYNTAX ERROR IN WristOS SCRIPT:")
+						print(err)
+						is_error = true
+					end
 					to_send["/"..k]=file
 					msg=msg..";"..k
 					num=num+1
 				end
 			end
-			print("Updating "..num.." files on device.")
-			send{message=msg,files_to_update=to_send}
-			old_stats=new_stats
+			if is_error then
+				print("************* DEVICE NOT UPDATED!!! ***********")
+				send{message=msg,files_to_update={}}
+			else
+				print("Updating "..num.." files on device.")
+				send{message=msg,files_to_update=to_send}
+				old_stats=new_stats
+			end
 		else
 			print (id.." <"..line..">")
 		end
