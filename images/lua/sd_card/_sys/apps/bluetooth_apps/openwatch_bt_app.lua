@@ -63,8 +63,8 @@ end
 function app:handle_event_socket_data(socket, data_in)
 	assert(data_in)
 	local activity = assert(socket.activity)
-	--log(socket.." got "..#data_in.." bytes of data")
-	log("Got "..#data_in.." bytes of data: "..safe_string(data_in))
+	log(socket.." got "..#data_in.." bytes of data")
+	--log("Got "..#data_in.." bytes of data: "..safe_string(data_in))
 	
 	while #data_in > 2 and (string.byte(data_in) < 180 or string.byte(data_in) > 183) do
 		data_in = data_in.sub(2)
@@ -118,10 +118,11 @@ function app:activity_chunk_received(activity, chunk)
 end
 
 function app:activity_got_binstring(activity, binstring)
-	log("Parsing binstring: "..safe_string(binstring))
+	--log("Parsing binstring: "..safe_string(binstring))
 	local value, rest = self:binstring_to_value(binstring)
 	assert (rest == "", #rest.." unconsumed bytes after binstring parsing")
-	log("PARSED RESULT VALUE: "..dynawa.file.serialize(value))
+	log("Parsed result: OK")
+	--log("PARSED RESULT VALUE: "..dynawa.file.serialize(value))
 	if type(value) == "table" and value.command then
 		if value.command == "echo" then
 			log("Echoing back...")
