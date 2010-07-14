@@ -31,7 +31,7 @@ function app:start()
 	local my_events
 	dynawa.app_manager:after_app_start("dynawa.bt.openwatch",function (openwatch)
 		openwatch.events:register_for_events(self, function(ev)
-			if not ev.type == "from_watch" then
+			if not ev.type == "from_phone" then
 				return false
 			end
 			local com = ev.data.command
@@ -40,9 +40,16 @@ function app:start()
 	end)
 end
 
-function app:handle_event_from_watch(ev)
+function app:handle_event_from_phone(ev)
 	local data = assert(ev.data)
-	dynawa.popup:open{text = "from_watch: "..ev.data.command, autoclose=true, bgcolor = {0,0,200}}
+	local items = {}
+	table.insert(items,(dynawa.bitmap.text_lines{text = "from_phone: "..ev.data.command, width = 140}))
+	if data.contact_icon then
+		table.insert(items,1,assert(dynawa.bitmap.from_png(data.contact_icon["30"])))
+	end
+	local bmap = dynawa.bitmap.layout_vertical(items, {align = "center", border = 3, spacing = 5, bgcolor={128,0,128}})
+	dynawa.bitmap.border(bmap,1,{255,255,255})
+	dynawa.popup:open{bitmap = bmap, autoclose = 9999}
 end
 
 function app:text_or_time(arg)
