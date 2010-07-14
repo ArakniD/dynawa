@@ -23,22 +23,32 @@ function app:open(args)
 	self.window = self:new_window()
 	local his_win = dynawa.window_manager:peek()
 	local his_bmp = (his_win or {}).bitmap
+	local wsize --Window size
 	if not his_bmp then
-		his_bmp = dynawa.bitmap.new(dynawa.devices.display.size.w, dynawa.devices.display.size.h, 0,0,0)
+		wsize = dynawa.devices.display.size		
+		his_bmp = dynawa.bitmap.new(dynawa.devices.display.size.w, wsize, 0,0,0)
+	else
+		wsize = assert(his_win.size)
 	end
 	local bgcolor = args.bgcolor or {0,40,0}
-	if args.style == "error" then
-		bgcolor = {128,0,0}
+	local bmp,w,h
+	if args.bitmap then --Bitmap supplied by caller, don't render it
+		bmp = args.bitmap
+		w,h = dynawa.bitmap.info(bmp)
+	else
+		if args.style == "error" then
+			bgcolor = {128,0,0}
+		end
+		local textbmp = dynawa.bitmap.text_lines{width = math.floor(wsize.w * 0.85), autoshrink = true, center = true, text = assert(args.text)}
+		local sw0,sh0 = dynawa.bitmap.info(textbmp)
+		w,h = sw0+8, sh0+8
+		bmp = dynawa.bitmap.new(w,h, unpack(bgcolor))
+		dynawa.bitmap.border(bmp, 2, {255,255,255})
+		dynawa.bitmap.border(bmp, 1, {0,0,0})
+		dynawa.bitmap.combine(bmp, textbmp, 4, 4)
 	end
-	local dsize = dynawa.devices.display.size
-	local textbmp = dynawa.bitmap.text_lines{width = math.floor(dsize.w * 0.85), autoshrink = true, center = true, text = assert(args.text)}
-	local sw0,sh0 = dynawa.bitmap.info(textbmp)
-	local w,h = sw0+8, sh0+8
-	local bmp = dynawa.bitmap.new(w,h, unpack(bgcolor))
-	dynawa.bitmap.border(bmp, 2, {255,255,255})
-	dynawa.bitmap.border(bmp, 1, {0,0,0})
-	dynawa.bitmap.combine(bmp, textbmp, 4, 4)
-	local start_w, start_h = math.floor((dsize.w - w) / 2), math.floor((dsize.h - h) / 2)
+	
+	local start_w, start_h = math.floor((wsize.w - w) / 2), math.floor((wsize.h - h) / 2)
 	local screen = dynawa.bitmap.combine(his_bmp, self.mesh, 0,0, true)
 	dynawa.bitmap.combine(screen, bmp, start_w, start_h)
 	self.window:show_bitmap(screen)

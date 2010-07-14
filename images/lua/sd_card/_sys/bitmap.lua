@@ -211,6 +211,40 @@ function dynawa.bitmap.text_lines(args)
 	return bitmap, width, height
 end
 
+function dynawa.bitmap.layout_vertical(items0, args)
+	args = args or {}
+	args.spacing = args.spacing or 0
+	args.border = args.border or 0
+	args.bgcolor = args.bgcolor or {0,0,0,0} --No bgcolor -> Transparent background
+	local items = {}
+	local sizew, sizeh = 0, 0
+	for i, bitmap in ipairs(items0) do
+		local w,h = dynawa.bitmap.info(bitmap)
+		if sizew < w then
+			sizew = w
+		end
+		table.insert(items, {bitmap = bitmap, y = sizeh, w=w})
+		sizeh = sizeh + h
+		if i < #items0 then
+			sizeh = sizeh + args.spacing
+		end
+	end
+	local border = args.border
+	local border2 = border + border
+	local bmap
+	bmap = dynawa.bitmap.new (sizew + border2, sizeh + border2, unpack(args.bgcolor))
+	for i, item in ipairs(items) do
+		local x = border
+		if args.align == "center" then
+			x = border + math.floor((sizew - item.w)/2)
+		elseif args.align == "right" then
+			x = border + sizew - item.w
+		end
+		dynawa.bitmap.combine (bmap, item.bitmap, border + x, border + item.y)
+	end
+	return bmap, sizew + border2, sizeh + border2
+end
+
 local screen = dynawa.bitmap.new(160,128,0,0,99)
 dynawa.bitmap.combine(screen,dynawa.bitmap.text_lines{width = 156, text=
 		"WristOS "..dynawa.version.wristOS.."; settings rev. "..dynawa.version.settings_revision.."; main.bin: ???"

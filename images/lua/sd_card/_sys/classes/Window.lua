@@ -2,6 +2,8 @@ local class = Class("Window")
 class.is_window = true
 class.bitmap = false
 
+class.size = {w=160,h=128}
+
 function class:_init()
 	self.id = dynawa.unique_id()
 	self:force_full_update()

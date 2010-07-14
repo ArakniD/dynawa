@@ -133,7 +133,7 @@ function app:activity_got_binstring(activity, binstring)
 			log (string.format("Time sync: %+d seconds",time - t0))
 			dynawa.time.set(time)
 		else
-			self.events:generate_event{type = "from_watch", data = value}
+			self.events:generate_event{type = "from_phone", data = value}
 		end
 	end
 end
