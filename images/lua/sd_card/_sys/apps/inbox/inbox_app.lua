@@ -42,14 +42,65 @@ end
 
 function app:handle_event_from_phone(ev)
 	local data = assert(ev.data)
-	local items = {}
-	table.insert(items,(dynawa.bitmap.text_lines{text = "from_phone: "..ev.data.command, width = 140}))
+	local icon
 	if data.contact_icon then
-		table.insert(items,1,assert(dynawa.bitmap.from_png(data.contact_icon["30"])))
+		icon = assert(data.contact_icon["30"])
 	end
-	local bmap = dynawa.bitmap.layout_vertical(items, {align = "center", border = 3, spacing = 5, bgcolor={128,0,128}})
+	local command = assert(data.command)
+	local item = {body={},read=false}
+	local rows = {}
+	local typ
+	local popup
+	if command == "incoming_call" then
+		typ = "call"
+		table.insert(rows,"INCOMING CALL")
+		table.insert(rows,assert(data.contact_phone))
+		if data.contact_name then
+			table.insert(rows, data.contact_name)
+		end
+		local caller = data.contact_name
+		if not caller then
+			caller = assert(data.contact_phone)
+		end
+		item.header = "From "..caller
+		if data.contact_name then
+			table.insert(item.body,"Number: "..data.contact_phone)
+		end
+		table.insert(item.body,{"Called %s",os.time()-3})
+	elseif command == "incoming_sms" then
+		table.insert(rows,"INCOMING SMS")
+		local caller = data.contact_name
+		if not caller then
+			caller = assert(data.contact_phone)
+		end
+		table.insert(rows,"From: "..caller)
+		local snippet = self:get_snippet(data.text)
+		if data.contact_name then
+			table.insert(rows, data.contact_name)
+		end
+	else
+		error("Unknown command: "..tostring(command))
+	end
+	
+	for i, row in ipairs(rows) do
+		if type(row) == "string" then
+			rows[i] = dynawa.bitmap.text_lines{text = row, width = 140, autoshrink = true, center = true}
+		end
+	end
+	if icon then
+		table.insert(rows,1,assert(dynawa.bitmap.from_png(icon)))
+		item.icon = icon
+	end
+	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={128,0,128}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
-	dynawa.popup:open{bitmap = bmap, autoclose = 9999}
+	dynawa.popup:open{bitmap = bmap, autoclose = 20000}
+	table.insert(self.prefs.storage[typ],1,item)
+	--SAVE!
+end
+
+function app:get_snippet(lines)
+	local snippet = assert(lines[1])
+	
 end
 
 function app:text_or_time(arg)

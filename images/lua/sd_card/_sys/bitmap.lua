@@ -234,11 +234,11 @@ function dynawa.bitmap.layout_vertical(items0, args)
 	local bmap
 	bmap = dynawa.bitmap.new (sizew + border2, sizeh + border2, unpack(args.bgcolor))
 	for i, item in ipairs(items) do
-		local x = border
+		local x = 0
 		if args.align == "center" then
-			x = border + math.floor((sizew - item.w)/2)
+			x = math.floor((sizew - item.w)/2)
 		elseif args.align == "right" then
-			x = border + sizew - item.w
+			x = sizew - item.w
 		end
 		dynawa.bitmap.combine (bmap, item.bitmap, border + x, border + item.y)
 	end
