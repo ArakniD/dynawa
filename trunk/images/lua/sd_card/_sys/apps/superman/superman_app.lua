@@ -92,7 +92,7 @@ function app.menu_builders:default_font_size()
 	local menudesc = {banner = "Select default font size:", items = {}}
 	local font_sizes = {7,10,15}
 	for i, size in ipairs(font_sizes) do
-		table.insert(menudesc.items, {text = "Quick brown fox jumped over the lazy dog ("..size.." px)",
+		table.insert(menudesc.items, {text = "Quick brown fox jumps over a lazy dog ("..size.." px)",
 				value = {font_size = size, font_name = "/_sys/fonts/default"..size..".png"}})
 	end
 	local menu = self:new_menuwindow(menudesc).menu
