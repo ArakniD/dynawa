@@ -24,6 +24,8 @@
 #include "debug/trace.h"
 #include "bitmap.h"
 
+#define SCREEN_ROTATE   1
+
 scr_coord_t scrscrX1;
 scr_coord_t scrscrX2;
 scr_coord_t scrscrY1;
@@ -148,7 +150,8 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
     //volatile oled_access_fast *pFastOLED;  
     volatile oled_access_cmd *pCMDOLED;
     volatile oled_access *pOLED;
-    uint32_t writes,i;
+    uint32_t writes;
+    int32_t i;
 
     //_TRACE_INFO("scrWriteBitmapRGBA %d %d %d %d %x\r\n", left_x, top_y, right_x, bot_y, buf);
 
@@ -161,17 +164,27 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
 
         //direct to screen
         //clear screen (blank, black)
-        oledWriteCommand(MX1_ADDR, x1);
-        oledWriteCommand(MY1_ADDR, y1);
-        oledWriteCommand(MX2_ADDR, x2);
-        oledWriteCommand(MY2_ADDR, y2);
-        oledWriteCommand(MEMORY_ACCESSP_X, x1);
-        oledWriteCommand(MEMORY_ACCESSP_Y, y1);  
+        writes = (((x2-x1+1)*(y2-y1+1)));   
+
+        if (SCREEN_ROTATE) {
+            oledWriteCommand(MX1_ADDR, x1);
+            oledWriteCommand(MY1_ADDR, y1);
+            oledWriteCommand(MX2_ADDR, x2);
+            oledWriteCommand(MY2_ADDR, y2);
+            oledWriteCommand(MEMORY_ACCESSP_X, x1);
+            oledWriteCommand(MEMORY_ACCESSP_Y, y1);  
+        } else {
+            oledWriteCommand(MX1_ADDR, OLED_RESOLUTION_X - x2 - 1);
+            oledWriteCommand(MY1_ADDR, OLED_RESOLUTION_Y - y2 - 1);
+            oledWriteCommand(MX2_ADDR, OLED_RESOLUTION_X - x1 - 1);
+            oledWriteCommand(MY2_ADDR, OLED_RESOLUTION_Y - y1 - 1);
+            oledWriteCommand(MEMORY_ACCESSP_X, OLED_RESOLUTION_X - x2 - 1);
+            oledWriteCommand(MEMORY_ACCESSP_Y, OLED_RESOLUTION_Y - y2 - 1);  
+        }
         pCMDOLED=OLED_CMD_BASE;  
         *pCMDOLED = (OLED_DDRAM<<1); //bit align
 
         pOLED = OLED_PARAM_BASE;
-        writes = (((x2-x1+1)*(y2-y1+1)));   
 
 // Bitmap RGBA (6b channel)
 // 10987654321098765432109876543210
@@ -194,19 +207,24 @@ void scrWriteBitmapRGBA(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right
         _TRACE_INFO("%x\r\n", rgb62w(0xfc, 0xfc, 0xfc));
         _TRACE_INFO("%x\r\n", rgba2w(0xfcfcfc));
 */
-        for (i=0;i<(writes);(i++))
-        {          
-            // 24 - 31b - Alpha
-            //*pOLED = rgb2w((buf[i]&0xff),(buf[i]>>8)&0xff,(buf[i]>>16)&0xff);                  
-            //*pOLED = rgb21w((buf[i]&0xff),(buf[i]>>8)&0xff,(buf[i]>>16)&0xff);                  
-            //register uint32_t rgba = (buf[i] & 0xfcfcfc) >> 2;
-            //*pOLED = rgb2w((rgba&0xff),(rgba>>8)&0xff,(rgba>>16)&0xff);                  
-            //*pOLED = rgb62w((buf[i]&0xff),(buf[i]>>8)&0xff,(buf[i]>>16)&0xff);                  
-            // [RGB] 8b -> 6b
-            //*pOLED = rgb2w((buf[i]&0xff)>>2,((buf[i]>>8)&0xff)>>2,((buf[i]>>16)&0xff)>>2);                  
-            //*pOLED = buf[i];
-            *pOLED = RGBA2W(buf[i]);
-            //*pOLED = 0x11223344;
+        if (SCREEN_ROTATE) {
+            for (i=0;i<(writes);(i++)) {          
+                // 24 - 31b - Alpha
+                //*pOLED = rgb2w((buf[i]&0xff),(buf[i]>>8)&0xff,(buf[i]>>16)&0xff);                  
+                //*pOLED = rgb21w((buf[i]&0xff),(buf[i]>>8)&0xff,(buf[i]>>16)&0xff);                  
+                //register uint32_t rgba = (buf[i] & 0xfcfcfc) >> 2;
+                //*pOLED = rgb2w((rgba&0xff),(rgba>>8)&0xff,(rgba>>16)&0xff);                  
+                //*pOLED = rgb62w((buf[i]&0xff),(buf[i]>>8)&0xff,(buf[i]>>16)&0xff);                  
+                // [RGB] 8b -> 6b
+                //*pOLED = rgb2w((buf[i]&0xff)>>2,((buf[i]>>8)&0xff)>>2,((buf[i]>>16)&0xff)>>2);                  
+                //*pOLED = buf[i];
+                *pOLED = RGBA2W(buf[i]);
+                //*pOLED = 0x11223344;
+            }
+        } else {
+            for (i = writes - 1; i >= 0; i--) {
+                *pOLED = RGBA2W(buf[i]);
+            }
         }
 
     } else {
@@ -258,12 +276,21 @@ void scrWriteBitmapRGBA2(scr_coord_t scr_x, scr_coord_t scr_y, scr_coord_t bmp_x
     x2 = x1 + width - 1;
     y2 = y1 + height - 1;
 
-    oledWriteCommand(MX1_ADDR, x1);
-    oledWriteCommand(MY1_ADDR, y1);
-    oledWriteCommand(MX2_ADDR, x2);
-    oledWriteCommand(MY2_ADDR, y2);
-    oledWriteCommand(MEMORY_ACCESSP_X, x1);
-    oledWriteCommand(MEMORY_ACCESSP_Y, y1);  
+    if (SCREEN_ROTATE) {
+        oledWriteCommand(MX1_ADDR, x1);
+        oledWriteCommand(MY1_ADDR, y1);
+        oledWriteCommand(MX2_ADDR, x2);
+        oledWriteCommand(MY2_ADDR, y2);
+        oledWriteCommand(MEMORY_ACCESSP_X, x1);
+        oledWriteCommand(MEMORY_ACCESSP_Y, y1);  
+    } else {
+        oledWriteCommand(MX1_ADDR, OLED_RESOLUTION_X - x2 - 1);
+        oledWriteCommand(MY1_ADDR, OLED_RESOLUTION_Y - y2 - 1);
+        oledWriteCommand(MX2_ADDR, OLED_RESOLUTION_X - x1 - 1);
+        oledWriteCommand(MY2_ADDR, OLED_RESOLUTION_Y - y1 - 1);
+        oledWriteCommand(MEMORY_ACCESSP_X, OLED_RESOLUTION_X - x2 - 1);
+        oledWriteCommand(MEMORY_ACCESSP_Y, OLED_RESOLUTION_Y - y2 - 1);  
+    }
     pCMDOLED=OLED_CMD_BASE;  
     *pCMDOLED = (OLED_DDRAM<<1); //bit align
 
@@ -272,15 +299,26 @@ void scrWriteBitmapRGBA2(scr_coord_t scr_x, scr_coord_t scr_y, scr_coord_t bmp_x
 
     uint32_t *rgba_data = (uint32_t*)((uint8_t*)bmp + sizeof(bitmap_header));
 
-    uint32_t bmp_addr = bmp_y * bmp_width + bmp_x;
     uint32_t bmp_addr_wrap = bmp_width - width;
 
     int x, y;
-    for (y = 0; y < height; y++) {          
-        for (x = 0; x < width; x++) {          
-            *pOLED = RGBA2W(rgba_data[bmp_addr]);
-            bmp_addr++;
+    if (SCREEN_ROTATE) {
+        uint32_t bmp_addr = bmp_y * bmp_width + bmp_x;
+        for (y = 0; y < height; y++) {          
+            for (x = 0; x < width; x++) {          
+                *pOLED = RGBA2W(rgba_data[bmp_addr]);
+                bmp_addr++;
+            }
+            bmp_addr += bmp_addr_wrap;
         }
-        bmp_addr += bmp_addr_wrap;
+    } else {
+        uint32_t bmp_addr = (bmp_y + height - 1) * bmp_width + bmp_x + width - 1;
+        for (y = height - 1; y >= 0; y--) {          
+            for (x = width - 1; x >= 0; x--) {          
+                *pOLED = RGBA2W(rgba_data[bmp_addr]);
+                bmp_addr--;
+            }
+            bmp_addr -= bmp_addr_wrap;
+        }
     }
 }
