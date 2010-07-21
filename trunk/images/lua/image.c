@@ -95,9 +95,11 @@ void Run( ) // this task gets called as soon as we boot up.
 */
     
     UsbSerial_open();
+/*
     while( !UsbSerial_isActive() )
         Task_sleep(10);
-    //Task_sleep(500);
+       //Task_sleep(500);
+*/
 
 
     //Task_create( blinkLoop, "Blink", 400, 1, NULL );
