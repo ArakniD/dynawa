@@ -6,6 +6,7 @@
 #include <rtos.h>
 #include <usbserial.h>
 #include <serial.h>
+//#include <analogin.h>
 #include <task_param.h>
 
 #include "lua.h"
@@ -101,6 +102,12 @@ void Run( ) // this task gets called as soon as we boot up.
        //Task_sleep(500);
 */
 
+/*
+    AnalogIn adc;
+    AnalogIn_init(&adc, 7);
+    AnalogIn_value(&adc);
+    AnalogIn_close(&adc);
+*/
 
     //Task_create( blinkLoop, "Blink", 400, 1, NULL );
     //Task_create( console, "console", 400, 1, NULL );
