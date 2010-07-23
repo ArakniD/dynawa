@@ -102,6 +102,19 @@ int oledInitHw(void)
     oledWriteCommand(DRIVING_CURRENT_R, 13); //9
     oledWriteCommand(DRIVING_CURRENT_G, 15);  //A
     oledWriteCommand(DRIVING_CURRENT_B, 15);  //A
+#elif 0
+    oledWriteCommand(PRECHARGE_TIME_R, 0x0F);  //ghost fix orig: 3
+    oledWriteCommand(PRECHARGE_TIME_G, 0x0F);  //ghost fix, orig:5
+    oledWriteCommand(PRECHARGE_TIME_B, 0x0F);  //ghost fix orig: 5
+
+    oledWriteCommand(PRECHARGE_CURRENT_R, 0xff); //ghost fix orig:56
+    oledWriteCommand(PRECHARGE_CURRENT_G, 0xff); //ghost fix orig:4D
+    oledWriteCommand(PRECHARGE_CURRENT_B, 0xff); //ghost fix orig:46
+
+    //
+    oledWriteCommand(DRIVING_CURRENT_R, 0xff); //9
+    oledWriteCommand(DRIVING_CURRENT_G, 0xff);  //A
+    oledWriteCommand(DRIVING_CURRENT_B, 0xff);  //A
 
 #else
     oledWriteCommand(PRECHARGE_TIME_R, 0x3);

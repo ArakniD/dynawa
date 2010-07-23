@@ -247,8 +247,10 @@ THUMB_SRC= \
   $(DYNAWA)/lua/lib_dynawa_file.c \
   $(DYNAWA)/lua/lib_dynawa_time.c \
   $(DYNAWA)/lua/lib_dynawa_bt.c \
+  $(DYNAWA)/lua/lib_dynawa_x.c \
   $(DYNAWA)/event.c \
   $(DYNAWA)/timer.c \
+  $(DYNAWA)/analogin.c \
   $(DYNAWA)/button.c \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
@@ -325,6 +327,7 @@ ARM_SRC= \
   $(DYNAWA)/serial_isr.c \
   $(DYNAWA)/button_isr.c \
   $(DYNAWA)/timer_isr.c \
+  $(DYNAWA)/analogin_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \
   $(SCREEN)/screen.c \
