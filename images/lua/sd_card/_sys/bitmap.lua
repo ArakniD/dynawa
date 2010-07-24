@@ -130,7 +130,9 @@ function dynawa.bitmap.text_lines(args)
 	assert(args.width >= 20, "Width is less than 20")
 	local text = assert(args.text, "No text supplied")
 	string.gsub(text.." ","(.-) ", function(word)
-		assert(#word > 0)
+		if word == "" then
+			word = " "
+		end
 		--log("word:"..word)
 		local bitmap, w, h = dynawa.bitmap.text_line(word, args.font, args.color)
 		table.insert(words, {text = word, bitmap = bitmap, w = w, h = h})
@@ -241,6 +243,40 @@ function dynawa.bitmap.layout_vertical(items0, args)
 			x = sizew - item.w
 		end
 		dynawa.bitmap.combine (bmap, item.bitmap, border + x, border + item.y)
+	end
+	return bmap, sizew + border2, sizeh + border2
+end
+
+function dynawa.bitmap.layout_horizontal(items0, args)
+	args = args or {}
+	args.spacing = args.spacing or 0
+	args.border = args.border or 0
+	args.bgcolor = args.bgcolor or {0,0,0,0} --No bgcolor -> Transparent background
+	local items = {}
+	local sizew, sizeh = 0, 0
+	for i, bitmap in ipairs(items0) do
+		local w,h = dynawa.bitmap.info(bitmap)
+		if sizeh < h then
+			sizeh = h
+		end
+		table.insert(items, {bitmap = bitmap, x = sizew, h=h})
+		sizew = sizew + w
+		if i < #items0 then
+			sizew = sizew + args.spacing
+		end
+	end
+	local border = args.border
+	local border2 = border + border
+	local bmap
+	bmap = dynawa.bitmap.new (sizew + border2, sizeh + border2, unpack(args.bgcolor))
+	for i, item in ipairs(items) do
+		local y = 0
+		if args.align == "center" then
+			y = math.floor((sizeh - item.h)/2)
+		elseif args.align == "bottom" then
+			y = sizeh - item.h
+		end
+		dynawa.bitmap.combine (bmap, item.bitmap, border + item.x, border + y)
 	end
 	return bmap, sizew + border2, sizeh + border2
 end
