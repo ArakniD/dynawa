@@ -91,7 +91,7 @@ function app:handle_event_from_phone(ev)
 			sender = assert(data.contact_email)
 		end
 		table.insert(rows,"From: "..sender)
-		table.insert(rows,'"'..get_snippet{assert(data.subject)}..'"')
+		table.insert(rows,'"'..self:get_snippet{assert(data.subject)}..'"')
 		item.header = assert(data.subject)
 		local time = assert(data.time_received)
 		local from = "From "..sender
@@ -119,8 +119,17 @@ function app:handle_event_from_phone(ev)
 	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={128,0,128}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
 	dynawa.popup:open{bitmap = bmap, autoclose = 20000}
-	table.insert(self.prefs.storage[typ],1,item)
-	--SAVE (typ)!
+	local folder = assert(self.prefs.storage[typ])
+	table.insert(folder,1,item)
+	if typ == "calendar" then
+		--Sort events by time!
+	end
+	local limit = 10 --Message cap per inbox. #todo increase!
+	while #folder > limit do
+		table.remove(folder)
+	end
+	--#todo save only relevant folder?
+	
 end
 
 function app:get_snippet(lines)
@@ -295,10 +304,23 @@ function app:display_folder(folder_id)
 		local item = {value = {message = item}}
 		item.render = function(_self,args)
 			local color
-			if not _self.value.message.read then
+			local message = _self.value.message
+			if not message.read then
 				color = highlight_color
 			end
-			local bitmap = dynawa.bitmap.text_lines{text="> "..self:text_or_time(_self.value.message.header), color = color, width = assert(args.max_size.w)}
+			local bitmap
+			if message.icon then
+				local icon = assert(dynawa.bitmap.from_png(message.icon),"Cannot parse icon from PNG")
+				local iw,ih = dynawa.bitmap.info(icon)
+				local width = args.max_size.w - iw - 1
+				assert(width >= 50, "Item width (minus icon) is less than 50")
+				local textbmp = dynawa.bitmap.text_lines{text = "> "..self:text_or_time(_self.value.message.header), color = color, width = width}
+				bitmap = dynawa.bitmap.layout_horizontal({textbmp, icon},{align="top", spacing = 1})
+				local w,h = dynawa.bitmap.info(bitmap) --#todo remove after testing!
+				assert (w == args.max_size.w, "Mismatch "..w.." / "..args.max_size.w) --#todo remove after testing!
+			else
+				bitmap = dynawa.bitmap.text_lines{text="> "..self:text_or_time(_self.value.message.header), color = color, width = assert(args.max_size.w)}
+			end
 			return bitmap
 		end
 		table.insert (menu.items, item)
