@@ -44,7 +44,7 @@ function app:handle_event_from_phone(ev)
 	local data = assert(ev.data)
 	local icon
 	if data.contact_icon then
-		icon = assert(data.contact_icon["30"])
+		icon = assert(data.contact_icon["30"], "No size 30 icon found")
 	end
 	local command = assert(data.command)
 	local item = {body={},read=false}
@@ -66,18 +66,43 @@ function app:handle_event_from_phone(ev)
 		if data.contact_name then
 			table.insert(item.body,"Number: "..data.contact_phone)
 		end
-		table.insert(item.body,{"Called %s",os.time()-3})
+		table.insert(item.body,{"Called %s",os.time()-5})
 	elseif command == "incoming_sms" then
+		typ = "sms"
 		table.insert(rows,"INCOMING SMS")
-		local caller = data.contact_name
-		if not caller then
-			caller = assert(data.contact_phone)
+		local sender = data.contact_name
+		if not sender then
+			sender = assert(data.contact_phone)
 		end
-		table.insert(rows,"From: "..caller)
+		table.insert(rows,"From: "..sender)
 		local snippet = self:get_snippet(data.text)
-		if data.contact_name then
-			table.insert(rows, data.contact_name)
+		table.insert(rows,'"'..snippet..'"')
+		local time = assert(data.time_received)
+		item.header = "From ".. sender
+		for i,line in ipairs(data.text) do
+			table.insert(item.body,line)
 		end
+		table.insert(item.body,{"(Received %s)",time})
+	elseif command == "incoming_email" then
+		typ = "email"
+		table.insert(rows,"INCOMING E-MAIL")
+		local sender = data.contact_name
+		if not sender then
+			sender = assert(data.contact_email)
+		end
+		table.insert(rows,"From: "..sender)
+		table.insert(rows,'"'..get_snippet{assert(data.subject)}..'"')
+		item.header = assert(data.subject)
+		local time = assert(data.time_received)
+		local from = "From "..sender
+		if sender ~= data.contact_email then
+			from = from .." ("..data.contact_email..")"
+		end
+		table.insert(item.body, from)
+		for i,line in ipairs(data.body_preview) do
+			table.insert(item.body,line)
+		end
+		table.insert(item.body,{"(Received %s)",time})
 	else
 		error("Unknown command: "..tostring(command))
 	end
@@ -88,19 +113,22 @@ function app:handle_event_from_phone(ev)
 		end
 	end
 	if icon then
-		table.insert(rows,1,assert(dynawa.bitmap.from_png(icon)))
+		table.insert(rows,2,assert(dynawa.bitmap.from_png(icon)))
 		item.icon = icon
 	end
 	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={128,0,128}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
 	dynawa.popup:open{bitmap = bmap, autoclose = 20000}
 	table.insert(self.prefs.storage[typ],1,item)
-	--SAVE!
+	--SAVE (typ)!
 end
 
 function app:get_snippet(lines)
 	local snippet = assert(lines[1])
-	
+	if #snippet <= 30 then
+		return snippet
+	end
+	return snippet:sub(1,30).."..."
 end
 
 function app:text_or_time(arg)
@@ -143,8 +171,8 @@ function app:text_or_time(arg)
 		else
 			result = result .. " ago"
 		end
-		result = string.format(arg[1], result)
 	end
+	result = string.format(arg[1], result)
 	return result
 end
 
