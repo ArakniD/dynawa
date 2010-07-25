@@ -213,7 +213,7 @@ int AnalogIn_valueWait(AnalogIn *analogin)
         return -1;
     }
 
-    TRACE_ADC("ADC_SR %x\r\n", AT91C_BASE_ADC->ADC_SR);
+    //TRACE_ADC("ADC_SR %x\r\n", AT91C_BASE_ADC->ADC_SR);
 
     AT91C_BASE_ADC->ADC_IDR = AT91C_ADC_DRDY; // turn off data ready interrupt
     AT91C_BASE_ADC->ADC_CR = AT91C_ADC_START; // start the conversion
@@ -222,7 +222,7 @@ int AnalogIn_valueWait(AnalogIn *analogin)
 // dynawa
         asm volatile ("nop");
     }
-    TRACE_ADC("ADC_SR %x\r\n", AT91C_BASE_ADC->ADC_SR);
+    //TRACE_ADC("ADC_SR %x\r\n", AT91C_BASE_ADC->ADC_SR);
 
 // Busy wait till it's done
     AT91C_BASE_ADC->ADC_IER = AT91C_ADC_DRDY;
@@ -284,7 +284,7 @@ int AnalogIn_managerInit()
 
 // MV: z Petrova peripheral/amblightsensor.c
     //AT91C_BASE_ADC->ADC_MR = (64<<8)|(16<<16)|(8<<24);
-    AT91C_BASE_ADC->ADC_MR = 0x08203000;
+    AT91C_BASE_ADC->ADC_MR = 0x0f1f3f10;   // MCK/30, 8b
 
     //TODO: Will need to fine-tune these timings.
 

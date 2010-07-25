@@ -7,6 +7,9 @@
 /*                                                                            */
 /* ========================================================================== */
 
+#ifndef OLED_H
+#define OLED_H
+
 //#define rgb2w(r,g,b) ((b&0x3F)|((g<<6)&0xFC0)|((r<<12)&0x3F000))
 
 #define rgb2w(r,g,b) (((b&0x3F)<<16)|((g&0x7)<<22)|((g>>3)&0x7)|((r&0x3f)<<3))
@@ -71,6 +74,12 @@ typedef  unsigned long long int oled_access_fast;
 typedef  unsigned short int oled_access_cmd;
 typedef  unsigned int oled_access;
 
+typedef struct {
+    uint8_t precharge_time_r, precharge_time_g, precharge_time_b;
+    uint8_t precharge_current_r, precharge_current_g, precharge_current_b;
+    uint8_t driving_current_r, driving_current_g, driving_current_b;
+} oled_profile;
+
 int oledInitHw(void);
 void oledWriteCommand(uint16_t cmd, uint16_t param);
 void oledWrite(uint16_t param);
@@ -99,3 +108,5 @@ void oledWrite(uint16_t param);
 0   x     x
 
 */
+
+#endif  // OLED_H

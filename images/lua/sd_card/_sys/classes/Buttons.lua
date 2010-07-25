@@ -20,9 +20,6 @@ function class:update_matrix(event)
 		self.matrix[button] = nil
 	elseif action == "button_down" then
 		self.matrix[button] = dynawa.ticks()
-
--- MV: ambient sensor test
-        log("adc " .. dynawa.x.adc(6))
 	else
 		assert(action == "button_hold")
 		self.matrix[button] = 0 - dynawa.ticks()
