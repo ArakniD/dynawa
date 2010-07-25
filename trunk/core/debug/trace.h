@@ -38,14 +38,14 @@
 #define TR_ERROR        
 #define TR_SCR  //screen
 //#define TR_FAT          
-#define TR_BT          
+//#define TR_BT          
 //#define TR_LUA          
 //#define TR_BMP          
 //#define TR_SYS          
 //#define TR_TMR          
 //#define TR_RTC          
 #define TR_ADC
-#define TR_SER          
+//#define TR_SER          
 //#define TR_SD           
 //#define TR_USB          
 //#define TR_BOT          

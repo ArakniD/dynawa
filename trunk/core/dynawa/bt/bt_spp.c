@@ -529,19 +529,23 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
 		p = q;
 	}
 */
-    int i;
-    for (i = 0; i < p->len; ++i) {
-        LWIP_DEBUGF(BT_SPP_DEBUG, ("data: %c %d\n", data[i], data[i]));
+    if (p->len) {
+        int i;
+        for (i = 0; i < p->len; ++i) {
+            LWIP_DEBUGF(BT_SPP_DEBUG, ("data: %c %d\n", data[i], data[i]));
+        }
+        
+    // MV
+        TRACE_INFO("spp_recv %d\r\n", p->len);
+        event ev;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_DATA;
+        ev.data.bt.sock = arg;
+        ev.data.bt.param.ptr = p;
+        event_post(&ev);
+    } else {
+        pbuf_free(p);
     }
-    
-// MV
-    TRACE_INFO("spp_recv %d\r\n", p->len);
-    event ev;
-    ev.type = EVENT_BT;
-    ev.data.bt.type = EVENT_BT_DATA;
-    ev.data.bt.sock = arg;
-    ev.data.bt.param.ptr = p;
-    event_post(&ev);
 
 	return ERR_OK;
 

@@ -251,6 +251,7 @@ THUMB_SRC= \
   $(DYNAWA)/event.c \
   $(DYNAWA)/timer.c \
   $(DYNAWA)/analogin.c \
+  $(DYNAWA)/display.c \
   $(DYNAWA)/button.c \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \

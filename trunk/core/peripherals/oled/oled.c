@@ -33,6 +33,54 @@ void oledWrite(uint16_t param)
     *pOLED = (uint16_t)(param);  
 }
 
+static oled_profile oled_profiles[] = {
+// display off
+    {
+        0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00,
+    },
+// brightness low (TODO)
+    {
+        0x0f, 0x0f, 0x0f,
+        0xff, 0xe6, 0xd1,
+        0x09, 0x0a, 0x0a,
+    },
+// brightness medium
+    {
+        0x0f, 0x0f, 0x0f,
+        0xff, 0xe6, 0xd1,
+        0x09, 0x0a, 0x0a,
+    },
+// brightness max
+    {
+        0x0f, 0x0f, 0x0f,
+        0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff,
+    },
+};
+
+int oledSetProfile(uint8_t profile_index) {
+
+    if (profile_index >= sizeof(oled_profiles) / sizeof((oled_profiles)[0]))
+        return 1;
+
+    oled_profile *profile = &oled_profiles[profile_index]; 
+
+    oledWriteCommand(PRECHARGE_TIME_R, profile->precharge_time_r);
+    oledWriteCommand(PRECHARGE_TIME_G, profile->precharge_time_g);
+    oledWriteCommand(PRECHARGE_TIME_B, profile->precharge_time_b);
+
+    oledWriteCommand(PRECHARGE_CURRENT_R, profile->precharge_current_r);
+    oledWriteCommand(PRECHARGE_CURRENT_G, profile->precharge_current_g);
+    oledWriteCommand(PRECHARGE_CURRENT_B, profile->precharge_current_b);
+
+    oledWriteCommand(DRIVING_CURRENT_R, profile->driving_current_r);
+    oledWriteCommand(DRIVING_CURRENT_G, profile->driving_current_g);
+    oledWriteCommand(DRIVING_CURRENT_B, profile->driving_current_b);
+
+    return 0;
+}
 
 int oledInitHw(void)
 {
@@ -90,6 +138,8 @@ int oledInitHw(void)
 */
 
 #if 1
+    oledSetProfile(2);
+#elif 0
     oledWriteCommand(PRECHARGE_TIME_R, 0x0F);  //ghost fix orig: 3
     oledWriteCommand(PRECHARGE_TIME_G, 0x0F);  //ghost fix, orig:5
     oledWriteCommand(PRECHARGE_TIME_B, 0x0F);  //ghost fix orig: 5
