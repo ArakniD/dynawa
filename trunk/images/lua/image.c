@@ -80,6 +80,8 @@ void Run( ) // this task gets called as soon as we boot up.
     ledrgb_set(0x7, 0, 0, 0);
     ledrgb_close();
 
+    display_power(1);
+
     //test();
     scrWriteRect(0,126,40,127,0xffffff);
     scrWriteRect(80,126,120,127,0xffffff);

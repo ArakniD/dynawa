@@ -33,6 +33,21 @@ static int l_cmd (lua_State *L) {
             bt_set_link_key(bdaddr, link_key);
         }
         break;
+    case 8:         // LINK_KEY_REQ_REPLY
+        {
+            const uint8_t *bdaddr = luaL_checkstring(L, 2);
+            const uint8_t *link_key = luaL_checkstring(L, 3);
+
+            bt_link_key_req_reply(bdaddr, link_key);
+        }
+        break;
+    case 9:         // LINK_KEY_REQ_NEG_REPLY
+        {
+            const uint8_t *bdaddr = luaL_checkstring(L, 2);
+
+            bt_link_key_req_neg_reply(bdaddr);
+        }
+        break;
     case 4:
         bt_inquiry();
         break;

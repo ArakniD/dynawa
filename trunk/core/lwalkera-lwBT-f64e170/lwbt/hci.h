@@ -62,6 +62,8 @@ void hci_connection_complete(err_t (* conn_complete)(void *arg, struct bd_addr *
 #define hci_maxsize(pcb) ((pcb)->maxsize)
 err_t hci_inquiry(u32_t lap, u8_t inq_len, u8_t num_resp, err_t (* inq_complete)(void *arg, struct hci_pcb *pcb, struct hci_inq_res *ires, u16_t result));
 err_t hci_disconnect(struct bd_addr *bdaddr, u8_t reason);
+err_t hci_link_key_request_reply(struct bd_addr *bdaddr, u8_t *key);
+err_t hci_link_key_request_neg_reply(struct bd_addr *bdaddr);
 err_t hci_pin_code_request_reply(struct bd_addr *bdaddr, u8_t pinlen, u8_t *pincode);
 err_t hci_pin_code_request_neg_reply(struct bd_addr *bdaddr);
 err_t hci_write_stored_link_key(struct bd_addr *bdaddr, u8_t *key);
@@ -117,6 +119,8 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_CREATE_CONNECTION 0x05
 #define HCI_REJECT_CONNECTION_REQUEST 0x0A
 #define HCI_DISCONNECT 0x06
+#define HCI_LINK_KEY_REQ_REP 0x0B
+#define HCI_LINK_KEY_REQ_NEG_REP 0x0C
 #define HCI_PIN_CODE_REQ_REP 0x0D
 #define HCI_PIN_CODE_REQ_NEG_REP 0x0E
 #define HCI_SET_CONN_ENCRYPT 0x13
@@ -259,6 +263,8 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_CREATE_CONN_PLEN 17
 #define HCI_DISCONN_PLEN 7
 #define HCI_REJECT_CONN_REQ_PLEN 11
+#define HCI_LINK_KEY_REQ_REP_PLEN 26
+#define HCI_LINK_KEY_REQ_NEG_REP_PLEN 10
 #define HCI_PIN_CODE_REQ_REP_PLEN 27
 #define HCI_PIN_CODE_REQ_NEG_REP_PLEN 10
 #define HCI_SET_CONN_ENCRYPT_PLEN 7

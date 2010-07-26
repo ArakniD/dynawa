@@ -913,6 +913,53 @@ err_t hci_reject_connection_request(struct bd_addr *bdaddr, u8_t reason)
     return hci_cmd_main_send(p);
 }
 
+/* hci_link_key_request_reply():
+ *
+ * Used to reply to a Link Key Request event from the Host Controller and
+ * specifies the link key to use for a connection.
+ */
+err_t hci_link_key_request_reply(struct bd_addr *bdaddr, u8_t *key)
+{
+	struct pbuf *p;
+
+    // HCI_LINK_KEY_REQ_REP_PLEN = 26 OK
+	if((p = pbuf_alloc(PBUF_RAW, HCI_LINK_KEY_REQ_REP_PLEN, PBUF_RAM)) == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_link_key_request_reply: Could not allocate memory for pbuf\n"));
+		return ERR_MEM;
+	}
+
+	/* Reset buffer content just to make sure */
+	MEMSET((u8_t *)p->payload, 0, HCI_LINK_KEY_REQ_REP_PLEN);
+
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_LINK_KEY_REQ_REP, HCI_LINK_CTRL_OGF, HCI_LINK_KEY_REQ_REP_PLEN);
+	/* Assembling cmd prameters */
+	MEMCPY(((u8_t *)p->payload) + 4, bdaddr->addr, 6);
+	MEMCPY(((u8_t *)p->payload) + 10, key, 16);
+
+    return hci_cmd_main_send(p);
+}
+
+/* hci_link_key_request_neg_reply():
+ *
+ * Used to reply to a Link Key Request event from the Host Controller when the
+ * Host cannot specify a link key to use for a connection.
+ */
+err_t hci_link_key_request_neg_reply(struct bd_addr *bdaddr)
+{
+	struct pbuf *p;
+    // HCI_LINK_KEY_REQ_NEG_REP_PLEN = 10 OK
+	if((p = pbuf_alloc(PBUF_RAW, HCI_LINK_KEY_REQ_NEG_REP_PLEN, PBUF_RAM)) == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_link_key_request_neg_reply: Could not allocate memory for pbuf\n"));
+		return ERR_MEM;
+	}
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_LINK_KEY_REQ_NEG_REP, HCI_LINK_CTRL_OGF, HCI_LINK_KEY_REQ_NEG_REP_PLEN);
+	/* Assembling cmd prameters */
+	MEMCPY(((u8_t *)p->payload)+4, bdaddr->addr, 6);
+
+    return hci_cmd_main_send(p);
+}
 /* hci_pin_code_request_reply():
  *
  * Used to reply to a PIN Code Request event from the Host Controller and
