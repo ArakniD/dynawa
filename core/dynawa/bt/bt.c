@@ -341,6 +341,26 @@ static void u_bt_task(bt_command *cmd)
                 free(bdaddr_link_key);
             }
             break;
+        case BT_COMMAND_LINK_KEY_REQ_REPLY:
+            {
+                TRACE_INFO("BT_COMMAND_LINK_KEY_REQ_REPLY\r\n");
+                struct bt_bdaddr_link_key *bdaddr_link_key = cmd->param.ptr;
+
+                hci_link_key_request_reply(&bdaddr_link_key->bdaddr, &bdaddr_link_key->link_key);
+
+                free(bdaddr_link_key);
+            }
+            break;
+        case BT_COMMAND_LINK_KEY_REQ_NEG_REPLY:
+            {
+                TRACE_INFO("BT_COMMAND_LINK_KEY_REQ_NEG_REPLY\r\n");
+                struct bd_addr *bdaddr = cmd->param.ptr;
+
+                hci_link_key_request_neg_reply(bdaddr);
+
+                free(bdaddr);
+            }
+            break;
         case BT_COMMAND_RFCOMM_LISTEN:
             {
                 TRACE_INFO("BT_COMMAND_RFCOMM_LISTEN\r\n");
@@ -793,6 +813,50 @@ void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
 
     cmd.id = BT_COMMAND_SET_LINK_KEY;
     cmd.param.ptr = bdaddr_link_key;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+void bt_link_key_req_reply(uint8_t *bdaddr, uint8_t *link_key) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_link_key_req_reply\r\n");
+
+    struct bt_bdaddr_link_key *bdaddr_link_key = malloc(sizeof(struct bt_bdaddr_link_key)); 
+    if (bdaddr_link_key == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(&bdaddr_link_key->bdaddr, bdaddr, BT_BDADDR_LEN);
+    memcpy(&bdaddr_link_key->link_key, link_key, BT_LINK_KEY_LEN);
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+    trace_bytes("linkkey", link_key, BT_LINK_KEY_LEN);
+
+    cmd.id = BT_COMMAND_LINK_KEY_REQ_REPLY;
+    cmd.param.ptr = bdaddr_link_key;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+void bt_link_key_req_neg_reply(uint8_t *bdaddr) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_link_key_req_neg_reply\r\n");
+
+    struct bd_addr *cmd_bdaddr = malloc(sizeof(struct bd_addr)); 
+    if (cmd_bdaddr == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(cmd_bdaddr, bdaddr, BT_BDADDR_LEN);
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+
+    cmd.id = BT_COMMAND_LINK_KEY_REQ_NEG_REPLY;
+    cmd.param.ptr = cmd_bdaddr;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();

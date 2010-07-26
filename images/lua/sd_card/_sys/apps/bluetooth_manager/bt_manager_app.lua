@@ -187,9 +187,10 @@ function app:handle_bt_event_link_key_req(event)
 		link_key = self.prefs.devices[bdaddr].link_key
 	end
 	if link_key then
-		self.hw.cmd:set_link_key(bdaddr, link_key)
+		self.hw.cmd:link_key_req_reply(bdaddr, link_key)
 	else
-		error("I don't have the link key!")
+		--error("I don't have the link key!")
+		self.hw.cmd:link_key_req_neg_reply(bdaddr)
 	end
 end
 

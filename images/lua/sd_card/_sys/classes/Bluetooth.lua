@@ -7,6 +7,8 @@ function class:_init()
 		close = 2,
 		set_link_key = 3,
 		inquiry = 4,
+        link_key_req_reply = 8,
+        link_key_req_neg_reply = 9,
 		socket_new = 100,
 		socket_close = 101,
 		socket_bind = 102,

@@ -29,6 +29,8 @@ local cmd = {
     CLOSE = 2,
     SET_LINK_KEY = 3,
     INQUIRY = 4,
+    LINK_KEY_REQ_REPLY = 8,
+    LINK_KEY_REQ_NEG_REPLY = 9,
     SOCKET_NEW = 100,
     SOCKET_CLOSE = 101,
     SOCKET_BIND = 102,
@@ -127,6 +129,14 @@ dynawa.bt.socket = bt_socket
 
 local function set_link_key(bdaddr, link_key)
     dynawa.bt.cmd(cmd.SET_LINK_KEY, bdaddr, link_key)
+end
+
+local function link_key_req_reply(bdaddr, link_key)
+    dynawa.bt.cmd(cmd.LINK_KEY_REQ_REPLY, bdaddr, link_key)
+end
+
+local function link_key_req_neg_reply(bdaddr)
+    dynawa.bt.cmd(cmd.LINK_KEY_REQ_NEG_REPLY, bdaddr)
 end
 
 local function find_service(bdaddr, event_handler, event_handler_data)
@@ -427,7 +437,9 @@ local function got_message(message)
         log("bdaddr " .. bdaddr2str(bdaddr))
         local link_key = my.globals.prefs.devices[bdaddr]
         if link_key then
-            set_link_key(bdaddr, link_key)
+            link_key_req_reply(bdaddr, link_key)
+        else
+            link_key_req_neg_reply(bdaddr)
         end
     elseif message.subtype == event.BT_CONNECTED then
         log("BT_CONNECTED")
