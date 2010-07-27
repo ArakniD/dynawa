@@ -107,6 +107,8 @@ function app.menu_builders:display_brightness()
 			text = choices[i],
 			selected = function()
 				dynawa.devices.display.brightness(i)
+				dynawa.settings.display.brightness = i
+				dynawa.file.save_settings()
 			end
 		})
 	end

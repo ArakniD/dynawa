@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.6", settings_revision = 26100622}
+dynawa.version = {wristOS="0.6", settings_revision = 100727}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -40,10 +40,11 @@ end
 dynawa.dofile(dynawa.dir.sys.."file.lua")
 
 dynawa.settings = dynawa.file.load_data(dynawa.dir.sys.."settings.data")
-if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_revision then
+if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_revision or dynawa.settings.revision > 999999 then
 	dynawa.settings = {
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
+		display = {brightness = 2},
 		autostart = {"/_sys/apps/clock/clock_app.lua","/_sys/apps/inbox/inbox_app.lua", "/_sys/apps/bluetooth_apps/openwatch_bt_app.lua","/apps/bt/echo_bt_app.lua"},
 		switchable = {"dynawa.bluetooth_manager","dynawa.inbox","dynawa.clock"},
 	}
@@ -62,6 +63,8 @@ dynawa.devices.buttons = Class.Buttons()
 dynawa.devices.display = {size = {w = 160, h = 128}, flipped = false}
 dynawa.devices.display.power = assert(dynawa.x.display_power)
 dynawa.devices.display.brightness = assert(dynawa.x.display_brightness)
+
+dynawa.devices.display.brightness(assert(dynawa.settings.display.brightness))
 
 dynawa.devices.timers = Class.Timers()
 
