@@ -71,6 +71,9 @@ function app:switching_to_front()
 				text = "Send complex structure", value = {jump = "send_openwatch_struct"},
 			},
 			{
+				text = "Emulate random calendar_event", value = {jump = "random_calendar_event"},
+			},
+			{
 				text = "Delete all pairings", value = {jump = "delete_pairings"},
 			},
 		},
@@ -112,6 +115,11 @@ function app:menu_action_send_openwatch_helloworld50()
 	self:send_openwatch{data=table.concat(str), " "}
 end
 
+function app:menu_action_random_calendar_event()
+	local event = {command = "calendar_event", description = "Lunch "..math.random(99999), location = "Hilton hotel, Berlin", details = "Bring guns & ammo", contact_name = "John Smith", time = os.time() + math.random(60*60*20) - 5*60*60}
+	local app = dynawa.app_manager:app_by_id("dynawa.inbox")
+	app:handle_event_from_phone{type = "from_phone", data = event}
+end
 function app:menu_action_send_openwatch_struct()
 	local data = {string = "Hello world", number = 666, TRUE = true, FALSE = false, array = {1,2,"three",4,5}, 
 			subhash = {key1 = "val1", key2 = "val2"}}
