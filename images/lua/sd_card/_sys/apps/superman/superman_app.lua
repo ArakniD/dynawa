@@ -81,11 +81,36 @@ function app.menu_builders:root()
 			{text = "Shortcuts", value = {go_to_url = "shortcuts"}},
 			{text = "Apps", value = {go_to_url = "apps"}},
 			{text = "File browser", value = {go_to_url = "file_browser"}},
-			{text = "Adjust time and date", value = {go_to_url = "adjust_time_date"}},
-			{text = "Default font size", value = {go_to_url = "default_font_size"}},
+			{text = "Display settings", value = {go_to_url = "adjust_display"}},
+			{text = "Time and date settings", value = {go_to_url = "adjust_time_date"}},
 		},
 	}
 	return menu_def
+end
+
+function app.menu_builders:adjust_display()
+	local menudesc = {
+		banner = "Adjust display", items = {
+			{text = "Default font size", value = {go_to_url = "default_font_size"}},
+			{text = "Display brightness", value = {go_to_url = "display_brightness"}},
+		}
+	}
+	local menu = self:new_menuwindow(menudesc).menu
+	return menu
+end
+
+function app.menu_builders:display_brightness()
+	local choices = {[0] = "Auto brightness", "Min. brightness", "Normal brightness", "Max. brightness"}
+	local menudesc = {banner = "Display brightness", items = {}}
+	for i = 0,3 do
+		table.insert(menudesc.items,{
+			text = choices[i],
+			selected = function()
+				dynawa.devices.display.brightness(i)
+			end
+		})
+	end
+	return menudesc
 end
 
 function app.menu_builders:default_font_size()
