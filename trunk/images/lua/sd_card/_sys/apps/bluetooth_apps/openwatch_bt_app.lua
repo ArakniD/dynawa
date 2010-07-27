@@ -314,6 +314,7 @@ end
 
 function app:handle_event_socket_error(socket,error)
 	log("BT error '"..tostring(error).."' in "..socket)
+	--#todo destroy the socket!
 	local activity = assert(socket.activity)
 	self:should_reconnect(activity)
 end
