@@ -20,14 +20,14 @@ function app:start()
 	end
 	self.events = Class.EventSource("inbox")
 	self.prefs = self:load_data() or {storage = {email={},sms={},calendar={},call={}}}
-	table.insert(self.prefs.storage.email,{header = "We should meet (obama@whitehouse.gov)",
+--[[	table.insert(self.prefs.storage.email,{header = "We should meet (obama@whitehouse.gov)",
 			body={"From: Barack Obama <obama@whitehouse.gov>",{"(Received %s)",os.time() - 300},"Dear Sir,","Please contact me, because we have to meet soon. The future","of the free world is currently at stake","Your truly, Barack"}})
 
 	table.insert(self.prefs.storage.email,{header = "You inherited $80,000,000 congratulations!! (ahmed@niger.net)",
 			body={"From: Ahmed Ahmed <ahmed@niger.net>",{"(Received %s)",os.time() - 60 * 60 * 12},"Dear Sir,","Please contact me, because we have to meet soon. You are the sole heir of","the great rich maharaja.","Your truly, Ahmed"}})	
 
 	table.insert(self.prefs.storage.calendar,{header = {"Meet Vaclav Klaus (%s)",os.time() + 60*60*24*7 + 1000},
-			body={"At Prague Castle"}})
+			body={"At Prague Castle"}})]]
 	local my_events
 	dynawa.app_manager:after_app_start("dynawa.bt.openwatch",function (openwatch)
 		openwatch.events:register_for_events(self, function(ev)
@@ -103,8 +103,25 @@ function app:handle_event_from_phone(ev)
 			table.insert(item.body,line)
 		end
 		table.insert(item.body,{"(Received %s)",time})
+	elseif command == "calendar_event" then
+		typ = "calendar"
+		table.insert(rows,"CALENDAR EVENT")
+		table.insert(rows,self:get_snippet{assert(data.description)})
+		local time = data.time or os.time()
+		table.insert(rows,self:text_or_time{"When: %s",time})
+		item.header = {data.description.." (%s)",time}
+		item.time = time
+		if data.location then
+			table.insert(item.body,"Where: "..data.location)
+		end
+		if data.contact_name then
+			table.insert(item.body,"With: "..data.contact_name)
+		end
+		if data.details then
+			table.insert(item.body, "Details: "..data.details)
+		end
 	else
-		error("Unknown command: "..tostring(command))
+		error("Unknown from_phone command: "..tostring(command))
 	end
 	
 	for i, row in ipairs(rows) do
@@ -121,13 +138,18 @@ function app:handle_event_from_phone(ev)
 	dynawa.popup:open{bitmap = bmap, autoclose = 20000}
 	local folder = assert(self.prefs.storage[typ])
 	table.insert(folder,1,item)
-	if typ == "calendar" then
-		--Sort events by time!
+	if typ == "calendar" then --Calendar folder is sorted by event time
+		table.sort(folder,function(a,b)
+			return ((a.time or 0) > (b.time or 0))
+		end)
 	end
 	local limit = 10 --Message cap per inbox. #todo increase!
 	while #folder > limit do
 		table.remove(folder)
 	end
+	
+	self:save_data(self.prefs)
+	self:broadcast_update()
 	--#todo save only relevant folder?
 	
 end
