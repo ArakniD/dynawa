@@ -44,7 +44,7 @@ function app:handle_event_from_phone(ev)
 	local data = assert(ev.data)
 	local icon
 	if data.contact_icon then
-		icon = assert(data.contact_icon["30"], "No size 30 icon found")
+		icon = assert(data.contact_icon["45"], "No size 45 icon found")
 	end
 	local command = assert(data.command)
 	local item = {body={},read=false}
@@ -114,7 +114,7 @@ function app:handle_event_from_phone(ev)
 	end
 	if icon then
 		table.insert(rows,2,assert(dynawa.bitmap.from_png(icon)))
-		item.icon = icon
+		item.icon = assert(data.contact_icon["30"])
 	end
 	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={128,0,128}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
