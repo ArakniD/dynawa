@@ -37,14 +37,14 @@ function app:push(x)
 	table.insert(self.stack,1,x)
 	--self:window_to_front(x)
 	x.in_front = true
-	log("Pushed "..x)
+	log("Pushed "..x..", "..#(self.stack).." now on stack")
 end
 
 function app:pop()
 	local x = assert(table.remove(self.stack,1),"Nothing to pop from stack")
 	assert(x.is_window, "Should be window")
 	assert(x.in_front, "Should be front window")
-	log("Popped "..x)
+	log("Popped "..x..", "..#(self.stack).." remain on stack")
 	x.in_front = nil
 	if self.stack[1] then
 		self.stack[1].in_front = true

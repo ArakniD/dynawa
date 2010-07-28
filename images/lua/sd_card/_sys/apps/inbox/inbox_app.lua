@@ -135,7 +135,9 @@ function app:handle_event_from_phone(ev)
 	end
 	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={128,0,128}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
-	dynawa.popup:open{bitmap = bmap, autoclose = 20000}
+	dynawa.popup:open{bitmap = bmap, autoclose = 20000, on_confirm = function()
+		self:show_message{folder_id = typ, message = item}
+	end}
 	local folder = assert(self.prefs.storage[typ])
 	table.insert(folder,1,item)
 	if typ == "calendar" then --Calendar folder is sorted by event time
@@ -143,15 +145,13 @@ function app:handle_event_from_phone(ev)
 			return ((a.time or 0) > (b.time or 0))
 		end)
 	end
-	local limit = 10 --Message cap per inbox. #todo increase!
+	local limit = 10 --Message cap per folder. #todo increase!
 	while #folder > limit do
 		table.remove(folder)
 	end
 	
 	self:save_data(self.prefs)
 	self:broadcast_update()
-	--#todo save only relevant folder?
-	
 end
 
 function app:get_snippet(lines)
@@ -244,8 +244,6 @@ function app:display_root_menu()
 			dynawa.bitmap.combine(bitmap, self.gfx[id],width - 25, 0)
 			dynawa.bitmap.combine(bitmap, dynawa.bitmap.text_line(inbox_names[id]..":","/_sys/fonts/default10.png"), 0, 10)
 			dynawa.bitmap.combine(bitmap, dynawa.bitmap.text_line(newstr, "/_sys/fonts/default15.png", color),87,6)
-			
-			--dynawa.bitmap.combine(bitmap, dynawa.bitmap.text_lines{text=inbox_names[id].." "..newstr, color = color, width = assert(width - 25)}, 0, 0)
 			return bitmap
 		end}
 		item.value = {open_folder = id}
@@ -281,36 +279,9 @@ function app:menu_item_selected(args)
 	if value.open_folder then
 		self:display_folder(value.open_folder)
 	elseif value.message then
-		local message = value.message
-		local menu = {flags = {parent = assert(args.menu)}, items = {}}
-		menu.banner = self:text_or_time(message.header)
-		for i, line in ipairs(message.body) do
-			table.insert(menu.items, {text = self:text_or_time(line), textcolor = {255,255,0}})
-		end
-		if not message.read then
-			message.read = true
-			args.menu:invalidate()
-			args.menu.flags.parent:invalidate()
-			self:save_data(self.prefs)
-			self:broadcast_update()
-		end
-		table.insert(menu.items, {text = "Delete this message", selected = function(_self,args)
-			local folder_id = assert(args.menu.flags.parent.flags.folder_id)
-			for i, msg_iter in ipairs(self.prefs.storage[folder_id]) do
-				if msg_iter == message then
-					table.remove(self.prefs.storage[folder_id],i)
-					break
-				end
-			end
-			dynawa.window_manager:pop():_delete() --Pop the message menu
-			dynawa.window_manager:pop():_delete() --And the original folder menu
-			self:display_folder(folder_id)
-			dynawa.popup:info("Message deleted.")
-			self:save_data(self.prefs)
-			self:broadcast_update()
-		end})
-		local menuwin = self:new_menuwindow(menu)
-		menuwin:push()
+		self:show_message{folder_id = args.menu.flags.folder_id, message = value.message}
+	else
+		error("WTF?")
 	end
 end
 
@@ -385,3 +356,45 @@ function app:mark_all_read(box_id)
 	end
 end
 
+--Show single message details
+--The exact m.o. depends on whether this is called from folder menu or not
+function app:show_message(args)
+	local folder_id, message = assert(args.folder_id, "No folder"), assert(args.message, "No message")
+	local topwin = dynawa.window_manager:peek()
+	if not (topwin and topwin.menu.flags and topwin.menu.flags.folder_id == folder_id) then
+		--We are not being called from folder. Close all active apps, open inbox and relevant folder.
+		dynawa.window_manager:stack_cleanup()
+		self:display_root_menu()
+		self:display_folder(folder_id)
+		topwin = dynawa.window_manager:peek()
+	end
+	local menu = {flags = {parent = assert(topwin.menu)}, items = {}}
+	menu.banner = self:text_or_time(message.header)
+	for i, line in ipairs(message.body) do
+		table.insert(menu.items, {text = self:text_or_time(line), textcolor = {255,255,0}})
+	end
+	if not message.read then
+		message.read = true
+		topwin.menu:invalidate()
+		topwin.menu.flags.parent:invalidate()
+		self:save_data(self.prefs)
+		self:broadcast_update()
+	end
+	table.insert(menu.items, {text = "Delete this message", selected = function(_self,args)
+		local folder_id = assert(args.menu.flags.parent.flags.folder_id)
+		for i, msg_iter in ipairs(self.prefs.storage[folder_id]) do
+			if msg_iter == message then
+				table.remove(self.prefs.storage[folder_id],i)
+				break
+			end
+		end
+		dynawa.window_manager:pop():_delete() --Pop the message menu
+		dynawa.window_manager:pop():_delete() --And the original folder menu
+		self:display_folder(folder_id)
+		dynawa.popup:info("Message deleted.")
+		self:save_data(self.prefs)
+		self:broadcast_update()
+	end})
+	local menuwin = self:new_menuwindow(menu)
+	menuwin:push()
+end
