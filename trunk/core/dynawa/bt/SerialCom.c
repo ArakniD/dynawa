@@ -1330,14 +1330,14 @@ bool_t UartDrv_Start(void)
 	/*	tx and rx threads		*/
 	//txThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) txThreadFunc, NULL, 0, &threadId);
 	//if(txThread == INVALID_HANDLE_VALUE) 
-    if(xTaskCreate(txThreadFunc, "bt_tx", TASK_STACK_SIZE(TASK_BT_TX_STACK), TASK_BT_TX_PRI, NULL, &txThread) != pdPASS ) 
+    if(xTaskCreate(txThreadFunc, "bt_tx", TASK_STACK_SIZE(TASK_BT_TX_STACK), NULL, TASK_BT_TX_PRI, &txThread) != pdPASS ) 
 	{
 		errorHandler(__LINE__, __FILE__, "Thread create failure");
 		return(FALSE);
 	}
 	//rxThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) rxThreadFunc, NULL, 0, &threadId);
 	//if(rxThread == INVALID_HANDLE_VALUE) 
-    if(xTaskCreate(rxThreadFunc, "bt_rx", TASK_STACK_SIZE(TASK_BT_RX_STACK), TASK_BT_RX_PRI, NULL, &rxThread) != pdPASS ) 
+    if(xTaskCreate(rxThreadFunc, "bt_rx", TASK_STACK_SIZE(TASK_BT_RX_STACK), NULL, TASK_BT_RX_PRI, &rxThread) != pdPASS ) 
 	{
 		errorHandler(__LINE__, __FILE__, "Thread create failure");
 		return(FALSE);

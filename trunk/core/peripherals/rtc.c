@@ -16,14 +16,17 @@ int rtc_init() {
     rtc_mutex = xSemaphoreCreateMutex();
     if(rtc_mutex == NULL)
         panic();
+    return 0;
 }
 
 int rtc_open() {
     i2c_open();
+    return 0;
 }
 
 int rtc_close() {
     i2c_close();
+    return 0;
 }
 
 int rtc_write(struct tm *new_time) {
@@ -52,6 +55,7 @@ int rtc_write(struct tm *new_time) {
     //portEXIT_CRITICAL ();
     xSemaphoreGive(rtc_mutex);
     // rtc_sleep();
+    return 0;
 }
 
 int rtc_read(struct tm *curr_time, unsigned int *milliseconds) {

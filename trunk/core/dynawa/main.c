@@ -64,7 +64,6 @@ int main( void )
     fontColor = SCR_COLOR_WHITE;
     TRACE_SCR("FreeRTOS Image\n\r");
 
-
     event_init(100);
     //button_init();
     xTaskCreate( StarterTask, "starter", TASK_STACK_SIZE(TASK_STARTER_STACK), NULL, TASK_STARTER_PRI, NULL );

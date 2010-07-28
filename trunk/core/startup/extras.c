@@ -23,14 +23,24 @@ void *byte_memcpy(void *dest, const void *src, size_t n) {
     return _dest;
 }
 
+//#define MALLOC_LICK_SEMAPHORE
+
+#ifdef MALLOC_LICK_SEMAPHORE
 static xSemaphoreHandle malloc_lock_mutex;
 static unsigned int malloc_lock_ref_count = 0;
+#endif
 
 void malloc_lock_init() {
+#ifdef MALLOC_LICK_SEMAPHORE
     malloc_lock_mutex = xSemaphoreCreateRecursiveMutex();
+#endif
 }
 
 void __malloc_lock (struct _reent *reent) {
+#ifdef MALLOC_LICK_SEMAPHORE
+    if (malloc_lock_mutex == NULL)
+        return;
+
     xTaskHandle task = xTaskGetCurrentTaskHandle();
     //TRACE_INFO(">>>malloc_lock %x %x %u\r\n", task, *((uint32_t*)malloc_lock_mutex + 1), malloc_lock_ref_count);
     if(task) {
@@ -39,9 +49,17 @@ void __malloc_lock (struct _reent *reent) {
     }
     malloc_lock_ref_count++;
     //TRACE_INFO("<<<malloc_lock %x %u\r\n", task, malloc_lock_ref_count);
+#else
+    //vPortEnterCritical();
+    vTaskSuspendAll();
+#endif
 }
 
 void __malloc_unlock (struct _reent *reent) {
+#ifdef MALLOC_LICK_SEMAPHORE
+    if (malloc_lock_mutex == NULL)
+        return;
+
     xTaskHandle task = xTaskGetCurrentTaskHandle();
     //TRACE_INFO(">>>malloc_unlock %x %x %u\r\n", task, *((uint32_t*)malloc_lock_mutex + 1), malloc_lock_ref_count);
     malloc_lock_ref_count--;
@@ -49,6 +67,10 @@ void __malloc_unlock (struct _reent *reent) {
         xSemaphoreGiveRecursive(malloc_lock_mutex);
     }
     //TRACE_INFO("<<<malloc_unlock %x %u\r\n", task, malloc_lock_ref_count);
+#else
+    //vPortExitCritical();
+    xTaskResumeAll();
+#endif
 }
 
 /************************** _sbrk_r *************************************
@@ -552,6 +574,7 @@ _ssize_t _write (int fd, const void *ptr, size_t len)
         case MONITOR_STDOUT :
             {
             int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
+            //int bytesWritten = len;
             bytesUnWritten = len - bytesWritten;
             }
             break;
@@ -666,6 +689,7 @@ bytesUnWritten = len - i;
     bytesUnWritten = len - i;
     */
     int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
+    //int bytesWritten = len;
     bytesUnWritten = len - bytesWritten;
     }
     break;

@@ -151,6 +151,7 @@ int i2c_init() {
     i2c_mutex = xSemaphoreCreateMutex();
     if(i2c_mutex == NULL)
         panic();
+    return 0;
 }
 
 int i2c_open() {
@@ -158,6 +159,7 @@ int i2c_open() {
     if(!i2c_open_count++)
         pPMC->PMC_PCER = ( (uint32_t) 1 << AT91C_ID_TWI );
     xSemaphoreGive(i2c_mutex); 
+    return 0;
 }
 
 int i2c_close() {
@@ -165,6 +167,7 @@ int i2c_close() {
     if(i2c_open_count && --i2c_open_count == 0)
         pPMC->PMC_PCDR = ( (uint32_t) 1 << AT91C_ID_TWI );
     xSemaphoreGive(i2c_mutex); 
+    return 0;
 }
 
 void i2cMasterWrite(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t data) {

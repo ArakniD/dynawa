@@ -51,8 +51,17 @@ struct {
     {NULL, NULL}  /* sentinel */
 };
 
+#define LUAL_REGISTER   1
 int luaopen_dynawa (lua_State *L) {
+// MV TODO - luaL_register causes corruption
+
+#if LUAL_REGISTER
     luaL_register(L, "dynawa", dynawa);
+#else
+    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    lua_newtable(L);
+    luaL_register(L, NULL, dynawa);
+#endif
 
     int i = 0;
     while(modules[i].module) {
@@ -62,6 +71,10 @@ int luaopen_dynawa (lua_State *L) {
         lua_settable(L, -3);
         i++;
     }
+
+#if !LUAL_REGISTER
+    lua_setfield(L, -2, "dynawa");
+#endif
 
     return 1;
 }

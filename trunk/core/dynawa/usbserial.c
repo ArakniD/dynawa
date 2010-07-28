@@ -40,9 +40,11 @@ void UsbSerial_open()
     CDCDSerialDriver_Initialize();
     USBD_Connect();
 #endif
-    usbserial.readSemaphore = Semaphore_create();
+    //usbserial.readSemaphore = Semaphore_create();
+    vSemaphoreCreateBinary(usbserial.readSemaphore); 
     Semaphore_take(usbserial.readSemaphore, -1 );
-    usbserial.writeSemaphore = Semaphore_create();
+    //usbserial.writeSemaphore = Semaphore_create();
+    vSemaphoreCreateBinary(usbserial.writeSemaphore); 
     Semaphore_take(usbserial.writeSemaphore, -1 );
     usbserial.justGot = 0;
     usbserial.rxBufCount = 0;
@@ -165,6 +167,9 @@ void usbserial_onRxData(void *pArg, unsigned char status, unsigned int received,
   */
 int UsbSerial_write( const char *buffer, int length, int timeout )
 {
+// TEST
+    //return length;
+
     int rv = 0;
     if( USBD_GetState() == USBD_STATE_CONFIGURED ) {
         unsigned char result = USBD_Write(CDCDSerialDriverDescriptors_DATAIN, buffer, length, usbserial_onTxData, NULL);

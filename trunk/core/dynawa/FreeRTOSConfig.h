@@ -65,7 +65,8 @@ extern "C" {
 #define configMAX_PRIORITIES		( ( unsigned portBASE_TYPE ) 8 )
 #define configMINIMAL_STACK_SIZE	( ( unsigned portSHORT ) 110 )
 //MV#define configTOTAL_HEAP_SIZE		( ( size_t ) CONTROLLER_HEAPSIZE)
-#define configMAX_TASK_NAME_LEN		( 16 )
+//MV#define configMAX_TASK_NAME_LEN		( 16 )
+#define configMAX_TASK_NAME_LEN		( 32 )
 #define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		0
 #define configIDLE_SHOULD_YIELD		1

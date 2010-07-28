@@ -773,7 +773,7 @@ int bt_open() {
         bc_state = BC_STATE_STARTING;
         command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
         //bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
-        xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), TASK_BT_MAIN_PRI, NULL, &bt_task_handle);
+        xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), NULL, TASK_BT_MAIN_PRI, &bt_task_handle);
         return BT_OK;
     }
     return BT_ERR_ALREADY_STARTED;
