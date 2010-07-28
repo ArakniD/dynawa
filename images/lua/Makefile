@@ -24,6 +24,7 @@ CONFIG_OPTS = \
 ROOT = ../..
 CORE = ../../core
 FREERTOS = ../../core/freertos
+#FREERTOS = ../../core/freertos-6.05/Source
 
 # lwIP/lwBT
 _LWIP = ../../core/lwip

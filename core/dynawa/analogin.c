@@ -62,6 +62,7 @@ AnalogIn* ain0 = new AnalogIn(0);
 */
 void AnalogIn_init(AnalogIn *analogin,  int channel )
 {
+    TRACE_INFO("AnalogIn_init %x\r\n", analogin_manager.activeChannels);
     if ( channel < 0 || channel >= ANALOGIN_CHANNELS )
     {
         analogin->index = -1;
@@ -86,6 +87,7 @@ void AnalogIn_init(AnalogIn *analogin,  int channel )
 void AnalogIn_close(AnalogIn *analogin)
 {
     int c = 1 << analogin->index;
+    TRACE_INFO("AnalogIn_close %x\r\n", analogin_manager.activeChannels);
     analogin_manager.activeChannels &= ~c; // mark it as unused
     if(!analogin_manager.activeChannels) // if that was our last channel, turn everything off
         AnalogIn_managerDeinit();
@@ -111,7 +113,8 @@ else
 int AnalogIn_value(AnalogIn *analogin)
 {
     int value;
-    if ( !Semaphore_take(analogin_manager.semaphore, 1000 ) )
+    //if ( !Semaphore_take(analogin_manager.semaphore, 1000 ) )
+    if ( xSemaphoreTake(analogin_manager.semaphore, 1000 / portTICK_RATE_MS) != pdTRUE)
         return -1;
 
     // disable other channels, and enable the one we want
@@ -120,12 +123,14 @@ int AnalogIn_value(AnalogIn *analogin)
     AT91C_BASE_ADC->ADC_CHER = mask;
     AT91C_BASE_ADC->ADC_CR = AT91C_ADC_START; // Start the conversion
 
-    if ( !Semaphore_take(analogin_manager.doneSemaphore, 1000 ) ) // wait for the ISR
+    //if ( !Semaphore_take(analogin_manager.doneSemaphore, 1000 ) ) // wait for the ISR
+    if ( xSemaphoreTake(analogin_manager.doneSemaphore, 1000 / portTICK_RATE_MS) != pdTRUE)
         return -1;
 
     value = AT91C_BASE_ADC->ADC_LCDR & 0xFFFF; // grab the last converted value
 
-    Semaphore_give(analogin_manager.semaphore);
+    //Semaphore_give(analogin_manager.semaphore);
+    xSemaphoreGive(analogin_manager.semaphore);
 
     return value;
 }
@@ -151,7 +156,8 @@ bool AnalogIn_multi( int values[] ) // static
     if(!analogin_manager.activeChannels)
         AnalogIn_managerInit();
 
-    if ( !Semaphore_take(analogin_manager.semaphore, 1000) ) // lock the channel
+    //if ( !Semaphore_take(analogin_manager.semaphore, 1000) ) // lock the channel
+    if ( xSemaphoreTake(analogin_manager.semaphore, 1000 / portTICK_RATE_MS) != pdTRUE)
         return false;
 
     analogin_manager.activeChannels |= 0xFF;
@@ -170,7 +176,8 @@ bool AnalogIn_multi( int values[] ) // static
     analogin_manager.multiConversionsComplete = 0;
     AT91C_BASE_ADC->ADC_CR = AT91C_ADC_START; // start the conversion
 
-    if ( !Semaphore_take(analogin_manager.doneSemaphore, 1000) )
+    //if ( !Semaphore_take(analogin_manager.doneSemaphore, 1000) )
+    if ( xSemaphoreTake(analogin_manager.doneSemaphore, 1000 / portTICK_RATE_MS) != pdTRUE)
         return false;
 
     // read all the data channels into the passed in array
@@ -184,7 +191,8 @@ bool AnalogIn_multi( int values[] ) // static
     *values++ = AT91C_BASE_ADC->ADC_CDR7;
 
     analogin_manager.waitingForMulti = false;
-    Semaphore_give(analogin_manager.semaphore); // free up the channel
+    //Semaphore_give(analogin_manager.semaphore); // free up the channel
+    xSemaphoreGive(analogin_manager.semaphore); // free up the channel
 
     return true;
 }
@@ -252,11 +260,19 @@ void AnalogIn_AutoSendInit( )
 
 int AnalogIn_managerInit()
 {
-    analogin_manager.semaphore = Semaphore_create();
-    analogin_manager.doneSemaphore = Semaphore_create();
+    //memset(&analogin_manager, 0, sizeof(analogin_manager));
+
+    //analogin_manager.semaphore = Semaphore_create();
+    vSemaphoreCreateBinary(analogin_manager.semaphore);
+    TRACE_INFO("semaphore %x\r\n", analogin_manager.semaphore);
+    //analogin_manager.doneSemaphore = Semaphore_create();
+    vSemaphoreCreateBinary(analogin_manager.doneSemaphore);
+    TRACE_INFO("doneSemaphore %x\r\n", analogin_manager.doneSemaphore);
+
+    //return CONTROLLER_OK;
 
     p_analogin_manager = &analogin_manager;
-    //AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_ADC; // enable the peripheral clock
+    AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_ADC; // enable the peripheral clock
     AT91C_BASE_ADC->ADC_CR = AT91C_ADC_SWRST;     // reset to clear out previous settings
 
 /*
@@ -288,7 +304,8 @@ int AnalogIn_managerInit()
 
     //TODO: Will need to fine-tune these timings.
 
-    Semaphore_take(analogin_manager.doneSemaphore, -1);
+    //Semaphore_take(analogin_manager.doneSemaphore, -1);
+    xSemaphoreTake(analogin_manager.doneSemaphore, -1);
 
     // Initialize the interrupts
     unsigned int mask = 0x1 << AT91C_ID_ADC;                          
@@ -307,11 +324,15 @@ int AnalogIn_managerInit()
 void AnalogIn_managerDeinit() // static
 {
     unsigned int mask = 0x1 << AT91C_ID_ADC;    
-    //AT91C_BASE_PMC->PMC_PCDR = mask; // Disable the peripheral clock
+    AT91C_BASE_PMC->PMC_PCDR = mask; // Disable the peripheral clock
     AT91C_BASE_AIC->AIC_IDCR = mask; // disable interrupts for the ADC
 
-    Semaphore_delete(analogin_manager.semaphore);
-    Semaphore_delete(analogin_manager.doneSemaphore);
+    //Semaphore_delete(analogin_manager.semaphore);
+    TRACE_INFO("semaphore %x\r\n", analogin_manager.semaphore);
+    vQueueDelete(analogin_manager.semaphore);
+    //Semaphore_delete(analogin_manager.doneSemaphore);
+    TRACE_INFO("doneSemaphore %x\r\n", analogin_manager.doneSemaphore);
+    vQueueDelete(analogin_manager.doneSemaphore);
 }
 
 int AnalogIn_getIo( int index )
@@ -507,3 +528,14 @@ int AnalogInOsc_Async( int channel )
 }
 
 #endif // OSC
+
+void AnalogIn_test (void) {
+    xSemaphoreHandle sem;
+    vSemaphoreCreateBinary(sem);
+    vQueueDelete(sem);
+    //vSemaphoreCreateBinary(analogin_manager.semaphore);
+    //vSemaphoreCreateBinary(analogin_manager.doneSemaphore);
+
+    //vQueueDelete(analogin_manager.semaphore);
+    //vQueueDelete(analogin_manager.doneSemaphore);
+}

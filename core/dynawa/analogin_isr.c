@@ -53,12 +53,14 @@ void AnalogIn_Isr( void )
         if( manager->multiConversionsComplete == 0xFF )
         {
             status = AT91C_BASE_ADC->ADC_LCDR; // dummy read to clear
-            Semaphore_giveFromISR(manager->doneSemaphore, &cTaskWokenByPost );
+            //Semaphore_giveFromISR(manager->doneSemaphore, &cTaskWokenByPost );
+            xSemaphoreGiveFromISR(manager->doneSemaphore, &cTaskWokenByPost );
         }
     }
     else if ( status & AT91C_ADC_DRDY )
     {
-        Semaphore_giveFromISR(manager->doneSemaphore, &cTaskWokenByPost );
+        //Semaphore_giveFromISR(manager->doneSemaphore, &cTaskWokenByPost );
+        xSemaphoreGiveFromISR(manager->doneSemaphore, &cTaskWokenByPost );
         status = AT91C_BASE_ADC->ADC_LCDR; // dummy read to clear
     }
 

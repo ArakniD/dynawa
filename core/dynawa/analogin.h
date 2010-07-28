@@ -55,8 +55,10 @@ int AnalogIn_managerInit(void);
 void AnalogIn_managerDeinit(void);
 
 typedef struct {
-    Semaphore semaphore;
-    Semaphore doneSemaphore;
+    //Semaphore semaphore;
+    xSemaphoreHandle semaphore;
+    //Semaphore doneSemaphore;
+    xSemaphoreHandle doneSemaphore;
     int activeChannels;
     bool waitingForMulti; // are we waiting for a multi conversion or just a single channel
     int multiConversionsComplete; // mask of which conversions have been completed

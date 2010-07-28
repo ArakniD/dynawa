@@ -203,10 +203,12 @@ int Task_remainingStack( Task task )
   int priority = myTask->priority();
   \endcode
   */
+/*
 int Task_priority( Task task )
 {
     return xTaskGetPriority( task );
 }
+*/
 
 /**
   Set a task's priority.
@@ -271,10 +273,12 @@ int Task_id( Task task )
 // now name should be "Me!"
 \endcode
 */
+/*
 char* Task_name( Task task )
 {
     return (char*)xTaskGetName( task );
 }
+*/
 
 /**
   Get the next task in the system.

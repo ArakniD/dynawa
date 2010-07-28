@@ -6,7 +6,7 @@
 #include <rtos.h>
 #include <usbserial.h>
 #include <serial.h>
-//#include <analogin.h>
+#include <analogin.h>
 #include <task_param.h>
 
 #include "lua.h"
@@ -73,6 +73,14 @@ void test() {
 void Run( ) // this task gets called as soon as we boot up.
 {
     //TRACE_INFO("Run\n\r");
+
+#if 0 // now in core/dynawa/main.c
+    malloc_lock_init();
+    i2c_init();
+    rtc_init();
+    event_init(100);
+#endif
+
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();
 
@@ -104,12 +112,14 @@ void Run( ) // this task gets called as soon as we boot up.
        //Task_sleep(500);
 */
 
-/*
+    //AnalogIn_test();
+#if 0
     AnalogIn adc;
     AnalogIn_init(&adc, 7);
-    AnalogIn_value(&adc);
+    //AnalogIn_value(&adc);
+    AnalogIn_valueWait(&adc);
     AnalogIn_close(&adc);
-*/
+#endif
 
     //Task_create( blinkLoop, "Blink", 400, 1, NULL );
     //Task_create( console, "console", 400, 1, NULL );
@@ -120,7 +130,17 @@ void Run( ) // this task gets called as soon as we boot up.
     //Task_create( lua, "LUA", 8192, 1, NULL );
 #endif
     //Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
-    xTaskCreate(lua_event_loop, "lua", TASK_STACK_SIZE(TASK_LUA_STACK), TASK_LUA_PRI, NULL, NULL);
+    xTaskCreate(lua_event_loop, (signed char*)"lua", TASK_STACK_SIZE(TASK_LUA_STACK), NULL, TASK_LUA_PRI, NULL);
+
+#if 0
+    int i;
+    for(i = 0; i < 100; i++) {
+        TRACE_INFO("test %d\r\n", i);
+        AnalogIn_test();
+        Task_sleep(100);
+    }
+#endif
+
     //monitorTaskStart();
 
     //bt_open();
