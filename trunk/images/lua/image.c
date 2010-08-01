@@ -6,7 +6,7 @@
 #include <rtos.h>
 #include <usbserial.h>
 #include <serial.h>
-#include <analogin.h>
+//#include <analogin.h>
 #include <task_param.h>
 
 #include "lua.h"
@@ -74,12 +74,10 @@ void Run( ) // this task gets called as soon as we boot up.
 {
     //TRACE_INFO("Run\n\r");
 
-#if 0 // now in core/dynawa/main.c
-    malloc_lock_init();
+    spi_init();
     i2c_init();
     rtc_init();
     event_init(100);
-#endif
 
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();

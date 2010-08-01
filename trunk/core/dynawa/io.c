@@ -161,7 +161,7 @@ bool Io_value( Io *io )
 */
 bool Io_setValue( Io *io, bool onoff )
 {
-  if ( !onoff )
+  if ( onoff )
     io->basePort->PIO_SODR = io->mask; // set it
   else
     io->basePort->PIO_CODR = io->mask; // clear

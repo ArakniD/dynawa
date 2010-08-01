@@ -35,12 +35,19 @@
 #include <utils/time.h>
 #include "sdcard.h"
 
+#define SPI_DMA     1
+
 uint8_t ver2_card = false;  //!< Flag to indicate version 2.0 SD card
 uint8_t sdhc_card = false;  //!< Flag to indicate version SDHC card
 uint32_t sd_numsectors; //!< Total number of sectors on card
 uint32_t sd_size; //!< Total number of sectors on card
 uint32_t sd_blocksize; //!< Total number of sectors on card
 uint8_t sd_sectorbuffer[512];   //!< buffer to hold one sector of card
+
+#if SPI_DMA
+static uint8_t spi_dummy_buff_in[512];
+static uint8_t spi_dummy_buff_out[512];
+#endif
 
 /**
  * Return SD card present status.
@@ -177,6 +184,10 @@ int8_t sd_init(void)
 
     TRACE_SD("Init SD card\n\r");
     
+#if SPI_DMA
+    memset(spi_dummy_buff_out, 0xff, 512);
+#endif
+
     for(retries = 0, resp = 0; (retries < 5) && (resp != SD_R1_IDLE_STATE) ; retries++)
     {
         // send CMD0 to reset card
@@ -509,6 +520,7 @@ uint32_t sd_info(void)
  * \return 0 on success, -1 on error
  * 
 */  
+static int c = 0;
 int8_t sd_readsector(uint32_t lba,
                      uint8_t *buffer,
                      Callback_f   fCallback,
@@ -539,8 +551,31 @@ int8_t sd_readsector(uint32_t lba,
         return SD_ERROR;   // return error code
     }
 
+    uint8_t *b = buffer;
+#if SPI_DMA
+    spi_rw_bytes(buffer, spi_dummy_buff_out, 512, 0);
+#else
     for (i=0; i<512 ; i++)             // read sector data
         *buffer++ = spi_byte(0xff,0);
+#endif
+#if 0
+    int s = 0;
+    for (i=0; i<512 ; i++) {
+        if (b[i]) {
+            TRACE_SD("spi %d %x\r\n", i, b[i]);
+            s += b[i];
+        }
+    }
+    if (s) {
+        //TRACE_SD("spi %d %x\r\n", i, b[i]);
+    }
+    TRACE_SD("sum %x\r\n", s);
+/*
+    if (c++ == 1) {
+        while(1);
+    }
+*/
+#endif
         
     spi_byte(0xff,0);    // ignore dummy checksum
     spi_byte(0xff,0);    // ignore dummy checksum
@@ -614,10 +649,14 @@ int8_t sd_writesector(uint32_t lba,
 
     spi_byte(0xfe,0);    // send data token
 
+#if SPI_DMA
+    spi_rw_bytes(spi_dummy_buff_in, buffer, 512, 0);
+#else
     for (i=0;i<512;i++)             // write sector data
     {
         spi_byte(*buffer++,0);
     }
+#endif
 
     spi_byte(0xff,0);    // send dummy checksum
     spi_byte(0xff,0);    // send dummy checksum

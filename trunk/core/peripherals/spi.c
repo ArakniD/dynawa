@@ -27,6 +27,7 @@
 #include <utils/interrupt_utils.h>
 #include <debug/trace.h>
 #include <peripherals/pmc/pmc.h>
+#include "rtos.h"
 #include "spi.h"
 
 
@@ -35,6 +36,9 @@
 SPI pSPI = SPI_BASE;
 SPI_PIO pSPI_PIO = SPI_PIO_BASE;  
 
+xSemaphoreHandle spi_semaphore;
+
+extern void (SPIIsr_Wrapper)(void);
 
 /**
  * Initialize SPI
@@ -44,6 +48,9 @@ SPI_PIO pSPI_PIO = SPI_PIO_BASE;
 */
 void spi_init(void)
 {
+    vSemaphoreCreateBinary(spi_semaphore);
+    xSemaphoreTake(spi_semaphore, -1);
+
     // disable PIO from controlling MOSI, MISO, SCK (=hand over to SPI)
     pSPI_PIO->PIO_PDR = SPI_PIO_MISO | SPI_PIO_MOSI | SPI_PIO_SPCK | SPI_PIO_NPCS;
     
@@ -68,9 +75,27 @@ void spi_init(void)
     // channel 2 is PA31, SD-Card
     pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
 
+
+    // Initialize the interrupts
+    pSPI->SPI_IDR = 0xffffffff;
+
+    unsigned int mask = 0x1 << AT91C_ID_SPI;
+
+    // Disable the interrupt controller & register our interrupt handler
+    AT91C_BASE_AIC->AIC_IDCR = mask ;
+    AT91C_BASE_AIC->AIC_SVR[ AT91C_ID_SPI ] = (unsigned int)SPIIsr_Wrapper;
+    AT91C_BASE_AIC->AIC_SMR[ AT91C_ID_SPI ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;
+    AT91C_BASE_AIC->AIC_ICCR = mask ;
+    AT91C_BASE_AIC->AIC_IECR = mask;
+
     // enable SPI
     pSPI->SPI_CR = AT91C_SPI_SPIEN;
 }
+
+void spi_close() {
+    vQueueDelete(spi_semaphore);
+}
+
 
 /**
  * Send and Receive an SPI byte.
@@ -104,4 +129,54 @@ uint16_t spi_byte(uint16_t dout, uint8_t last)
         pSPI->SPI_CR = AT91C_SPI_SPIEN | AT91C_SPI_LASTXFER;
 
     return din;
+}
+
+uint16_t spi_rw_bytes(uint8_t *buff_in, uint8_t *buff_out, uint16_t len, uint8_t last)
+{
+    TRACE_SPI("spi_rw_bytes(%x, %x, %d, %d)\r\n", buff_in, buff_out, len, last);
+
+    while ( !( pSPI->SPI_SR & AT91C_SPI_TDRE ) ); // wait for channel ready
+
+    //TRACE_SPI("spi ready\r\n");
+
+    // activate required channel
+    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+
+    pSPI->SPI_MR  |= 0x00010000;  //NCPS1
+    pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    
+    pSPI->SPI_RPR = (uint32_t)buff_in;
+    pSPI->SPI_RCR = (uint32_t)len;
+    pSPI->SPI_RNPR = (uint32_t)0;
+    pSPI->SPI_RNCR = (uint32_t)0;
+
+    pSPI->SPI_TPR = (uint32_t)buff_out;
+    pSPI->SPI_TCR = (uint32_t)len;
+    pSPI->SPI_TNPR = (uint32_t)0;
+    pSPI->SPI_TNCR = (uint32_t)0;
+
+    // enable interrupt 
+    pSPI->SPI_IER = AT91C_SPI_ENDRX; 
+
+    // start DMA
+    pSPI->SPI_PTCR = AT91C_PDC_RXTEN | AT91C_PDC_TXTEN;
+
+    //TRACE_SPI("spi wait\r\n");
+#if 1
+    if ( xSemaphoreTake(spi_semaphore, -1) != pdTRUE) {
+        TRACE_SPI("xSemaphoreTake err\r\n");
+        return 0;
+    }
+#else
+    while ( pSPI->SPI_RCR ) {  // wait for incoming data
+        //Task_sleep(500);
+    }
+#endif
+
+    //TRACE_SPI("dma %x %x %d\r\n", buff_in, pSPI->SPI_RPR, pSPI->SPI_TCR);
+
+    if (last)
+        pSPI->SPI_CR = AT91C_SPI_SPIEN | AT91C_SPI_LASTXFER;
+
+    return len;
 }

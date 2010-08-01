@@ -43,10 +43,24 @@ static int l_display_brightness (lua_State *L) {
     return 1;
 }
 
+static int l_vibrator_set (lua_State *L) {
+
+    luaL_checktype(L, 1, LUA_TBOOLEAN);
+    bool on = lua_toboolean(L, 1);
+    //bool on = luaL_checkint(L, 1);
+
+    TRACE_LUA("dynawa.x.vibrator_set(%d)\r\n", on);
+
+    vibrator_set(on);
+
+    return 0;
+}
+
 static const struct luaL_reg x [] = {
     {"adc", l_adc},
     {"display_power", l_display_power},
     {"display_brightness", l_display_brightness},
+    {"vibrator_set", l_vibrator_set},
     {NULL, NULL}  /* sentinel */
 };
 

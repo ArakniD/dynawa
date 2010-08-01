@@ -62,7 +62,7 @@ AnalogIn* ain0 = new AnalogIn(0);
 */
 void AnalogIn_init(AnalogIn *analogin,  int channel )
 {
-    TRACE_INFO("AnalogIn_init %x\r\n", analogin_manager.activeChannels);
+    //TRACE_INFO("AnalogIn_init %x\r\n", analogin_manager.activeChannels);
     if ( channel < 0 || channel >= ANALOGIN_CHANNELS )
     {
         analogin->index = -1;
@@ -87,7 +87,7 @@ void AnalogIn_init(AnalogIn *analogin,  int channel )
 void AnalogIn_close(AnalogIn *analogin)
 {
     int c = 1 << analogin->index;
-    TRACE_INFO("AnalogIn_close %x\r\n", analogin_manager.activeChannels);
+    //TRACE_INFO("AnalogIn_close %x\r\n", analogin_manager.activeChannels);
     analogin_manager.activeChannels &= ~c; // mark it as unused
     if(!analogin_manager.activeChannels) // if that was our last channel, turn everything off
         AnalogIn_managerDeinit();
@@ -264,10 +264,8 @@ int AnalogIn_managerInit()
 
     //analogin_manager.semaphore = Semaphore_create();
     vSemaphoreCreateBinary(analogin_manager.semaphore);
-    TRACE_INFO("semaphore %x\r\n", analogin_manager.semaphore);
     //analogin_manager.doneSemaphore = Semaphore_create();
     vSemaphoreCreateBinary(analogin_manager.doneSemaphore);
-    TRACE_INFO("doneSemaphore %x\r\n", analogin_manager.doneSemaphore);
 
     //return CONTROLLER_OK;
 
@@ -328,10 +326,8 @@ void AnalogIn_managerDeinit() // static
     AT91C_BASE_AIC->AIC_IDCR = mask; // disable interrupts for the ADC
 
     //Semaphore_delete(analogin_manager.semaphore);
-    TRACE_INFO("semaphore %x\r\n", analogin_manager.semaphore);
     vQueueDelete(analogin_manager.semaphore);
     //Semaphore_delete(analogin_manager.doneSemaphore);
-    TRACE_INFO("doneSemaphore %x\r\n", analogin_manager.doneSemaphore);
     vQueueDelete(analogin_manager.doneSemaphore);
 }
 
@@ -528,14 +524,3 @@ int AnalogInOsc_Async( int channel )
 }
 
 #endif // OSC
-
-void AnalogIn_test (void) {
-    xSemaphoreHandle sem;
-    vSemaphoreCreateBinary(sem);
-    vQueueDelete(sem);
-    //vSemaphoreCreateBinary(analogin_manager.semaphore);
-    //vSemaphoreCreateBinary(analogin_manager.doneSemaphore);
-
-    //vQueueDelete(analogin_manager.semaphore);
-    //vQueueDelete(analogin_manager.doneSemaphore);
-}
