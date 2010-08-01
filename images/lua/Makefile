@@ -122,6 +122,7 @@ USB_COMMON_CDC_SRC= \
   $(USB)/common/cdc/CDCSetControlLineStateRequest.c \
   $(USB)/common/cdc/CDCLineCoding.c
 
+#MV
 _USB_COMMON_MSD_SRC= \
   $(CORE)/memories/Media.c \
   $(CORE)/memories/MEDSD.c \
@@ -143,6 +144,7 @@ USB_CDC_SRC= \
   $(USB)/device/cdc-serial/CDCDSerialDriver.c \
   $(USB)/device/cdc-serial/CDCDSerialDriverDescriptors.c
 
+#MV
 _USB_MSD_SRC= \
   $(USB)/device/massstorage/MSDDriver.c \
   $(USB)/device/massstorage/MSDDriverDescriptors.c
@@ -280,6 +282,7 @@ THUMB_SRC= \
   $(PERIPHERALS)/gasgauge.c \
   $(PERIPHERALS)/amblightsensor.c \
   $(PERIPHERALS)/ledrgb.c \
+  $(PERIPHERALS)/vibrator.c \
   $(LWBT_SRC) \
   $(ZLIB)/adler32.c \
   $(ZLIB)/compress.c \
@@ -330,6 +333,7 @@ ARM_SRC= \
   $(DYNAWA)/button_isr.c \
   $(DYNAWA)/timer_isr.c \
   $(DYNAWA)/analogin_isr.c \
+  $(PERIPHERALS)/spi_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \
   $(SCREEN)/screen.c \

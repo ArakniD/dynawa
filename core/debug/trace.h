@@ -47,6 +47,7 @@
 //#define TR_ADC
 //#define TR_SER          
 //#define TR_SD           
+//#define TR_SPI
 //#define TR_USB          
 //#define TR_BOT          
 //#define TR_SBC          
@@ -143,6 +144,12 @@
 #else
     #define TRACE_SD(...)       
 #endif // TR_SD
+
+#if defined(TR_SPI)
+    #define TRACE_SPI(...)       rprintf(DBG,__VA_ARGS__)     
+#else
+    #define TRACE_SPI(...)       
+#endif // TR_SPI
 
 #if defined(TR_USB)
     #define TRACE_USB(...)      rprintf(DBG,__VA_ARGS__)    

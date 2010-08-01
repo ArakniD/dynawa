@@ -24,6 +24,8 @@
 #ifndef SPI_H_
 #define SPI_H_
 
+#include "types.h"
+
 void spi_init(void);
 uint16_t spi_byte(uint16_t dout, uint8_t last);
 
