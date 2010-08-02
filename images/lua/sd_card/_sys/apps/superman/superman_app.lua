@@ -83,6 +83,13 @@ function app.menu_builders:root()
 			{text = "File browser", value = {go_to_url = "file_browser"}},
 			{text = "Display settings", value = {go_to_url = "adjust_display"}},
 			{text = "Time and date settings", value = {go_to_url = "adjust_time_date"}},
+			{text = "Toggle vibrator", selected = function()
+				if dynawa.devices.vibrator.status then
+					dynawa.devices.vibrator:off()
+				else
+					dynawa.devices.vibrator:on()
+				end
+			end},
 		},
 	}
 	return menu_def
@@ -101,7 +108,7 @@ end
 
 function app.menu_builders:display_brightness()
 	local choices = {[0] = "Auto brightness", "Min. brightness", "Normal brightness", "Max. brightness"}
-	local menudesc = {banner = "Display brightness", items = {}}
+	local menudesc = {banner = "Display brightness: "..choices[dynawa.settings.display.brightness], items = {}}
 	for i = 0,3 do
 		table.insert(menudesc.items,{
 			text = choices[i],
@@ -251,11 +258,41 @@ function app.menu_builders:default_font_size()
 			dynawa.popup:info("Default font changed to size "..args.item.value.font_size)
 		end
 	end
-	return menu
+	return menudesc
 end
 
 function app.menu_builders:apps()
+	local menudesc = {
+		banner = "Apps", items = {
+			{text = "Running Apps", value = {go_to_url = "apps_running"}},
+			{text = "Non-running Apps on SD card", value = {go_to_url = "apps_on_card"}},
+			{text = "Auto-starting Apps", value = {go_to_url = "apps_on_card"}},
+		}
+	}
+	return menudesc
+end
+
+function app.menu_builders:apps_running()
 	local menudesc = {banner = "Running Apps", items = {}}
+	local apps = {}
+	for id, app in pairs(dynawa.app_manager.all_apps) do
+		local name = "> "..id
+		if app.name then
+			name = name.." ("..app.name..")"
+		end
+		table.insert(menudesc.items, {text = name, selected = function(args)
+			app:switching_to_front()
+		end})
+	end
+	table.sort(menudesc.items, function (a,b)
+		return (a.text < b.text)
+	end)
+	local menu = self:new_menuwindow(menudesc).menu
+	return menu
+end
+
+function app.menu_builders:apps_on_card()
+	local menudesc = {banner = "Apps on SD card (not running)", items = {}}
 	local apps = {}
 	for id, app in pairs(dynawa.app_manager.all_apps) do
 		local name = "> "..id

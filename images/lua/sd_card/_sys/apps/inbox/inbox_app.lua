@@ -133,7 +133,7 @@ function app:handle_event_from_phone(ev)
 		table.insert(rows,2,assert(dynawa.bitmap.from_png(icon)))
 		item.icon = assert(data.contact_icon["30"])
 	end
-	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={128,0,128}})
+	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={80,0,80}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
 	dynawa.popup:open{bitmap = bmap, autoclose = 20000, on_confirm = function()
 		self:show_message{folder_id = typ, message = item}
@@ -152,6 +152,7 @@ function app:handle_event_from_phone(ev)
 	
 	self:save_data(self.prefs)
 	self:broadcast_update()
+	dynawa.devices.vibrator:alert()
 end
 
 function app:get_snippet(lines)

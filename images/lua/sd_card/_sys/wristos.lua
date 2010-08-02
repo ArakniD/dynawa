@@ -63,10 +63,11 @@ dynawa.devices.buttons = Class.Buttons()
 dynawa.devices.display = {size = {w = 160, h = 128}, flipped = false}
 dynawa.devices.display.power = assert(dynawa.x.display_power)
 dynawa.devices.display.brightness = assert(dynawa.x.display_brightness)
-
 dynawa.devices.display.brightness(assert(dynawa.settings.display.brightness))
 
 dynawa.devices.timers = Class.Timers()
+
+dynawa.devices.vibrator = Class.Vibrator()
 
 dynawa.devices.bluetooth = Class.Bluetooth()
 
