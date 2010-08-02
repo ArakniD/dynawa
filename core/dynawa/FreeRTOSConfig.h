@@ -59,7 +59,7 @@ extern "C" {
 // end MV
 #define configUSE_PREEMPTION		1
 #define configUSE_IDLE_HOOK			0
-#define configUSE_TICK_HOOK			0
+#define configUSE_TICK_HOOK			1
 #define configCPU_CLOCK_HZ			( ( unsigned portLONG ) 47923200 )
 #define configTICK_RATE_HZ			( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES		( ( unsigned portBASE_TYPE ) 8 )

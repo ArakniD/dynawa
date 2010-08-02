@@ -125,3 +125,11 @@ uint32_t timer_get_timer(void)
 {
 	return timeval;
 }
+
+
+// Dynawa MV  
+
+void vApplicationTickHook( void ) {
+    timeval++;
+}
+
