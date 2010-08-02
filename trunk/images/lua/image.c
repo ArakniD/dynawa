@@ -75,6 +75,9 @@ void Run( ) // this task gets called as soon as we boot up.
     //TRACE_INFO("Run\n\r");
 
     spi_init();
+    if ( sd_init() != SD_OK ) {
+        TRACE_ERROR("SD card init failed!\r\n");
+    }
     i2c_init();
     rtc_init();
     event_init(100);

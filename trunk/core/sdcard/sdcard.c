@@ -43,6 +43,7 @@ uint32_t sd_numsectors; //!< Total number of sectors on card
 uint32_t sd_size; //!< Total number of sectors on card
 uint32_t sd_blocksize; //!< Total number of sectors on card
 uint8_t sd_sectorbuffer[512];   //!< buffer to hold one sector of card
+uint32_t sd_clock; //!< Total number of sectors on card
 
 #if SPI_DMA
 static uint8_t spi_dummy_buff_in[512];
@@ -296,7 +297,7 @@ int8_t sd_init(void)
 
         sd_command(SD_READ_OCR,0);    // CMD58, get OCR
         TRACE_SD(".resp.");
-        if (sd_get_response() != 0)
+        if (sd_get_response() != 0)     // MV blocks upon sd_init() call
         {
             TRACE_SD("CMD58 failed\n");
         }
@@ -329,6 +330,22 @@ int8_t sd_init(void)
     TRACE_SD("Init SD card OK\n");
     return SD_OK;   
 }
+
+#define KBPS 1
+#define MBPS 1000
+
+static uint32_t ts_exp[] = { 100*KBPS, 1*MBPS, 10*MBPS, 100*MBPS, 0, 0, 0, 0 };
+static uint32_t ts_mul[] = { 0,    1000, 1200, 1300, 1500, 2000, 2500, 3000, 
+                  3500, 4000, 4500, 5000, 5500, 6000, 7000, 8000 };
+
+static uint32_t sd_tran_speed(uint8_t ts)
+{
+      uint32_t clock = ts_exp[(ts & 0x7)] * ts_mul[(ts & 0x78) >> 3];
+
+      TRACE_SD("clock :%d\r\n", clock);
+      return clock;
+}
+
 
 /**
  * Get Card Information.
@@ -410,6 +427,14 @@ uint32_t sd_info(void)
 
     // read 1 byte [bits 127:120]
     l = spi_byte(0xff,0);
+
+// MV b
+    spi_byte(0xff,0);   // taac
+    spi_byte(0xff,0);   // nsac
+    uint8_t trans_speed = spi_byte(0xff,0);
+    sd_clock = sd_tran_speed(trans_speed);
+    TRACE_SD("TRANS_SPEED %x %d\r\n", trans_speed, sd_clock);
+// MV e
     
     //orig. if(l == 0) // CSD 1.0 structure
     //correction petr sladek:
@@ -423,7 +448,8 @@ uint32_t sd_info(void)
         
         //peter sladek:
         //skip next 4 bytes [bits 119:88]
-    	  for (i=0;i<4;i++) 
+    	  //MV for (i=0;i<4;i++) 
+    	  for (i=0;i<1;i++) 
             spi_byte(0xff,0);  
         w=spi_byte(0xff,0);  //bits [87:80]
         // [83:80] = block len
@@ -471,12 +497,14 @@ uint32_t sd_info(void)
     else
     //orig. if( l == 0x40) // CSD 2.0 structure
     //correction petr sladek:
-    if((l&0xC0) == 0) // CSD 1.0 structure
+    //if((l&0xC0) == 0) // CSD 1.0 structure
+    if((l&0xC0) == 0x40) // CSD 1.0 structure
     {
     	TRACE_SD("CSD 2.0\n");
     	
         // skip next 6 bytes [bits 119:72]
-        for (i=0;i<6;i++) 
+        //MV for (i=0;i<6;i++) 
+        for (i=0;i<3;i++) 
             spi_byte(0xff,0);
         
         // get dword from [bits 71:48] 
@@ -570,11 +598,9 @@ int8_t sd_readsector(uint32_t lba,
         //TRACE_SD("spi %d %x\r\n", i, b[i]);
     }
     TRACE_SD("sum %x\r\n", s);
-/*
     if (c++ == 1) {
         while(1);
     }
-*/
 #endif
         
     spi_byte(0xff,0);    // ignore dummy checksum
