@@ -105,9 +105,8 @@ function app:tick(message)
 		return
 	end
 	local sec,msec = dynawa.time.get()
-	--local t = WristOS.time.ticks()
+	log("Clock time: "..sec.." / "..msec)
 	self:render(os.date("*t",sec), message.full_render)
-	--log("Ticks: "..WristOS.time.ticks() - t)
 	local sec2,msec2 = dynawa.time.get()
 	local when = 1000 - msec2
 	if message.full_render == "no_time" then
@@ -115,9 +114,10 @@ function app:tick(message)
 	elseif message.full_render then
 		message.full_render = nil
 	end
+	--log("when = "..when)
 	dynawa.devices.timers:timed_event{delay = when, receiver = self, method = "tick", run_id = self.run_id, full_render = message.full_render}
-	if when > 600 then
-		dynawa.devices.timers:timed_event{delay = 500, receiver = self, method = "remove_dots"}
+	if when > 700 then
+		dynawa.devices.timers:timed_event{delay = 300, receiver = self, method = "remove_dots"}
 	end
 end
 
