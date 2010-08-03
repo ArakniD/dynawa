@@ -113,6 +113,10 @@ end
 function app:update_display()
 	local window = self:peek()
 	if not window then --No windows in stack
+		local sandman = dynawa.app_manager:app_by_id("dynawa.sandman")
+		if sandman and sandman.sleeping then
+			return
+		end
 		self:show_default()
 		window = assert(self:peek())
 	end

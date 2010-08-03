@@ -57,6 +57,7 @@ function class:start_everything()
 		"/_sys/apps/superman/superman_app.lua",
 		"/_sys/apps/popup/popup_app.lua",
 		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
+		"/_sys/apps/sandman/sandman_app.lua",
 	}
 	
 	for i,app in ipairs(dynawa.settings.autostart) do
@@ -69,7 +70,7 @@ function class:start_everything()
 	end
 	
 	if next(self.waiting_for) then
-		error("After starting all Apps, there is still someone waiting for app "..(next(self.waiting_for)))
+		error("After starting all Apps, there is still someone waiting for the start of "..(next(self.waiting_for)))
 	end
 
 	dynawa.window_manager:show_default()

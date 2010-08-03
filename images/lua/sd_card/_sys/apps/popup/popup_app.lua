@@ -12,6 +12,7 @@ function app:info(text)
 end
 
 function app:open(args)
+	dynawa.busy()
 	--text, style
 	if self.window then
 		self:switching_to_back()
