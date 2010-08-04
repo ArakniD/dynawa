@@ -79,7 +79,6 @@ function app:switching_to_front()
 		},
 	}
 	local menuwin = self:new_menuwindow(menu)
-	menuwin.menu:render()
 	menuwin:push()
 end
 

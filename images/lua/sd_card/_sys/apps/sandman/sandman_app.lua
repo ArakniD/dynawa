@@ -22,6 +22,8 @@ function app:activity(force)
 		dynawa.busy()
 		dynawa.window_manager:show_default()
 	else
+		local delay = assert(dynawa.settings.display.autosleep) * 1000
+		--log("Auto sleep delay = "..delay)
 		local tstamp = dynawa.ticks()
 		if not force and (tstamp - self.last_timestamp < 500) then
 			--Ignore activity if not sleeping and received it less then 500 ms after previous activity and not "forced".
@@ -30,8 +32,11 @@ function app:activity(force)
 		if self.last_handle then
 			dynawa.devices.timers:cancel(self.last_handle)
 		end
+		if delay == 0 then --Autosleep off
+			return
+		end
 		self.last_timestamp = tstamp
-		self.last_handle = dynawa.devices.timers:timed_event{delay = 9999999999, timestamp = tstamp, receiver = self}
+		self.last_handle = dynawa.devices.timers:timed_event{delay = delay, timestamp = tstamp, receiver = self}
 	end
 end
 
@@ -48,8 +53,45 @@ function app:handle_event_timed_event(event)
 end
 
 function app:handle_event_button(event)
-	local t = dynawa.ticks()
+	--local t = dynawa.ticks()
 	--log("Button down at "..t)
 	self:activity()
 end
 
+local function time_to_text(num)
+	if num == 0 then
+		return "No autosleep"
+	end
+	if num >= 60 then
+		return ((num / 60).." minutes")
+	end
+	return (num.." seconds")
+end
+
+function app:switching_to_front()
+	local times = {0,15,30,45,60,120,300}
+	local menudef = {
+		banner = "Display autosleep: "..time_to_text(assert(dynawa.settings.display.autosleep)),
+		items = {},
+	}
+	for i,time in ipairs(times) do
+		local item = {
+			text = time_to_text(time),
+			value = {
+				time = time
+			}
+		}
+		table.insert(menudef.items, item)
+	end
+	menudef.item_selected = function(_self,args)
+		local value = assert(args.item.value)
+		dynawa.settings.display.autosleep = assert(value.time)
+		self:activity(true) --Forced activity to guarantee the change of the value
+		dynawa.file.save_settings()
+		args.menu.window:pop()
+		args.menu:_delete()
+		dynawa.popup:info("Autosleep changed to: "..time_to_text(value.time))
+	end
+	local menuwin = self:new_menuwindow(menudef)
+	menuwin:push()
+end

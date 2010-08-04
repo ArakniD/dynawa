@@ -52,12 +52,13 @@ function class:after_app_start(id,func)
 end
 
 function class:start_everything()
+	--The following apps are REQUIRED for WristOS to work
 	local apps = {
 		"/_sys/apps/window_manager/window_manager_app.lua",
 		"/_sys/apps/superman/superman_app.lua",
 		"/_sys/apps/popup/popup_app.lua",
 		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
---		"/_sys/apps/sandman/sandman_app.lua",
+		"/_sys/apps/sandman/sandman_app.lua",
 	}
 	
 	for i,app in ipairs(dynawa.settings.autostart) do
