@@ -24,6 +24,11 @@ function class:timed_event(event)
 	assert(event.receiver,"Delayed call has no receiver")
 	local handle = assert(dynawa.timer.start(event.delay, event.autorepeat))
 	self.timer_vectors[handle] = event
+--[[	local n = 0
+	for k,v in pairs(self.timer_vectors) do
+		n = n + 1
+	end
+	log(n.." timers active")]]
 	return handle
 end
 

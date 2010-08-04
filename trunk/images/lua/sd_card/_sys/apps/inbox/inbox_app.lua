@@ -145,7 +145,7 @@ function app:handle_event_from_phone(ev)
 			return ((a.time or 0) > (b.time or 0))
 		end)
 	end
-	local limit = 10 --Message cap per folder. #todo increase!
+	local limit = 20 --Message cap per folder. #todo increase!
 	while #folder > limit do
 		table.remove(folder)
 	end

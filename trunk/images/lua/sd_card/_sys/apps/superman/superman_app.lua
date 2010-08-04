@@ -83,13 +83,6 @@ function app.menu_builders:root()
 			{text = "File browser", value = {go_to_url = "file_browser"}},
 			{text = "Display settings", value = {go_to_url = "adjust_display"}},
 			{text = "Time and date settings", value = {go_to_url = "adjust_time_date"}},
-			{text = "Toggle vibrator", selected = function()
-				if dynawa.devices.vibrator.status then
-					dynawa.devices.vibrator:off()
-				else
-					dynawa.devices.vibrator:on()
-				end
-			end},
 		},
 	}
 	return menu_def
@@ -100,6 +93,12 @@ function app.menu_builders:adjust_display()
 		banner = "Adjust display", items = {
 			{text = "Default font size", value = {go_to_url = "default_font_size"}},
 			{text = "Display brightness", value = {go_to_url = "display_brightness"}},
+			{text = "Display autosleep", selected =
+				function()
+					local sandman = assert(dynawa.app_manager:app_by_id("dynawa.sandman"))
+					sandman:switching_to_front()
+				end
+			},
 		}
 	}
 	local menu = self:new_menuwindow(menudesc).menu
