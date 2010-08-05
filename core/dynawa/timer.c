@@ -128,6 +128,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     // Are we actually servicing an interupt right now?
     if ( !timer_manager.servicing )
     {
+        TRACE_TMR("srv 0\r\n");
         // No - so does the time requested by this new timer make the time need to come earlier?
         // first, unlink the timer 
         Timer *te = timer;
@@ -140,6 +141,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
             te = te->next;
         }
 
+        TRACE_TMR("%d < %d %d\r\n", timer->timeCurrent, remaining, TIMER_MARGIN);
         if ( timer->timeCurrent < ( remaining - TIMER_MARGIN ) )
         {
             // Damn it!  Reschedule the next callback
@@ -155,6 +157,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     }
     else
     {
+        TRACE_TMR("srv 1\r\n");
         // Yep... we're servicing something right now
 
         // Make sure the previous pointer is OK.  This comes up if we were servicing the first item

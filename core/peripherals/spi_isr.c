@@ -23,7 +23,7 @@ void SPIIsr_Handler( )
     if( status & (AT91C_SPI_ENDRX | AT91C_SPI_ENDTX)) {
         xSemaphoreGiveFromISR(spi_semaphore, &xHigherPriorityTaskWoken);
 
-        pSPI->SPI_IDR = AT91C_SPI_ENDRX;;
+        pSPI->SPI_IDR = AT91C_SPI_ENDRX;
     }
 
 

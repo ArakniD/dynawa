@@ -16,6 +16,7 @@
 
 #define PSKEY_ANAFREQ               0x1fe
 #define PSKEY_BAUDRATE              0x1be
+#define PSKEY_UART_CONFIG_BCSP      0x1bf
 #define PSKEY_UART_HOST_WAKE_SIGNAL     0x01ca
 #define PSKEY_UART_HOST_WAKE            0x01c7
 #define PSKEY_LC_MAX_TX_POWER           0x17  

@@ -56,11 +56,22 @@ static int l_vibrator_set (lua_State *L) {
     return 0;
 }
 
+static int l_battery_voltage (lua_State *L) {
+
+    TRACE_LUA("dynawa.x.battery_voltage()\r\n");
+
+    int voltage = gasgauge_voltage();
+
+    lua_pushnumber(L, voltage);
+    return 1;
+}
+
 static const struct luaL_reg x [] = {
     {"adc", l_adc},
     {"display_power", l_display_power},
     {"display_brightness", l_display_brightness},
     {"vibrator_set", l_vibrator_set},
+    {"battery_voltage", l_battery_voltage},
     {NULL, NULL}  /* sentinel */
 };
 

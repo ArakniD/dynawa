@@ -28,26 +28,23 @@
   with other devices.  The Make Controller SPI interface has 4 channels, although 2 of these
   are not available since they're used internally.  Channels 2 and 3 can still be used, though.
 */
-class Spi
-{
-  public:
-    Spi( int channel );
-    ~Spi( );
-    int configure( int bits, int clockDivider, int delayBeforeSPCK, int delayBetweenTransfers );
-    int readWriteBlock( unsigned char* buffer, int count );
-    void lock() { _lock.take(); }
-    void unlock() { _lock.give(); }
-    bool valid( ) { return chan != NULL; }
 
-  protected:
+typedef struct {
     Semaphore _lock;
     int _channel;
-    Io* chan;
-    int getIO( int channel );
-    int getChannelPeripheralA( int channel );
-    void init( );
+    Io chan;
+} Spi;
 
-    static int refcount;
-};
+void Spi_open(Spi *spi, int channel );
+void Spi_close( Spi *spi );
+int Spi_configure(Spi *spi, int bits, int clockDivider, int delayBeforeSPCK, int delayBetweenTransfers );
+int Spi_readWriteBlock(Spi *spi, unsigned char* buffer, int count );
+void Spi_lock(Spi *spi);
+void Spi_unlock(Spi *spi);
+bool Spi_valid( Spi *spi );
+
+int Spi_getIO( int channel );
+int Spi_getChannelPeripheralA( int channel );
+void Spi_init( );
 
 #endif // SPI__H

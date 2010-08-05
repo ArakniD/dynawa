@@ -166,6 +166,7 @@ void txThreadFunc(void)
 	{
 		//event = WaitForMultipleObjects(NO_OF_TX_EVENTS, txEvents, FALSE, INFINITE);
         //TRACE_BT("txevent wait\r\n");
+        TRACE_INFO("txevent wait %d\r\n", xTickCount);
         xQueueReceive(txEvents, &event, portMAX_DELAY); 
         //TRACE_BT("txevent\r\n");
         //event = NEW_TX_DATA_EVENT;
@@ -659,11 +660,14 @@ void rxThreadFunc(void)
                 }
                 // TODO: Wait for DMA data
                 //TRACE_BT("WAITTING\r\n");
+                TRACE_INFO("WAITTING %d\r\n", xTickCount);
                 if (1 || waitCount < 40) {
+                //if (waitCount < 40) {
                     Task_sleep(10);
                     waitCount++;
                 } else {
-                    Serial_waitForData(SERIAL_CHANNEL, -1);
+                    //Serial_waitForData(SERIAL_CHANNEL, -1);
+                    bt_wait_for_data();
                     waitCount = 0;
                 }
             }

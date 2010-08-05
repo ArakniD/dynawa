@@ -20,6 +20,8 @@ the specific language governing permissions and limitations under the License.
 #include "timer.h"
 #include "debug/trace.h"
 
+#define MIN_DELAY_TICKS     2
+
 extern volatile portTickType xTickCount;
 
 //extern Timer_Manager timer_manager;
@@ -56,15 +58,21 @@ void Timer_Isr( void )
         manager->next = NULL;
         manager->previous = NULL;
         manager->nextTime = -1;
+
+        int next_time_cv;
+
         while ( timer != NULL )
         {
             manager->next = timer->next;
             //timer->timeCurrent -= (manager->tc->TC_RC + manager->tc->TC_CV);
             //TRACE_TMR("timer %x %d (%d %d)\r\n", timer, timer->timeCurrent, manager->tc->TC_RC, manager->tc->TC_CV);
+            
+            int cv = manager->tc->TC_CV;
             timer->timeCurrent -= (rc + manager->tc->TC_CV);
             TRACE_TMR("timer %x %d (%d %d)\r\n", timer, timer->timeCurrent, rc, manager->tc->TC_CV);
             if ( timer->timeCurrent <= 0 )
             {
+                TRACE_TMR("tmr ex\r\n");
                 if ( timer->repeat )
                     timer->timeCurrent += timer->timeInitial;
                 else
@@ -108,9 +116,11 @@ void Timer_Isr( void )
 */
             if (timer) {
                 manager->previous = timer;
-                if ( manager->nextTime == -1 || timer->timeCurrent < manager->nextTime )
+                if ( manager->nextTime == -1 || timer->timeCurrent < manager->nextTime ) {
                     TRACE_TMR("nt %d\r\n", timer->timeCurrent);
                     manager->nextTime = timer->timeCurrent;
+                    next_time_cv = cv;
+                }
             }
 
             timer = manager->next;
@@ -119,7 +129,18 @@ void Timer_Isr( void )
         if ( manager->first != NULL )
         {
             // Add in whatever we're at now
+#if 1 // MV
             manager->nextTime += manager->tc->TC_CV;
+#else
+            TRACE_TMR("fix %d - (%d - %d)\r\n", manager->nextTime, manager->tc->TC_CV, next_time_cv);
+            manager->nextTime -= (manager->tc->TC_CV - next_time_cv);
+
+            if (manager->nextTime < 0) {
+                TRACE_ERROR("timer: nextTime < 0\r\n");
+                //panic();
+                manager->nextTime = manager->tc->TC_CV + MIN_DELAY_TICKS;
+            }
+#endif
             // Make sure it's not too big
             if ( manager->nextTime > 0xFFFF )
                 manager->nextTime = 0xFFFF;
