@@ -272,6 +272,7 @@ THUMB_SRC= \
   $(DYNAWA)/bt/bt_spp.c \
   $(PERIPHERALS)/serial.c \
   $(PERIPHERALS)/spi.c \
+  $(DYNAWA)/spi.c \
   $(PERIPHERALS)/pmc/pmc.c \
   $(PERIPHERALS)/usart/usart.c \
   $(PERIPHERALS)/aic/aic.c \
@@ -333,6 +334,7 @@ ARM_SRC= \
   $(DYNAWA)/button_isr.c \
   $(DYNAWA)/timer_isr.c \
   $(DYNAWA)/analogin_isr.c \
+  $(DYNAWA)/bt/bt_isr.c \
   $(PERIPHERALS)/spi_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \

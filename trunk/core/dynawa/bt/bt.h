@@ -7,6 +7,13 @@
 
 #include "bt/bt_socket.h"
 
+#define BCBOOT0_MASK (1 << 23)  // BC4 PIO0
+#define BCBOOT1_MASK (1 << 25)  // BC4 PIO1
+#define BCBOOT2_MASK (1 << 29)  // BC4 PIO4
+#define BCNRES_MASK (1 << 30)
+
+#define BC_WAKEUP_MASK (1 << 23)  // BC4 PIO0
+
 #define BC_STATE_STOPPED             0
 #define BC_STATE_STOPPING            1
 #define BC_STATE_STARTED             10

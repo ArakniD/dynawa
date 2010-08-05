@@ -14,7 +14,7 @@ void vibrator_set(bool on) {
     }
 #else
     Io vibrator;
-    Io_init(&vibrator, IO_PA01, IO_GPIO, true);
+    Io_init(&vibrator, IO_PA01, IO_GPIO, OUTPUT);
     Io_setValue(&vibrator, on);
 #endif
 }

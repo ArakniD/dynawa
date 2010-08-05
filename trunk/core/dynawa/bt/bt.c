@@ -31,20 +31,30 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "lwbt/rfcomm.h"
 #include "bt.h"
 #include "event.h"
+#include "io.h"
 
 #include "debug/trace.h"
 
 
-#define SET_HOST_WAKE       0
+#define SET_HOST_UART_HW_FLOW       0
+#define SET_HOST_WAKE_UART_BREAK    0
+#define SET_HOST_WAKE_PIO           1
 
 #define SET_TX_POWER        0
 #define TX_POWER            2
 
 #define BT_COMMAND_QUEUE_LEN 10
 
+//void bt_isr_wrapper();
+void bt_isr(void *context);
+
+xSemaphoreHandle bt_wakeup_semaphore;
+xQueueHandle bt_wakeup_queue;
+
 uint32_t bc_hci_event_count;
 static Task bt_task_handle;
 static xQueueHandle command_queue;
+static Io bt_gpio;
 
 static unsigned int bt_open_count = 0;
 
@@ -89,17 +99,61 @@ static struct bccmd_index_value {
     {5, PSKEY_BAUDRATE},
     {6, 1},
     {8, USART_BAUDRATE_CD},
+#if SET_HOST_UART_HW_FLOW
+    {0, 9},
+    {5, PSKEY_UART_CONFIG_BCSP},
+    {6, 1},
+    {8, 0x0802}, // hw flow on (default 0x0806)
+#endif
 
-#if SET_HOST_WAKE
+#if SET_HOST_WAKE_UART_BREAK
     {0, 9},
     {5, PSKEY_UART_HOST_WAKE_SIGNAL},
     {6, 1},
-    {8, 3}, // enable
+    {8, 3}, /*  
+        bit 0 - 3
+        0 - repeated byte sequence (only for H4DS)
+        1 - positive pulse on PIO
+        2 - negative pulse on PIO
+        3 - enable UART BREAK
+
+        bit 4 - 7
+            0 => PIO[0] 
+            1 => PIO[1] 
+            ...
+            */
+    {0, 12},
+    {5, PSKEY_UART_HOST_WAKE},
+    {6, 4},     
+    {8, 0x0001},    // 1 enable, 4 - disable
+    {9, 0x01f4},    /* Sleep_Delay = 500ms
+        Sleep_Delay: Milliseconds after tx to host or rx from host,
+after which host will be assumed to have gone into
+deep sleep state. (Range 1 -> 65535)
+When using BCSP or H5 host transports it is
+recommended that this is greater than the
+acknowledge delay (set by PSKEY_UART_ACK_TIMEOUT)
+                    */
+
+    {10, 0x0005},   /* Break_Length = 5ms (1 - 1000)
+Duration of wake signal in milliseconds (Range 1 -> 1000)
+                    */
+    {11, 0x0020},   /* Pause_Length = 32ms (0 - 1000)
+Pause_Length: Milliseconds between end of wake signal and sending data
+to the host. (Range 0 -> 1000.)
+                    */
+
+#elif SET_HOST_WAKE_PIO
+    {0, 9},
+    {5, PSKEY_UART_HOST_WAKE_SIGNAL},
+    {6, 1},
+    {8, 0x1}, // enable PIO #0 POSITIVE EDGE (pppp0001)
 
     {0, 12},
     {5, PSKEY_UART_HOST_WAKE},
     {6, 4},
-    {8, 0x0001},    // enable
+    {8, 0x0001},    // 1 enable, 4 - disable
+    //{9, 0x01f4},    // sleep timeout = 500ms
     {9, 0x01f4},    // sleep timeout = 500ms
     {10, 0x0005},   // break len = 5ms
     {11, 0x0020},   // pause length = 32ms
@@ -306,7 +360,7 @@ static void restartHandler(void);
 #endif
 #define TCP_INTERVAL	        (TCP_TMR_INTERVAL * 1000)
 
-uint16 bc_state = 0;
+uint16 bc_state = BC_STATE_STOPPED;
 
 static void u_bt_task(bt_command *cmd)
 {
@@ -513,6 +567,9 @@ static void restartHandler()
     bc_state = BC_STATE_READY;
     bc_hci_event_count = 0;
     Serial_setBaud(0, USART_BAUDRATE); 
+#if SET_HOST_UART_HW_FLOW
+    Serial_setHandshaking(0, true);
+#endif
     abcsp_init(&AbcspInstanceData);
 #if defined(TCPIP)
     //echo_init();
@@ -545,6 +602,10 @@ void bt_task(void *p)
 //int bcsp_main()
 {
     TRACE_BT("bt_task %x\r\n", xTaskGetCurrentTaskHandle());
+
+    bt_wakeup_queue = xQueueCreate(1, 2);
+    vSemaphoreCreateBinary(bt_wakeup_semaphore);
+    xSemaphoreTake(bt_wakeup_semaphore, -1);
 
     ledrgb_open();
     ledrgb_set(0x4, 0, 0, BT_LED_HIGH);
@@ -650,13 +711,14 @@ Undefined
 -
 
 Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky protokol ma BC naject, pak -BCRES do 1
-*/
+
 #define BCBOOT0_MASK (1 << 23)  // BC4 PIO0
 #define BCBOOT1_MASK (1 << 25)  // BC4 PIO1
 #define BCBOOT2_MASK (1 << 29)  // BC4 PIO4
 #define BCNRES_MASK (1 << 30)
 
-/*
+#define BC_WAKEUP_MASK (1 << 23)  // BC4 PIO0
+
 //MV CTS/RTS
     pPIOA->PIO_PDR = (1 << 7);
     pPIOA->PIO_PDR = (1 << 8);
@@ -695,6 +757,23 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
 
     Task_sleep(10);
 
+    pPIOB->PIO_PDR = BCBOOT0_MASK | BCBOOT1_MASK | BCBOOT2_MASK;
+#if 1
+    Io_init(&bt_gpio, IO_PB23, IO_GPIO, INPUT);
+    Io_addInterruptHandler(&bt_gpio, bt_isr, NULL);
+    //AT91C_BASE_PIOB->PIO_IDR = BC_WAKEUP_MASK;
+#else
+
+    pPIOB->PIO_PER = BC_WAKEUP_MASK;
+    pPIOB->PIO_ODR = BC_WAKEUP_MASK;
+    pPIOB->PIO_IDR = BC_WAKEUP_MASK;
+
+    //AIC_ConfigureIT(AT91C_ID_PIOB, AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 3, bt_isr_wrapper);
+    AIC_ConfigureIT(AT91C_ID_PIOB, AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 3, bt_isr_wrapper);
+    pPIOB->PIO_IER = BC_WAKEUP_MASK;
+    AT91C_BASE_AIC->AIC_IECR = 1 << AT91C_ID_PIOB;
+#endif
+
     ps_setrq_count = 0;
 
     bc_state = BC_STATE_STARTED;
@@ -713,6 +792,14 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
         UartDrv_Stop();
         CloseMicroSched();
     }
+
+#if 0
+    Io_removeInterruptHandler(&bt_gpio);
+#else
+    pPIOB->PIO_PDR = BC_WAKEUP_MASK;
+#endif
+    vQueueDelete(bt_wakeup_semaphore);
+    vQueueDelete(bt_wakeup_queue);
 
     pPIOB->PIO_CODR = BCNRES_MASK; // BC Stop
     bc_state = BC_STATE_STOPPED;
@@ -758,6 +845,25 @@ void trace_bytes(char *text, uint8_t *bytes, int len) {
 bool bt_is_ps_set(void) {
     struct bccmd_index_value *ps_setrq_value = &ps_setrq[ps_setrq_count];
     return !ps_setrq_value->index && !ps_setrq_value->value;
+}
+
+int bt_wait_for_data(void) {
+    //TRACE_INFO("bt_wait_for_data\r\n");
+
+    uint16_t event;
+    if (bc_state == BC_STATE_READY) {
+        xQueueReceive(bt_wakeup_queue, &event, portMAX_DELAY);
+    }
+/*
+    if (bc_state == BC_STATE_READY) {
+        AT91C_BASE_PIOB->PIO_IER = BC_WAKEUP_MASK;
+        if ( xSemaphoreTake(bt_wakeup_semaphore, -1) != pdTRUE) {
+            TRACE_BT("xSemaphoreTake err\r\n");
+            return 0;
+        }
+    }
+*/
+    return 1;
 }
 
 // commands 

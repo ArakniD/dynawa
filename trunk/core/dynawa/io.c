@@ -439,6 +439,8 @@ bool Io_addInterruptHandler(Io *io, handler h, void* context)
       (!Io_isrBInit && io->basePort == AT91C_BASE_PIOB) )
   {
     Io_initInterrupts(io->basePort, (AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 3) );
+    // MV
+    //Io_initInterrupts(io->basePort, (AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 3) );
   }
   
   io->basePort->PIO_ISR;                                   // clear the status register
