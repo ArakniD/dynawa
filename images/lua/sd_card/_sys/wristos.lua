@@ -76,6 +76,8 @@ dynawa.devices.timers = Class.Timers()
 
 dynawa.devices.vibrator = Class.Vibrator()
 
+dynawa.devices.battery = Class.Battery()
+
 dynawa.devices.bluetooth = Class.Bluetooth()
 
 dynawa.app_manager = Class.AppManager()

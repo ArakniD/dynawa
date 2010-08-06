@@ -11,6 +11,7 @@ function app:start()
 		inbox.events:register_for_events(self)
 		inbox:broadcast_update()
 	end)
+	dynawa.devices.battery:register_for_events(self)
 end
 
 function app:display(bitmap, x, y)
@@ -56,7 +57,7 @@ function app:render(time, full)
 		render_date(time)
 		return
 	end
-	local top = 40
+	local top = 42
 	local sec1 = math.floor(time.sec / 10)
 	local sec2 = time.sec % 10
 	local mm_hh = full
@@ -92,9 +93,9 @@ function app:render(time, full)
 end
 
 function app:remove_dots(message)
-	--[[if not my.app.in_front then
+	if not self.in_front then
 		return
-	end]]
+	end
 	local black = dynawa.bitmap.new(5,5,0,0,0)
 	self.window:show_bitmap_at(black, 58,40+11)
 	self.window:show_bitmap_at(black, 58,40+31)
@@ -105,9 +106,10 @@ function app:tick(message)
 		return
 	end
 	local sec,msec = dynawa.time.get()
-	log("Clock time: "..sec.." / "..msec)
+	log("Clock time before clock render: "..sec.." / "..msec)
 	self:render(os.date("*t",sec), message.full_render)
 	local sec2,msec2 = dynawa.time.get()
+	log("After clock render: "..sec2.." / "..msec2)
 	local when = 1000 - msec2
 	if message.full_render == "no_time" then
 		message.full_render = true
@@ -135,6 +137,7 @@ function app:switching_to_front()
 	self.run_id = dynawa.unique_id()
 	self.window:push()
 	self:tick{run_id = self.run_id, full_render = true}
+	self:handle_event_battery_status(dynawa.devices.battery:status())
 end
 
 function app:gfx_init()
@@ -158,6 +161,31 @@ function app:gfx_init()
 		icons.bitmaps[id] = b_copy(bmap, i*25 - 25, 0, 25, 25)
 		icons.state[id] = 0
 	end
+	for i, id in ipairs{"battery","battery_critical","battery_charging"} do
+		icons.bitmaps[id] = b_copy(bmap, i*21 - 21, 25, 21, 40)
+	end
+end
+
+function app:handle_event_battery_status(event)
+	local x,y = 139,0
+	if event.critical then
+		self.window:show_bitmap_at(icons.bitmaps.battery_critical,x,y)
+	elseif event.percentage == 100 then
+		self.window:show_bitmap_at(icons.bitmaps.battery_charging,x,y) --#Test only
+	else
+		self.window:show_bitmap_at(icons.bitmaps.battery,x,y)
+		local full = math.floor (event.percentage/100 * 29 + 0.5)
+		if full > 0 then
+			local fullbmp = dynawa.bitmap.new(13,full,255,0,0)
+			self.window:show_bitmap_at(fullbmp, x + 4, y + 36 - full)
+		end
+	end
+	local txtbmp = dynawa.bitmap.text_line(tostring(event.voltage),"/_sys/fonts/default10.png")
+	x = 130
+	y = 81
+	local blank = dynawa.bitmap.new(30,10)
+	self.window:show_bitmap_at(blank,x,y)
+	self.window:show_bitmap_at(txtbmp,x,y)
 end
 
 function app:handle_event_inbox_updated(event)
@@ -181,7 +209,7 @@ function app:handle_event_inbox_updated(event)
 		return
 	end
 	icons.state = new_state
-	local blank = dynawa.bitmap.new(160,40)
+	local blank = dynawa.bitmap.new(139,40)
 	self.window:show_bitmap_at(blank,0,0)
 	local x_pos = 0
 	for i, id in ipairs {"sms","email","calendar","call"} do
