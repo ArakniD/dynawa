@@ -86,6 +86,7 @@ load_classes{
 	"BluetoothApp",
 	"AppManager",
 	"Vibrator",
+	"Battery",
 }
 
 if dynawa.debug then
