@@ -20,6 +20,9 @@ the specific language governing permissions and limitations under the License.
 #include "timer.h"
 #include "debug/trace.h"
 
+// debug
+#include "utils/time.h"
+
 #define MIN_DELAY_TICKS     2
 
 extern volatile portTickType xTickCount;
@@ -72,11 +75,13 @@ void Timer_Isr( void )
             TRACE_TMR("timer %x %d (%d %d)\r\n", timer, timer->timeCurrent, rc, manager->tc->TC_CV);
             if ( timer->timeCurrent <= 0 )
             {
-                TRACE_TMR("tmr ex\r\n");
-                if ( timer->repeat )
+                //TRACE_TMR("tmr ex %d %d\r\n", timer->value, timeval - timer->started);
+                TRACE_INFO("tmrexp %d %d\r\n", timer->value, timeval - timer->started);
+                if ( timer->repeat ) {
                     timer->timeCurrent += timer->timeInitial;
-                else
-                {
+                    // debug
+                    timer->started = timeval;
+                } else {
                     // remove it if necessary (do this first!)
                     if ( manager->previous == NULL )
                         manager->first = manager->next;
@@ -128,8 +133,8 @@ void Timer_Isr( void )
 
         if ( manager->first != NULL )
         {
-            // Add in whatever we're at now
 #if 1 // MV
+            // Add in whatever we're at now
             manager->nextTime += manager->tc->TC_CV;
 #else
             TRACE_TMR("fix %d - (%d - %d)\r\n", manager->nextTime, manager->tc->TC_CV, next_time_cv);

@@ -90,6 +90,7 @@ void Serial_open( int channel, int q_size )
 
     // Disable the interrupt on the interrupt controller
     AT91C_BASE_AIC->AIC_IDCR = mask;
+#if 1
     // Save the interrupt handler routine pointer and the interrupt priority
     if(channel == 0)
         AT91C_BASE_AIC->AIC_SVR[ id ] = (unsigned int)Serial0Isr_Wrapper;
@@ -97,6 +98,15 @@ void Serial_open( int channel, int q_size )
         AT91C_BASE_AIC->AIC_SVR[ id ] = (unsigned int)Serial1Isr_Wrapper;
     // Store the Source Mode Register
     AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4;
+
+#else
+// test FIQ
+    //AT91C_BASE_AIC->AIC_SMR[ 0 ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4;
+    AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 4;
+    AT91C_BASE_AIC->AIC_SVR[ 0 ] = (unsigned int)Serial0Isr_Wrapper;
+    AT91C_BASE_AIC->AIC_FFER = mask;
+#endif
+
     //AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 4;
     // Clear the interrupt on the interrupt controller
     AT91C_BASE_AIC->AIC_ICCR = mask;

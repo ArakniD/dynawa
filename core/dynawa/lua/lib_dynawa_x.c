@@ -1,6 +1,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include "analogin.h"
+#include "gasgauge.h"
 #include "debug/trace.h"
 
 static int l_adc (lua_State *L) {
@@ -56,13 +57,27 @@ static int l_vibrator_set (lua_State *L) {
     return 0;
 }
 
-static int l_battery_voltage (lua_State *L) {
+static int l_battery_stats (lua_State *L) {
 
-    TRACE_LUA("dynawa.x.battery_voltage()\r\n");
+    TRACE_LUA("dynawa.x.battery_stats()\r\n");
 
-    int voltage = gasgauge_voltage();
+    gasgauge_stats stats;
+    gasgauge_get_stats (&stats);
 
-    lua_pushnumber(L, voltage);
+    lua_newtable(L);
+
+    lua_pushstring(L, "state");
+    lua_pushnumber(L, stats.state);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "voltage");
+    lua_pushnumber(L, stats.voltage);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "current");
+    lua_pushnumber(L, stats.current);
+    lua_settable(L, -3);
+
     return 1;
 }
 
@@ -71,7 +86,7 @@ static const struct luaL_reg x [] = {
     {"display_power", l_display_power},
     {"display_brightness", l_display_brightness},
     {"vibrator_set", l_vibrator_set},
-    {"battery_voltage", l_battery_voltage},
+    {"battery_stats", l_battery_stats},
     {NULL, NULL}  /* sentinel */
 };
 

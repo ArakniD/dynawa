@@ -112,6 +112,14 @@
 #define BUT2_MASK (1<<21)
 #define BUT3_MASK (1<<24)
 #define BUT4_MASK (1<<27)
+
+#define CHARGEEN_PIN  (1<<28)
+#define CHARGEEN_PIO_BASE AT91C_BASE_PIOA
+
+#define PIN_CHARGING  AT91C_PIO_PA2
+
+#define USBPEN2_PIN AT91C_PIO_PA21
+#define PIN_CHARGEDONE AT91C_PIO_PA18
 /**
  * \name I/O pins
  * 
