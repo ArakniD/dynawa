@@ -38,7 +38,8 @@ void SerialIsr_Handler( int index )
     long xTaskWokenByPostThis = false;
     Serial_Internal* sp = &Serial_internals[index];
 
-    //TRACE_SER("SER ISR %d\r\n", index);
+    //TRACE_INFO("SER ISR %d %x %x\r\n", index, sp->uart->US_CSR, sp->uart->US_IMR);
+    TRACE_SER("SER ISR %d %x %x\r\n", index, sp->uart->US_CSR, sp->uart->US_IMR);
     unsigned int status = ( sp->uart->US_CSR ) & ( sp->uart->US_IMR ); // What caused the interrupt?
     if( status & AT91C_US_TXRDY ) 
     { 
@@ -64,6 +65,8 @@ void SerialIsr_Handler( int index )
            character from the RHR and place it in the queue or received  
            characters. */ 
 #if DMA
+        sp->uart->US_IDR = AT91C_US_RXRDY;
+/* test mv
         sp->uart->US_PTCR = AT91C_PDC_RXTEN;
         //int t = sp->uart->US_RHR;
         //cChar = t & 0xFF; 
@@ -74,6 +77,7 @@ void SerialIsr_Handler( int index )
         //Serial_DMARxStart(index);        
         sp->uart->US_IDR = AT91C_US_RXRDY;
         Semaphore_giveFromISR(sp->rxSem, &xTaskWokenByPost);
+*/
 #else
         int t = sp->uart->US_RHR;
         cChar = t & 0xFF; 

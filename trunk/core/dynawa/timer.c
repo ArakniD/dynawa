@@ -20,6 +20,8 @@ the specific language governing permissions and limitations under the License.
 #include "error.h"
 #include "rtos.h"
 #include "debug/trace.h"
+// debug
+#include "utils/time.h"
 
 #define TIMER_CYCLES_PER_MS 47
 
@@ -87,6 +89,10 @@ void Timer_setHandler(Timer *timer, TimerHandler handler, void *context )
   */
 int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
 {
+// debug
+    timer->started = timeval;
+    timer->value = millis;
+
     timer->timeCurrent = 0;
     timer->timeInitial = millis * TIMER_CYCLES_PER_MS;
     timer->repeat = repeat;
@@ -109,12 +115,14 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
         Timer_enable();
     }  
 
+/*
     // Calculate how long remaining
     int target = Timer_getTimeTarget();
     int timeCurrent = Timer_getTime();
     int remaining = target - timeCurrent;
 
     TRACE_TMR("t %d tc %d r %d\r\n", target, timeCurrent, remaining);
+*/
     // Get the entry ready to roll
     timer->timeCurrent = timer->timeInitial;
 
@@ -141,6 +149,12 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
             te = te->next;
         }
 
+        // Calculate how long remaining
+        int target = Timer_getTimeTarget();
+        int timeCurrent = Timer_getTime();
+        int remaining = target - timeCurrent;
+
+        TRACE_TMR("t %d tc %d r %d\r\n", target, timeCurrent, remaining);
         TRACE_TMR("%d < %d %d\r\n", timer->timeCurrent, remaining, TIMER_MARGIN);
         if ( timer->timeCurrent < ( remaining - TIMER_MARGIN ) )
         {

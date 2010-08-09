@@ -81,6 +81,9 @@ typedef struct
     bool freeOnStop;
     TimerHandler callback;
     struct Timer* next;
+// debug
+    uint32_t started;
+    uint32_t value;
 } Timer;
 
 typedef Timer* TimerHandle;

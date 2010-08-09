@@ -38,6 +38,8 @@ SPI_PIO pSPI_PIO = SPI_PIO_BASE;
 
 xSemaphoreHandle spi_semaphore;
 
+static spi_scbr = (0x4 << 8);
+
 extern void (SPIIsr_Wrapper)(void);
 
 /**
@@ -73,7 +75,8 @@ void spi_init(void)
     //MV channel 1: accelerometer at -cs0, 16bits/transfer
     pSPI->SPI_CSR[0] = AT91C_SPI_CPOL  | AT91C_SPI_BITS_16  | (32<<8) | (4<<16) | (1<<24);
     // channel 2 is PA31, SD-Card
-    pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
 
 
     // Initialize the interrupts
@@ -117,7 +120,8 @@ uint16_t spi_byte(uint16_t dout, uint8_t last)
     pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
 
     pSPI->SPI_MR  |= 0x00010000;  //NCPS1
-    pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
     
     pSPI->SPI_TDR = dout;
 
@@ -143,7 +147,8 @@ uint16_t spi_rw_bytes(uint8_t *buff_in, uint8_t *buff_out, uint16_t len, uint8_t
     pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
 
     pSPI->SPI_MR  |= 0x00010000;  //NCPS1
-    pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
     
     pSPI->SPI_RPR = (uint32_t)buff_in;
     pSPI->SPI_RCR = (uint32_t)len;

@@ -135,7 +135,7 @@ recommended that this is greater than the
 acknowledge delay (set by PSKEY_UART_ACK_TIMEOUT)
                     */
 
-    {10, 0x0005},   /* Break_Length = 5ms (1 - 1000)
+    {10, 0x0001},   /* Break_Length = 5ms (1 - 1000)
 Duration of wake signal in milliseconds (Range 1 -> 1000)
                     */
     {11, 0x0020},   /* Pause_Length = 32ms (0 - 1000)
