@@ -170,7 +170,7 @@ function app:handle_event_battery_status(event)
 	local x,y = 139,0
 	if event.critical then
 		self.window:show_bitmap_at(icons.bitmaps.battery_critical,x,y)
-	elseif event.percentage == 100 then
+	elseif event.charging then
 		self.window:show_bitmap_at(icons.bitmaps.battery_charging,x,y) --#Test only
 	else
 		self.window:show_bitmap_at(icons.bitmaps.battery,x,y)
@@ -180,10 +180,10 @@ function app:handle_event_battery_status(event)
 			self.window:show_bitmap_at(fullbmp, x + 4, y + 36 - full)
 		end
 	end
-	local txtbmp = dynawa.bitmap.text_line(tostring(event.voltage),"/_sys/fonts/default10.png")
-	x = 130
+	local txtbmp = dynawa.bitmap.text_line(string.format("%d%+d",event.voltage,event.current),"/_sys/fonts/default7.png")
+	x = 124
 	y = 81
-	local blank = dynawa.bitmap.new(30,10)
+	local blank = dynawa.bitmap.new(36,10)
 	self.window:show_bitmap_at(blank,x,y)
 	self.window:show_bitmap_at(txtbmp,x,y)
 end
