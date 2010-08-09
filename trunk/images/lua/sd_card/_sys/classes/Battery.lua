@@ -11,14 +11,16 @@ end
 function class:_init()
 	Class.EventSource._init(self,"battery")
 	self.last_status = false
-	self.critical_percentage = self:voltage_to_percent(3500)
+	self.pct0 = 3400
+	self.pct100 = 4150
+	self.critical_voltage = 3500
 	dynawa.devices.timers:timed_event{delay = 10000, receiver = self}
 	log_file("REBOOT")
 end
 
 function class:voltage_to_percent(v)
-	--Linear, for now... 3000 - 4150
-	local pct = (v - 3000) / 11.5
+	-- 3000 - 4150
+	local pct = (v - self.pct0) / (self.pct100 - self.pct0) * 100
 	pct = math.floor(pct + 0.5)
 	if pct < 0 then
 		return 0
@@ -32,12 +34,11 @@ end
 function class:status()
 	local status = {timestamp = os.time()}
 	status.voltage = dynawa.x.battery_voltage()
-	--status.voltage = 4000
 	status.percentage = self:voltage_to_percent(status.voltage)
 	if false then
 		status.charging = true --#todo
 	end
-	if status.percentage <= self.critical_percentage and not status.charging then
+	if status.voltage <= self.critical_voltage and not status.charging then
 		status.critical = true
 	end
 	self.last_status = {timestamp = status.timestamp, voltage = status.voltage, percentage = status.percentage}
