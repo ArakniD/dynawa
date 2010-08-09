@@ -37,8 +37,9 @@ function class:handle_bt_event_connected(event)
 end
 
 function class:handle_bt_event_disconnected(event)
+	local prvstate = self.state
 	self.state = "disconnected"
-	self.app:handle_event_socket_disconnected(self)
+	self.app:handle_event_socket_disconnected(self,prvstate)
 end
 
 function class:handle_bt_event_accepted(event)

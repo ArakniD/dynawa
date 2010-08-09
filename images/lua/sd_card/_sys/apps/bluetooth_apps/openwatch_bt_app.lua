@@ -188,7 +188,8 @@ function app:handle_event_socket_connected(socket)
 	log(self.." socket connected: "..socket)
 	socket.activity.status = "connected"
 	socket.activity.reconnect_delay = nil
-	self:activity_send_data(socket.activity,"HELLO")
+	self:info("Succesfully connected to "..socket.activity.name)
+	self:activity_send_data(socket.activity,"HELLO")	
 end
 
 function app:send_data_test(data)
@@ -283,9 +284,12 @@ function app:activity_send_chunk(activity, chunk)
 	assert(activity.socket):send(data)
 end
 
-function app:handle_event_socket_disconnected(socket)
+function app:handle_event_socket_disconnected(socket,prev_state)
 	log(socket.." disconnected")
 	local activity = socket.activity
+	if prev_state == "connected" then
+		self:info("Disconnected from "..activity.name)
+	end
 	activity.socket = nil
 	socket:_delete()
 	self:should_reconnect(activity)
@@ -294,7 +298,7 @@ end
 function app:should_reconnect(activity)
 	assert(not activity.__deleted)
 	activity.status = "waiting_for_reconnect"
-	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 5000)
+	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 8000)
 	log("Waiting "..activity.reconnect_delay.." ms before trying to reconnect "..activity.name)
 	dynawa.devices.timers:timed_event{delay = activity.reconnect_delay, receiver = self, what = "attempt_reconnect", activity = activity}
 end
@@ -340,5 +344,14 @@ end
 
 function app:start()
 	self.events = Class.EventSource("openwatch")
+end
+
+function app:info(txt)
+	--[[if self.last_info == txt then
+		return
+	end
+	self.last_info = txt]]
+	dynawa.popup:open{text = txt, autoclose = true}
+	dynawa.devices.vibrator:alert()
 end
 

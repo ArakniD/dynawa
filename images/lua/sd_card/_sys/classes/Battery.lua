@@ -10,6 +10,7 @@ end
 
 function class:_init()
 	Class.EventSource._init(self,"battery")
+	self.last_critial_status = -999999
 	self.last_status = false
 	self.pct0 = 3400
 	self.pct100 = 4150
@@ -33,16 +34,18 @@ end
 
 function class:status()
 	local status = {timestamp = os.time()}
-	status.voltage = dynawa.x.battery_voltage()
+	local stat = assert(dynawa.x.battery_stats())
+	status.voltage = assert(stat.voltage)
+	status.current = assert(stat.current)
 	status.percentage = self:voltage_to_percent(status.voltage)
-	if false then
+	if stat.state == 1 then
 		status.charging = true --#todo
 	end
 	if status.voltage <= self.critical_voltage and not status.charging then
 		status.critical = true
 	end
-	self.last_status = {timestamp = status.timestamp, voltage = status.voltage, percentage = status.percentage}
-	local logtxt = "Voltage = "..status.voltage .. " ("..status.percentage.."%)"
+	self.last_status = {timestamp = status.timestamp, voltage = status.voltage, percentage = status.percentage, charging = status.charging}
+	local logtxt = "Voltage = "..status.voltage .. " ("..status.percentage.."%) "..status.current.." mA"
 	log(logtxt)
 	log_file(logtxt)
 	return status
@@ -57,6 +60,19 @@ function class:handle_event_timed_event(event)
 	local status = self:status()
 	if self.last_status and self.last_status.voltage ~= status.voltage then
 		self:broadcast_update(status)
+	end
+	if status.critical then
+		local ts = dynawa.ticks()
+		--Only 1 alert in 10 minutes to handle voltage fluctuations around critical level
+		if ts - self.last_critical_status < 60 * 1000 * 10 then
+			dynawa.popup.error("Only "..status.percentage.."% of battery charge remaining. Please recharge your TCH1.")
+			dynawa.devices.vibrator:alert(1,1000)			
+		else
+			--The voltage is critical but it's been less than 10 minutes since the last critical popup.
+			--Don't display alert but reset "last_critical_status" counter,
+			--effectively disabling the possibility of alert until battery is charged again AND at least 10 minutes pass.
+			self.last_critical_status = ts
+		end
 	end
 	--#todo Dynamic delay?
 	local delay = 60000
