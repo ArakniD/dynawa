@@ -76,7 +76,7 @@ void Timer_Isr( void )
             if ( timer->timeCurrent <= 0 )
             {
                 //TRACE_TMR("tmr ex %d %d\r\n", timer->value, timeval - timer->started);
-                TRACE_INFO("tmrexp %d %d\r\n", timer->value, timeval - timer->started);
+                //TRACE_INFO("tmrexp %d %d\r\n", timer->value, timeval - timer->started);
                 if ( timer->repeat ) {
                     timer->timeCurrent += timer->timeInitial;
                     // debug
