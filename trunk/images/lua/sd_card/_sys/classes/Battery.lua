@@ -10,7 +10,7 @@ end
 
 function class:_init()
 	Class.EventSource._init(self,"battery")
-	self.last_critial_status = -999999
+	self.last_critical_status = -999999
 	self.last_status = false
 	self.pct0 = 3400
 	self.pct100 = 4150
