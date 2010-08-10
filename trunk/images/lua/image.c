@@ -80,6 +80,8 @@ void Run( ) // this task gets called as soon as we boot up.
     }
     i2c_init();
     rtc_init();
+    gasgauge_init();
+
     event_init(100);
 
     //System* sys = System::get();

@@ -5,10 +5,30 @@
 #include "debug/trace.h"
 
 int gasgauge_init () {
-    i2cMasterConf(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), I2CMASTER_WRITE);
-    i2cWriteByte(I2CGG_POR_BITMASK|I2CGG_SHELF_BITMASK);
-    i2cMasterConf(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), I2CMASTER_WRITE);
-    i2cWriteByte(I2CGG_SHELF_BITMASK);
+    // TBD
+    /*
+       i2cMasterConf(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), I2CMASTER_WRITE);
+       i2cWriteByte(I2CGG_POR_BITMASK|I2CGG_SHELF_BITMASK);
+       i2cMasterConf(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), I2CMASTER_WRITE);
+       i2cWriteByte(I2CGG_SHELF_BITMASK);
+       */
+    AT91C_BASE_PIOA->PIO_PER = PIN_CHARGING;
+    AT91C_BASE_PIOA->PIO_ODR = PIN_CHARGING;
+    AT91C_BASE_PIOA->PIO_PPUER = PIN_CHARGING; // pull-up enabled
+
+    AT91C_BASE_PIOA->PIO_PER = PIN_CHARGEDONE;
+    AT91C_BASE_PIOA->PIO_ODR = PIN_CHARGEDONE;
+    AT91C_BASE_PIOA->PIO_PPUER = PIN_CHARGEDONE; // pull-up enabled
+
+    AT91C_BASE_PIOA->PIO_PER = CHARGEEN_PIN;
+    AT91C_BASE_PIOA->PIO_OER = CHARGEEN_PIN;
+    AT91C_BASE_PIOA->PIO_SODR = CHARGEEN_PIN; //set to log1
+
+/*
+    AT91C_BASE_PIOA->PIO_PER = USBPEN2_PIN;                          // PIO Enable Register - allow PIO to control pin PP3
+    AT91C_BASE_PIOA->PIO_OER = USBPEN2_PIN;                          // PIO Output Enable Register - sets pin P3 to outputs
+    AT91C_BASE_PIOA->PIO_CODR = USBPEN2_PIN;
+*/
 }
 
 int gasgauge_get_stats (gasgauge_stats *stats) {
@@ -38,6 +58,7 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
         stats->current = ((int32_t)(t&0x7fff)*157)/10000;//mAmps
 
     TRACE_INFO("gasgauge U: %d I: %d ", stats->voltage, stats->current);
+
 
     if (ISCLEARED(AT91C_BASE_PIOA->PIO_PDSR, PIN_CHARGING)) {
         TRACE_INFO("Charging.\n\r");
