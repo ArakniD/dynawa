@@ -160,6 +160,10 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
         {
             // Damn it!  Reschedule the next callback
             Timer_setTimeTarget( target - ( remaining - timer->timeCurrent ));
+            TRACE_TMR("%x rc %d cv %d\r\n", timer, timer_manager.tc->TC_RC, timer_manager.tc->TC_CV);
+            // pretend that the existing time has been with us for the whole slice so that when the 
+            // IRQ happens it credits the correct (reduced) time.
+            timer->timeCurrent += timeCurrent;
         }
         else
         {
@@ -332,8 +336,7 @@ int Timer_managerInit(int timerindex)
     // disable the interrupt, configure interrupt handler and re-enable
     AT91C_BASE_AIC->AIC_IDCR = mask;
     AT91C_BASE_AIC->AIC_SVR[ timer_manager.channel_id ] = (unsigned int)TimerIsr_Wrapper;
-    //AT91C_BASE_AIC->AIC_SMR[ timer_manager.channel_id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;
-    AT91C_BASE_AIC->AIC_SMR[ timer_manager.channel_id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 5  ;
+    AT91C_BASE_AIC->AIC_SMR[ timer_manager.channel_id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;
     AT91C_BASE_AIC->AIC_ICCR = mask;
 
     // Set the timer up.  We want just the basics, except when the timer compares 
