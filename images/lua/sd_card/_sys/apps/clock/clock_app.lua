@@ -93,7 +93,7 @@ function app:render(time, full)
 end
 
 function app:remove_dots(message)
-	if not self.in_front then
+	if not self.window.in_front then
 		return
 	end
 	local black = dynawa.bitmap.new(5,5,0,0,0)
