@@ -25,11 +25,11 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
 
     stats->voltage = ((t>>6)*199)/10;
 
-
     b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires));
     t = (uint16_t)b;
     b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires+1));
     i2c_close();
+
     t |= (((uint16_t)b)<<8);
 
     if (t&0x8000)
@@ -37,7 +37,7 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
     else
         stats->current = ((int32_t)(t&0x7fff)*157)/10000;//mAmps
 
-    TRACE_INFO("gasgauge U: %d I: %d", stats->voltage, stats->current);
+    TRACE_INFO("gasgauge U: %d I: %d ", stats->voltage, stats->current);
 
     if (ISCLEARED(AT91C_BASE_PIOA->PIO_PDSR, PIN_CHARGING)) {
         TRACE_INFO("Charging.\n\r");

@@ -332,7 +332,8 @@ int Timer_managerInit(int timerindex)
     // disable the interrupt, configure interrupt handler and re-enable
     AT91C_BASE_AIC->AIC_IDCR = mask;
     AT91C_BASE_AIC->AIC_SVR[ timer_manager.channel_id ] = (unsigned int)TimerIsr_Wrapper;
-    AT91C_BASE_AIC->AIC_SMR[ timer_manager.channel_id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;
+    //AT91C_BASE_AIC->AIC_SMR[ timer_manager.channel_id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;
+    AT91C_BASE_AIC->AIC_SMR[ timer_manager.channel_id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 5  ;
     AT91C_BASE_AIC->AIC_ICCR = mask;
 
     // Set the timer up.  We want just the basics, except when the timer compares 
