@@ -4,6 +4,7 @@ class.is_menu = true
 
 function class:_init(desc)
 	self.flags = desc.flags or {}
+	self.outer_color = desc.outer_color or {99,99,255}
 	self.banner = assert(desc.banner)
 	if type(self.banner) == "string" then
 		self.banner = {text = self.banner}
@@ -190,7 +191,7 @@ end
 
 --render outer menu border and banner
 function class:_render_outer()
-	local outer_color = {99,99,255}
+	local outer_color = self.outer_color
 	local display_w, display_h = self.window.size.w, self.window.size.h
 	local bgbmp = dynawa.bitmap.new(display_w, display_h,unpack(outer_color))
 	local banner_bmp, _, banner_h  = dynawa.bitmap.text_lines{text=assert(self.banner.text),

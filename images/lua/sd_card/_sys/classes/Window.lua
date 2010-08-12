@@ -4,8 +4,11 @@ class.bitmap = false
 
 class.size = {w=160,h=128}
 
-function class:_init()
+function class:_init(str)
 	self.id = dynawa.unique_id()
+	if str then
+		self.name = str.." "..self.id
+	end
 	self:force_full_update()
 	dynawa.window_manager:register_window(self)
 	self.size = assert(dynawa.devices.display.size)

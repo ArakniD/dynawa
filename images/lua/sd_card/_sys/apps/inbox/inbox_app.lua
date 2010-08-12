@@ -136,6 +136,7 @@ function app:handle_event_from_phone(ev)
 	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={80,0,80}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
 	dynawa.popup:open{bitmap = bmap, autoclose = 20000, on_confirm = function()
+		log("Showing message")
 		self:show_message{folder_id = typ, message = item}
 	end}
 	local folder = assert(self.prefs.storage[typ])
@@ -362,7 +363,7 @@ end
 function app:show_message(args)
 	local folder_id, message = assert(args.folder_id, "No folder"), assert(args.message, "No message")
 	local topwin = dynawa.window_manager:peek()
-	if not (topwin and topwin.menu.flags and topwin.menu.flags.folder_id == folder_id) then
+	if not (topwin and topwin.app == self and topwin.menu and topwin.menu.flags and topwin.menu.flags.folder_id == folder_id) then
 		--We are not being called from folder. Close all active apps, open inbox and relevant folder.
 		dynawa.window_manager:stack_cleanup()
 		self:display_root_menu()

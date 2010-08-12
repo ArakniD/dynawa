@@ -26,8 +26,8 @@ function app:open(args)
 	local his_bmp = (his_win or {}).bitmap
 	local wsize --Window size
 	if not his_bmp then
-		wsize = dynawa.devices.display.size		
-		his_bmp = dynawa.bitmap.new(dynawa.devices.display.size.w, wsize, 0,0,0)
+		wsize = dynawa.devices.display.size
+		his_bmp = dynawa.bitmap.new(wsize.w, wsize.h, 0,0,0)
 	else
 		wsize = assert(his_win.size)
 	end

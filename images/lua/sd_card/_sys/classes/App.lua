@@ -9,13 +9,13 @@ function class:start(id)
 end
 
 function class:new_window()
-	local win = Class.Window()
+	local win = Class.Window(self.name)
 	win.app = self
 	return win
 end
 
 function class:new_menuwindow(menudef)
-	local win = Class.Window()
+	local win = Class.Window(self.name.." (menu)")
 	win.app = self
 	local menu = Class.Menu(menudef)
 	menu.window = win
