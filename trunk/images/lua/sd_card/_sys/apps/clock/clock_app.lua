@@ -106,10 +106,10 @@ function app:tick(message)
 		return
 	end
 	local sec,msec = dynawa.time.get()
-	log("Clock time before clock render: "..sec.." / "..msec)
+	--log("Clock time before clock render: "..sec.." / "..msec)
 	self:render(os.date("*t",sec), message.full_render)
 	local sec2,msec2 = dynawa.time.get()
-	log("After clock render: "..sec2.." / "..msec2)
+	--log("After clock render: "..sec2.." / "..msec2)
 	local when = 1000 - msec2
 	if message.full_render == "no_time" then
 		message.full_render = true
@@ -180,12 +180,14 @@ function app:handle_event_battery_status(event)
 			self.window:show_bitmap_at(fullbmp, x + 4, y + 36 - full)
 		end
 	end
-	local txtbmp = dynawa.bitmap.text_line(string.format("%d%+d",event.voltage,event.current),"/_sys/fonts/default7.png")
+	
+	--Display voltage and charging values
+--[[	local txtbmp = dynawa.bitmap.text_line(string.format("%d%+d",event.voltage,event.current),"/_sys/fonts/default7.png")
 	x = 124
 	y = 81
 	local blank = dynawa.bitmap.new(36,10)
 	self.window:show_bitmap_at(blank,x,y)
-	self.window:show_bitmap_at(txtbmp,x,y)
+	self.window:show_bitmap_at(txtbmp,x,y)]]
 end
 
 function app:handle_event_inbox_updated(event)

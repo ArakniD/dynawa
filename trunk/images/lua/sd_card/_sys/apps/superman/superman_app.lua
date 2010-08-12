@@ -17,6 +17,7 @@ function app:open_menu_by_url(url)
 	if not menu.is_menu then
 		menu = self:new_menuwindow(menu).menu
 	end
+	menu.outer_color = {255,99,99}
 	menu.url = url
 	self:open_menu(menu)
 	return menu
@@ -125,21 +126,19 @@ function app.menu_builders:default_font_size()
 	local menudesc = {banner = "Select default font size:", items = {}}
 	local font_sizes = {7,10,15}
 	for i, size in ipairs(font_sizes) do
-		table.insert(menudesc.items, {text = "Quick brown fox jumps over a lazy dog ("..size.." px)",
-				value = {font_size = size, font_name = "/_sys/fonts/default"..size..".png"}})
-	end
-	local menu = self:new_menuwindow(menudesc).menu
-	for i, item in ipairs(menu.items) do
-		item.render = function(self,args)
-			return dynawa.bitmap.text_lines{text = self.text, font = self.value.font_name, width = assert(args.max_size.w)}
+		local item = {text = "Quick brown fox jumps over the lazy dog ("..size.." px)",
+				value = {font_size = size, font_name = "/_sys/fonts/default"..size..".png"}}
+		item.render = function(_self,args)
+			return dynawa.bitmap.text_lines{text = _self.text, font = assert(_self.value.font_name), width = assert(args.max_size.w)}
 		end
-		item.selected = function(self,args)
-			dynawa.settings.default_font = args.item.value.font_name
-			dynawa.file.save_settings()
-			dynawa.popup:info("Default font changed to size "..args.item.value.font_size)
-		end
+		table.insert(menudesc.items, item)
 	end
-	return menu
+	menudesc.item_selected = function(self,args)
+		dynawa.settings.default_font = args.item.value.font_name
+		dynawa.file.save_settings()
+		dynawa.popup:info("Default font changed to size "..args.item.value.font_size)
+	end
+	return menudesc
 end
 
 function app.menu_builders:file_browser(dir)
@@ -237,27 +236,6 @@ function app.menu_builders:adjust_time_date(what)
 		end
 	end
 	return menu
-end
-
-function app.menu_builders:default_font_size()
-	local menudesc = {banner = "Select default font size:", items = {}}
-	local font_sizes = {7,10,15}
-	for i, size in ipairs(font_sizes) do
-		table.insert(menudesc.items, {text = "Quick brown fox jumped over the lazy dog ("..size.." px)",
-				value = {font_size = size, font_name = "/_sys/fonts/default"..size..".png"}})
-	end
-	local menu = self:new_menuwindow(menudesc).menu
-	for i, item in ipairs(menu.items) do
-		item.render = function(self,args)
-			return dynawa.bitmap.text_lines{text = self.text, font = self.value.font_name, width = assert(args.max_size.w)}
-		end
-		item.selected = function(self,args)
-			dynawa.settings.default_font = args.item.value.font_name
-			dynawa.file.save_settings()
-			dynawa.popup:info("Default font changed to size "..args.item.value.font_size)
-		end
-	end
-	return menudesc
 end
 
 function app.menu_builders:apps()

@@ -58,7 +58,7 @@ function app:switching_to_front()
 			{
 				text = "BT off", value = {jump = "bt_off"},
 			},
-			{
+--[[			{
 				text = "Send 'Hello'", value = {jump = "send_openwatch_hello"},
 			},
 			{
@@ -72,7 +72,7 @@ function app:switching_to_front()
 			},
 			{
 				text = "Emulate random calendar_event", value = {jump = "random_calendar_event"},
-			},
+			},]]
 			{
 				text = "Delete all pairings", value = {jump = "delete_pairings"},
 			},
