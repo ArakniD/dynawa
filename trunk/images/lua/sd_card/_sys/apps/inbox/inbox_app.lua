@@ -361,6 +361,7 @@ end
 --Show single message details
 --The exact m.o. depends on whether this is called from folder menu or not
 function app:show_message(args)
+	dynawa.busy()
 	local folder_id, message = assert(args.folder_id, "No folder"), assert(args.message, "No message")
 	local topwin = dynawa.window_manager:peek()
 	if not (topwin and topwin.app == self and topwin.menu and topwin.menu.flags and topwin.menu.flags.folder_id == folder_id) then
@@ -375,6 +376,7 @@ function app:show_message(args)
 	for i, line in ipairs(message.body) do
 		table.insert(menu.items, {text = self:text_or_time(line), textcolor = {255,255,0}})
 	end
+	dynawa.busy()
 	if not message.read then
 		message.read = true
 		topwin.menu:invalidate()
@@ -397,6 +399,7 @@ function app:show_message(args)
 		self:save_data(self.prefs)
 		self:broadcast_update()
 	end})
+	dynawa.busy()
 	local menuwin = self:new_menuwindow(menu)
 	menuwin:push()
 end
