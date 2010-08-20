@@ -182,12 +182,12 @@ function app:handle_event_battery_status(event)
 	end
 	
 	--Display voltage and charging values
---[[	local txtbmp = dynawa.bitmap.text_line(string.format("%d%+d",event.voltage,event.current),"/_sys/fonts/default7.png")
+	local txtbmp = dynawa.bitmap.text_line(string.format("%d%+d",event.voltage,event.current),"/_sys/fonts/default7.png")
 	x = 124
 	y = 81
 	local blank = dynawa.bitmap.new(36,10)
 	self.window:show_bitmap_at(blank,x,y)
-	self.window:show_bitmap_at(txtbmp,x,y)]]
+	self.window:show_bitmap_at(txtbmp,x,y)
 end
 
 function app:handle_event_inbox_updated(event)

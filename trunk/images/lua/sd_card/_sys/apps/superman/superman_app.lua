@@ -268,23 +268,46 @@ function app.menu_builders:apps_running()
 	return menu
 end
 
+local function get_sd_apps_except(dirname,running,result)
+	local dir = assert(dynawa.file.dir_stat(dirname))
+	dynawa.busy()
+	for fname,size in pairs(dir) do
+		if size == "dir" then
+			get_sd_apps_except(dirname..fname.."/",running,result)
+		else
+			local id = dirname..fname
+			if not running[id] then
+				if id:match("_app%.lua$") then
+					--log("App: "..id)
+					table.insert(result,id)
+				end
+			end
+		end
+	end
+	return result
+end
+
 function app.menu_builders:apps_on_card()
 	local menudesc = {banner = "Apps on SD card (not running)", items = {}}
-	local apps = {}
+	local running = {}
 	for id, app in pairs(dynawa.app_manager.all_apps) do
-		local name = "> "..id
-		if app.name then
-			name = name.." ("..app.name..")"
-		end
-		table.insert(menudesc.items, {text = name, selected = function(args)
-			app:switching_to_front()
-		end})
+		assert(not running[app.filename])
+		running[app.filename] = app
 	end
-	table.sort(menudesc.items, function (a,b)
-		return (a.text < b.text)
-	end)
-	local menu = self:new_menuwindow(menudesc).menu
-	return menu
+	local dir = "/apps/"
+	local apps = get_sd_apps_except(dir,running,{})
+	if not next(apps) then
+		menudesc.items = {
+			{text = "No other Apps found in /apps/ directory"}
+		}
+		return menudesc
+	end
+	table.sort(apps)
+	for i,id in ipairs(apps) do
+		id = id:gsub("/"," / ")
+		table.insert(menudesc.items,{text=">"..id})
+	end
+	return menudesc
 end
 
 
