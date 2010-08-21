@@ -13,7 +13,7 @@ end
 
 function app:show_default()
 	local app_id = dynawa.settings.switchable[1]
-	if not app_id then
+	if not app_id then --There are no switchables defined, show SuperMan instead
 		dynawa.superman:switching_to_front()
 	else
 		local app = dynawa.app_manager:app_by_id(app_id)
@@ -21,7 +21,7 @@ function app:show_default()
 		--log("Switching to front: "..app)
 		app:switching_to_front()
 	end
-	assert(self:peek(), "Default app did not create graphical output")
+	assert(self:peek(), "Default App did not put any Window on stack")
 end
 
 function app:push(x)

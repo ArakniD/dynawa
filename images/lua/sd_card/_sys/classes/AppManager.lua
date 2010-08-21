@@ -3,6 +3,14 @@ local class = Class("AppManager")
 function class:_init()
 	self.all_apps = {}
 	self.waiting_for = {}
+	--The following apps are REQUIRED for WristOS to work
+	self.required_apps = {
+		"/_sys/apps/window_manager/window_manager_app.lua",
+		"/_sys/apps/superman/superman_app.lua",
+		"/_sys/apps/popup/popup_app.lua",
+		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
+		"/_sys/apps/sandman/sandman_app.lua",
+	}
 end
 
 function class:start_app(filename)
@@ -39,6 +47,15 @@ function class:app_by_id(id)
 	return self.all_apps[id]
 end
 
+function class:app_by_filename(fname)
+	for id,app in pairs(self.all_apps) do
+		if app.filename == fname then
+			return app
+		end
+	end
+	return nil
+end
+
 --Executes func only after the app "id" has been started
 function class:after_app_start(id,func)
 	local app = self:app_by_id(id)
@@ -51,28 +68,29 @@ function class:after_app_start(id,func)
 	table.insert(self.waiting_for[id],func)
 end
 
-function class:start_everything()
-	--The following apps are REQUIRED for WristOS to work
-	local apps = {
-		"/_sys/apps/window_manager/window_manager_app.lua",
-		"/_sys/apps/superman/superman_app.lua",
-		"/_sys/apps/popup/popup_app.lua",
-		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
-		"/_sys/apps/sandman/sandman_app.lua",
-	}
-	
+function class:all_autostarting_apps()
+	local apps = {}
+	for i,app in ipairs(self.required_apps) do
+		table.insert(apps, app)
+	end
 	for i,app in ipairs(dynawa.settings.autostart) do
 		table.insert(apps, app)
 	end
+	return apps	
+end
+
+function class:start_everything()
+	local apps = self:all_autostarting_apps()
 	
 	for i, app in ipairs(apps) do
 		dynawa.busy(i / 2 / #apps + 0.5)
 		self:start_app(app)
 	end
 	
-	if next(self.waiting_for) then
+	--Check if all dependencies are resolved.
+	--[[if next(self.waiting_for) then
 		error("After starting all Apps, there is still someone waiting for the start of "..(next(self.waiting_for)))
-	end
+	end]]
 
 	dynawa.window_manager:show_default()
 end
