@@ -243,7 +243,7 @@ function app.menu_builders:apps()
 		banner = "Apps", items = {
 			{text = "Running Apps", value = {go_to_url = "apps_running"}},
 			{text = "Non-running Apps on SD card", value = {go_to_url = "apps_on_card"}},
-			{text = "Auto-starting Apps", value = {go_to_url = "apps_on_card"}},
+			{text = "Auto-starting Apps", value = {go_to_url = "apps_autostart"}},
 		}
 	}
 	return menudesc
@@ -310,5 +310,36 @@ function app.menu_builders:apps_on_card()
 	return menudesc
 end
 
+local function is_app_required(app)
+	for i,fname in ipairs(dynawa.app_manager.required_apps) do
+		if app.filename == fname then
+			return true
+		end
+	end
+	return false
+end
 
+function app.menu_builders:apps_autostart()
+	local menudesc = {banner = "Auto-starting apps.", items = {}}
+	for i,fname in ipairs(dynawa.app_manager:all_autostarting_apps()) do
+		local app = dynawa.app_manager:app_by_filename(fname)
+		if app then
+			local name = app.name
+			if name ~= app.id then
+				name = name .. " ("..app.id..")"
+			end
+			if is_app_required(app) then
+				name = "(REQUIRED) ".. name
+			end
+			local item = {text = "> "..name}
+			table.insert(menudesc.items,item)
+		else
+			log("App "..fname.." is listed as autostarting but is not running")
+		end
+	end
+	if not next(menudesc.items) then
+		table.insert(menudesc.items,{text="No autostarting Apps"})
+	end
+	return menudesc
+end
 
