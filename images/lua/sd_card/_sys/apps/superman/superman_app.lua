@@ -13,7 +13,7 @@ function app:open_menu_by_url(url)
 	if not builder then
 		error("Cannot get builder for url: "..url)
 	end
-	local menu = builder(self,urlarg)
+	local menu = assert(builder(self,urlarg),"Builder didn't return menu nor menu descriptor")
 	if not menu.is_menu then
 		menu = self:new_menuwindow(menu).menu
 	end
@@ -257,15 +257,12 @@ function app.menu_builders:apps_running()
 		if app.name then
 			name = name.." ("..app.name..")"
 		end
-		table.insert(menudesc.items, {text = name, selected = function(args)
-			app:switching_to_front()
-		end})
+		table.insert(menudesc.items, {text = name, value = {go_to_url = "app:"..id}})
 	end
 	table.sort(menudesc.items, function (a,b)
 		return (a.text < b.text)
 	end)
-	local menu = self:new_menuwindow(menudesc).menu
-	return menu
+	return menudesc
 end
 
 local function get_sd_apps_except(dirname,running,result)
@@ -304,19 +301,10 @@ function app.menu_builders:apps_on_card()
 	end
 	table.sort(apps)
 	for i,id in ipairs(apps) do
-		id = id:gsub("/"," / ")
+		id = id:gsub("/"," /")
 		table.insert(menudesc.items,{text=">"..id})
 	end
 	return menudesc
-end
-
-local function is_app_required(app)
-	for i,fname in ipairs(dynawa.app_manager.required_apps) do
-		if app.filename == fname then
-			return true
-		end
-	end
-	return false
 end
 
 function app.menu_builders:apps_autostart()
@@ -328,10 +316,10 @@ function app.menu_builders:apps_autostart()
 			if name ~= app.id then
 				name = name .. " ("..app.id..")"
 			end
-			if is_app_required(app) then
+			if dynawa.app_manager:is_app_required(app) then
 				name = "(REQUIRED) ".. name
 			end
-			local item = {text = "> "..name}
+			local item = {text = "> "..name, value = {go_to_url = "app:"..app.id}}
 			table.insert(menudesc.items,item)
 		else
 			log("App "..fname.." is listed as autostarting but is not running")
@@ -340,6 +328,26 @@ function app.menu_builders:apps_autostart()
 	if not next(menudesc.items) then
 		table.insert(menudesc.items,{text="No autostarting Apps"})
 	end
+	return menudesc
+end
+
+function app.menu_builders:app(id)
+	assert(id,"No App id provided")
+	local app = dynawa.app_manager:app_by_id(id)
+	if not app then
+		local menudesc = {banner = "App with id: "..id, items = {}}
+		table.insert(menudesc.items, {"This App is not running"})
+		return menudesc
+	end
+	local menudesc = {banner = "App: "..app.name, items = {}}
+	table.insert(menudesc.items,{text = "Switch to this app", selected = function(_self,args)
+		log("Switching to front")
+		app:switching_to_front()
+	end})
+	table.insert(menudesc.items,{text = "Id: "..app.id})
+	local nicefname = app.filename:gsub("/"," /")
+	table.insert(menudesc.items,{text = "Filename:"..nicefname})
+	table.insert(menudesc.items,{text = "#todo Autostart"})
 	return menudesc
 end
 

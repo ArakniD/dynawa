@@ -95,5 +95,14 @@ function class:start_everything()
 	dynawa.window_manager:show_default()
 end
 
+function class:is_app_required(app)
+	for i,fname in ipairs(self.required_apps) do
+		if app.filename == fname then
+			return true
+		end
+	end
+	return false
+end
+
 return class
 
