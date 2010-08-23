@@ -37,7 +37,7 @@ end
 end]]
 
 function class:switching_to_front()
-	dynawa.popup:error(self.." generates no graphical output.")
+	dynawa.popup:error(self.." generates no graphical output by default.")
 end
 
 function class:switching_to_back()

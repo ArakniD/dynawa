@@ -20,14 +20,6 @@ function class:_init(desc)
 	end
 	for item_n, item_desc in ipairs(desc.items) do
 		local menuitem = Class.MenuItem(item_desc)
-		if item_desc.selected then
-			assert(type(item_desc.selected) == "function", "'selected' attribute is not a function")
-			menuitem.selected = item_desc.selected
-		end
-		if item_desc.render then
-			assert(type(item_desc.render) == "function", "'render' attribute is not a function")
-			menuitem.render = item_desc.render
-		end
 		table.insert(self.items, menuitem)
 		if desc.active_value and desc.active_value == menuitem.value then
 			self.active_item = menuitem

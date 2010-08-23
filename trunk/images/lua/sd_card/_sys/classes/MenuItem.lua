@@ -5,8 +5,13 @@ function class:_init(desc)
 	self.text = desc.text
 	self.textcolor = desc.textcolor
 	self.id = dynawa.unique_id()
-	if desc.on_select then
-		self.on_select = desc.on_select
+	if desc.selected then
+		assert(type(desc.selected) == "function", "'selected' attribute is not a function")
+		self.selected = desc.selected
+	end
+	if desc.render then
+		assert(type(desc.render) == "function", "'render' attribute is not a function")
+		self.render = desc.render
 	end
 	if desc.value then
 		self.value = desc.value
