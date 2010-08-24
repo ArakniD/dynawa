@@ -117,7 +117,7 @@ function app:tick(message)
 		time.raw = time_raw
 		self:update_dots(time,message.status)
 		self:text(time)
-	end
+	end 
 	local sec, msec = dynawa.time.get()
 	local when = 1100 - msec
 	dynawa.devices.timers:timed_event{delay = when, receiver = self, run_id = message.run_id}
