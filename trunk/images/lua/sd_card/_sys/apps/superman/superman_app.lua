@@ -265,44 +265,27 @@ function app.menu_builders:apps_running()
 	return menudesc
 end
 
-local function get_sd_apps_except(dirname,running,result)
-	local dir = assert(dynawa.file.dir_stat(dirname))
-	dynawa.busy()
-	for fname,size in pairs(dir) do
-		if size == "dir" then
-			get_sd_apps_except(dirname..fname.."/",running,result)
-		else
-			local id = dirname..fname
-			if not running[id] then
-				if id:match("_app%.lua$") then
-					--log("App: "..id)
-					table.insert(result,id)
-				end
-			end
-		end
-	end
-	return result
-end
-
 function app.menu_builders:apps_on_card()
-	local menudesc = {banner = "Apps on SD card (not running)", items = {}}
-	local running = {}
-	for id, app in pairs(dynawa.app_manager.all_apps) do
-		assert(not running[app.filename])
-		running[app.filename] = app
-	end
-	local dir = "/apps/"
-	local apps = get_sd_apps_except(dir,running,{})
+	local menudesc = {banner = "Apps on SD card (select to run)", items = {}}
+	local apps = dynawa.app_manager:sd_card_apps()
 	if not next(apps) then
 		menudesc.items = {
-			{text = "No other Apps found in /apps/ directory"}
+			{text = "No non-running Apps found in /apps/ directory"}
 		}
 		return menudesc
 	end
 	table.sort(apps)
-	for i,id in ipairs(apps) do
-		id = id:gsub("/"," /")
-		table.insert(menudesc.items,{text=">"..id})
+	for i,fname in ipairs(apps) do
+		local nicefname = fname:gsub("/"," /")
+		table.insert(menudesc.items,{text=">"..nicefname, value = {filename = fname}})
+	end
+	menudesc.item_selected = function(_self,args)
+		local fname = assert(args.item.value.filename)
+		local app,app2 = dynawa.app_manager:start_app(fname)
+		if not app then
+			app = assert(app2)
+		end
+		self:open_menu_by_url("app:"..app.id)
 	end
 	return menudesc
 end
@@ -346,8 +329,9 @@ function app.menu_builders:app(id)
 	end})
 	table.insert(menudesc.items,{text = "Id: "..app.id})
 	local nicefname = app.filename:gsub("/"," /")
-	table.insert(menudesc.items,{text = "Filename:"..nicefname})
-	table.insert(menudesc.items,{text = "#todo Autostart"})
+	table.insert(menudesc.items,{text = "Filename:"..nicefname})	
+	local is_autostarting = dynawa.app_manager:is_autostarting(app)
+	table.insert(menudesc.items,{text = "Autostart: "..tostring(is_autostarting)})
 	return menudesc
 end
 

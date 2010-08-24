@@ -13,11 +13,17 @@ function class:_init()
 	}
 end
 
+--Start app with provided filename. Returns the app object or false if app was already running.
 function class:start_app(filename)
 	--dynawa.busy()
 	local dir = filename:match("(.*/).*%.lua$")
 	if not dir then
 		error("Cannot extract directory name from App filename: "..filename)
+	end
+	for id,app in pairs(self.all_apps) do
+		if app.filename == filename then
+			return false, app
+		end
 	end
 	local chunk = assert(loadfile(filename))
 	local app
@@ -31,7 +37,7 @@ function class:start_app(filename)
 	rawset(_G, "app", app)
 	chunk()
 	rawset(_G, "app", nil)
-	assert(not self.all_apps[app.id], "App with id "..app.id.." is already running")
+	assert(not self.all_apps[app.id], "App with id "..app.id.." is already running") --Should never get here!
 	self.all_apps[app.id] = app
 	app:start(app)
 	if self.waiting_for[app.id] then
@@ -58,6 +64,7 @@ end
 
 --Executes func only after the app "id" has been started
 function class:after_app_start(id,func)
+	assert(type(id)=="string")
 	local app = self:app_by_id(id)
 	if app then
 		return func(app)
@@ -68,15 +75,26 @@ function class:after_app_start(id,func)
 	table.insert(self.waiting_for[id],func)
 end
 
+--Returns FILENAMES(!!) of all autostarting apps ("required" + user)
 function class:all_autostarting_apps()
 	local apps = {}
-	for i,app in ipairs(self.required_apps) do
-		table.insert(apps, app)
+	for i,id in ipairs(self.required_apps) do
+		table.insert(apps, id)
 	end
-	for i,app in ipairs(dynawa.settings.autostart) do
-		table.insert(apps, app)
+	for i,id in ipairs(dynawa.settings.autostart) do
+		table.insert(apps, id)
 	end
-	return apps	
+	return apps
+end
+
+function class:is_autostarting(app0)
+	assert(app0.is_app)
+	for i,id in ipairs(self:all_autostarting_apps()) do
+		if app0.filename == id then
+			return true
+		end
+	end
+	return false
 end
 
 function class:start_everything()
@@ -102,6 +120,37 @@ function class:is_app_required(app)
 		end
 	end
 	return false
+end
+
+local function get_sd_apps_except(dirname,running,result)
+	local dir = assert(dynawa.file.dir_stat(dirname))
+	dynawa.busy()
+	for fname,size in pairs(dir) do
+		if size == "dir" then
+			get_sd_apps_except(dirname..fname.."/",running,result)
+		else
+			local id = dirname..fname
+			if not running[id] then
+				if id:match("_app%.lua$") then
+					--log("App: "..id)
+					table.insert(result,id)
+				end
+			end
+		end
+	end
+	return result
+end
+
+--Gets filenames of all SD card apps which are NOT CURRENTLY RUNNING
+function class:sd_card_apps()
+	local running = {}
+	for id, app in pairs(self.all_apps) do
+		assert(not running[app.filename])
+		running[app.filename] = app
+	end
+	local dir = "/apps/"
+	local apps = get_sd_apps_except(dir,running,{})
+	return apps
 end
 
 return class
