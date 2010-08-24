@@ -40,6 +40,7 @@ function class:switching_to_front()
 	dynawa.popup:error(self.." generates no graphical output by default.")
 end
 
+--This is acceptable default for trivial Apps (one window plus standard menuwindows on top of that)
 function class:switching_to_back()
 	local win = dynawa.window_manager:pop_and_delete_menuwindows()
 	if win then
@@ -50,12 +51,13 @@ function class:switching_to_back()
 end
 
 function class:handle_event_button(event)
-	if event.button == "cancel" then
+	if event.action == "button_up" and event.button == "cancel" then
 		self:switching_to_back()
 	end
 end
 
 function class:handle_event_do_menu()
+	dynawa.popup:error("No context menu defined for "..self)
 end
 
 function class:menu_cancelled(menu)
