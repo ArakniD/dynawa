@@ -62,11 +62,10 @@ function app:handle_event_from_phone(ev)
 		if not caller then
 			caller = assert(data.contact_phone)
 		end
-		item.header = "From "..caller
+		item.header = {"From "..caller.." (%s)",os.time()-5}
 		if data.contact_name then
 			table.insert(item.body,"Number: "..data.contact_phone)
 		end
-		table.insert(item.body,{"Called %s",os.time()-5})
 	elseif command == "incoming_sms" then
 		typ = "sms"
 		table.insert(rows,"INCOMING SMS")
@@ -78,11 +77,10 @@ function app:handle_event_from_phone(ev)
 		local snippet = self:get_snippet(data.text)
 		table.insert(rows,'"'..snippet..'"')
 		local time = assert(data.time_received)
-		item.header = "From ".. sender
+		item.header = {"From ".. sender.. " (%s)",time}
 		for i,line in ipairs(data.text) do
 			table.insert(item.body,line)
 		end
-		table.insert(item.body,{"(Received %s)",time})
 	elseif command == "incoming_email" then
 		typ = "email"
 		table.insert(rows,"INCOMING E-MAIL")
@@ -92,8 +90,8 @@ function app:handle_event_from_phone(ev)
 		end
 		table.insert(rows,"From: "..sender)
 		table.insert(rows,'"'..self:get_snippet{assert(data.subject)}..'"')
-		item.header = assert(data.subject)
 		local time = assert(data.time_received)
+		item.header = {assert(data.subject).." (%s)",time}
 		local from = "From "..sender
 		if sender ~= data.contact_email then
 			from = from .." ("..data.contact_email..")"
@@ -102,7 +100,6 @@ function app:handle_event_from_phone(ev)
 		for i,line in ipairs(data.body_preview) do
 			table.insert(item.body,line)
 		end
-		table.insert(item.body,{"(Received %s)",time})
 	elseif command == "calendar_event" then
 		typ = "calendar"
 		table.insert(rows,"CALENDAR EVENT")
