@@ -244,6 +244,7 @@ function app.menu_builders:apps()
 			{text = "Running Apps", value = {go_to_url = "apps_running"}},
 			{text = "Non-running Apps on SD card", value = {go_to_url = "apps_on_card"}},
 			{text = "Auto-starting Apps", value = {go_to_url = "apps_autostart"}},
+			{text = "Switchable Apps (cycled using SWITCH button)", value = {go_to_url = "apps_switchable"}},
 		}
 	}
 	return menudesc
@@ -270,7 +271,7 @@ function app.menu_builders:apps_on_card()
 	local apps = dynawa.app_manager:sd_card_apps()
 	if not next(apps) then
 		menudesc.items = {
-			{text = "No non-running Apps found in /apps/ directory"}
+			{text = "No non-running Apps found on SD card"}
 		}
 		return menudesc
 	end
@@ -291,7 +292,7 @@ function app.menu_builders:apps_on_card()
 end
 
 function app.menu_builders:apps_autostart()
-	local menudesc = {banner = "Auto-starting apps.", items = {}}
+	local menudesc = {banner = "Auto-starting apps", items = {}}
 	for i,fname in ipairs(dynawa.app_manager:all_autostarting_apps()) do
 		local app = dynawa.app_manager:app_by_filename(fname)
 		if app then
@@ -299,7 +300,7 @@ function app.menu_builders:apps_autostart()
 			if name ~= app.id then
 				name = name .. " ("..app.id..")"
 			end
-			if dynawa.app_manager:is_app_required(app) then
+			if dynawa.app_manager:is_required(app) then
 				name = "(REQUIRED) ".. name
 			end
 			local item = {text = "> "..name, value = {go_to_url = "app:"..app.id}}
@@ -331,7 +332,42 @@ function app.menu_builders:app(id)
 	local nicefname = app.filename:gsub("/"," /")
 	table.insert(menudesc.items,{text = "Filename:"..nicefname})	
 	local is_autostarting = dynawa.app_manager:is_autostarting(app)
-	table.insert(menudesc.items,{text = "Autostart: "..tostring(is_autostarting)})
+	local auto = "disabled"
+	if dynawa.app_manager:is_autostarting(app) then
+		auto = "enabled"
+	end
+	if dynawa.app_manager:is_required(app) then
+		table.insert(menudesc.items,{text = "Autostart: enabled (required App)"})
+	else
+		table.insert(menudesc.items,{text = "Autostart: "..auto, selected = function(_self,args)
+			local menu = assert(args.menu)
+			menu.window:pop()
+			if auto == "disabled" then --set to autostart
+				dynawa.app_manager:enable_autostart(app)
+			else -- cancel autostart
+				dynawa.app_manager:disable_autostart(app)
+			end
+			self:open_menu_by_url("app:"..app.id)
+		end})
+	end
+	return menudesc
+end
+
+function app.menu_builders:apps_switchable()
+	local menudesc = {banner = "Switchable Apps", items = {}}
+	for i,fname in ipairs(dynawa.settings.switchable) do
+		local app = assert(dynawa.app_manager:app_by_id(fname))
+		local name = app.name
+		if app.name ~= app.id then
+			name = name.." ("..app.id..")"
+		end
+		table.insert(menudesc.items,{text=name})
+	end
+	if not next(menudesc.items) then
+		table.insert(menudesc.items,{text="No switchable Apps"})
+	else
+		table.insert(menudesc.items,{text="#todo: re-order & disable", value={val="xxx"}})
+	end
 	return menudesc
 end
 

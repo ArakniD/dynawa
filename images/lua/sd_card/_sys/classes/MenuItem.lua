@@ -16,6 +16,11 @@ function class:_init(desc)
 	if desc.value then
 		self.value = desc.value
 	end
+	if not self.textcolor then
+		if not(desc.selected or desc.value) then
+			self.textcolor = {128,128,128}
+		end
+	end
 end
 
 function class:render(args)
