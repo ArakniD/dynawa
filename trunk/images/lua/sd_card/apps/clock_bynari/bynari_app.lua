@@ -183,8 +183,6 @@ function app:gfx_init()
 	gfx.black = dynawa.bitmap.new(unpack(dot_size))
 end
 
-local after_select = {popup = "Color scheme changed", close_menu = true}
-
 function app:menu_item_selected(args)
 	local style = assert(args.item.value)
 	if self.prefs.style ~= style then
@@ -194,7 +192,7 @@ function app:menu_item_selected(args)
 	args.menu.window:pop()
 	args.menu.window:_delete()
 	self:init_colors()
-	--sdynawa.popup:open{text="Color scheme succesfully changed."}
+	dynawa.popup:info("Color scheme changed")
 end
 
 function app:handle_event_do_menu (message)

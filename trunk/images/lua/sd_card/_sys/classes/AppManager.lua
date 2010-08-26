@@ -113,7 +113,8 @@ function class:start_everything()
 	dynawa.window_manager:show_default()
 end
 
-function class:is_app_required(app)
+function class:is_required(app)
+	assert(app.is_app)
 	for i,fname in ipairs(self.required_apps) do
 		if app.filename == fname then
 			return true
@@ -148,9 +149,35 @@ function class:sd_card_apps()
 		assert(not running[app.filename])
 		running[app.filename] = app
 	end
-	local dir = "/apps/"
+	local dir = "/"
 	local apps = get_sd_apps_except(dir,running,{})
 	return apps
+end
+
+function class:enable_autostart(app)
+	assert(app.is_app)
+	assert(not self:is_autostarting(app))
+	table.insert(dynawa.settings.autostart,app.filename)
+	table.insert(dynawa.settings.switchable,app.id)
+	dynawa.file.save_settings()
+end
+
+function class:disable_autostart(app)
+	assert(app.is_app)
+	assert(self:is_autostarting(app))
+	for i,fname in ipairs(dynawa.settings.autostart) do
+		if fname == app.filename then
+			table.remove(dynawa.settings.autostart,i)
+			break
+		end
+	end
+	for i,id in ipairs(dynawa.settings.switchable) do
+		if id == app.id then
+			table.remove(dynawa.settings.switchable,i)
+			break
+		end
+	end
+	dynawa.file.save_settings()
 end
 
 return class

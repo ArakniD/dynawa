@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.7", settings_revision = 100811}
+dynawa.version = {wristOS="0.7", settings_revision = 100826.1}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
