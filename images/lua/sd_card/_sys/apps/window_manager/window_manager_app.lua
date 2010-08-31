@@ -12,12 +12,12 @@ function app:start()
 end
 
 function app:show_default()
-	local app_id = dynawa.settings.switchable[1]
-	if not app_id then --There are no switchables defined, show SuperMan instead
+	local id = dynawa.settings.switchable[1]
+	if not id then --There are no switchables defined, show SuperMan instead
 		dynawa.superman:switching_to_front()
 	else
-		local app = dynawa.app_manager:app_by_id(app_id)
-		assert(app, "This app is not running: "..app_id)
+		local app = dynawa.app_manager:app_by_id(id)
+		assert(app, "This app is not running: "..id)
 		--log("Switching to front: "..app)
 		app:switching_to_front()
 	end
@@ -73,17 +73,6 @@ function app:peek()
 	return (self.stack[1])
 end
 
-function app:pop_allXXXXXXXXXXXXXX() --#todo?
-	for i,window in ipairs(self.stack) do
-		if window.app == dynawa.superman then
-			window:_delete()
-		end
-	end
-	self.stack = {}
-	self.front_window = false
-	log("Popped all windows")
-end
-
 function app:register_window(window)
 	assert (not self._windows[window], "Window already registered")
 	self._windows[window] = window.id or true
@@ -94,20 +83,6 @@ function app:unregister_window(window)
 	assert (self._windows[window], "Window not registered")
 	self._windows[window] = nil
 	--log("Unregistered "..window)
-end
-
-function app:XXXXXXXXXXXXXwindow_to_front(window)
-	error("to_front called")
-	assert(window.is_window)
-	if self.front_window then
-		if self.front_window == window then
-			error(window.." is already in front")
-		end
-		self.front_window.in_front = false
-	end
-	self.front_window = window
-	window.in_front = true
-	window:you_are_now_in_front()
 end
 
 function app:update_display()
@@ -153,13 +128,13 @@ function app:handle_event_do_switch()
 	local win0 = self:peek()
 	self:stack_cleanup()
 	local switchable = dynawa.settings.switchable
-	if not win0 or #switchable <= 1 then
+	if (not win0) or (#switchable <= 1) then
 		return self:show_default()
 	end
-	local id1 = assert(win0.app.id)
+	local app1 = assert(win0.app)
 	local index1 = nil
 	for i,id in ipairs(switchable) do
-		if id == id1 then
+		if id == app1.id then
 			index1 = i
 			break
 		end
@@ -171,10 +146,8 @@ function app:handle_event_do_switch()
 	if index2 > #switchable then
 		index2 = 1
 	end
-	local id2 = switchable[index2]
-	local app = dynawa.app_manager:app_by_id(id2)
-	assert(app, "This app is not running: "..id2)
-	app:switching_to_front()
+	local app2 = dynawa.app_manager:app_by_id(switchable[index2])
+	app2:switching_to_front()
 end
 
 function app:handle_event_do_superman()

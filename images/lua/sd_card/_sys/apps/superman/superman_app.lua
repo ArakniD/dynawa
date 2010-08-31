@@ -79,7 +79,7 @@ function app.menu_builders:root()
 			text="SuperMan root menu"
 			},
 		items = {
-			{text = "Shortcuts", value = {go_to_url = "shortcuts"}},
+--			{text = "Shortcuts", value = {go_to_url = "shortcuts"}},
 			{text = "Apps", value = {go_to_url = "apps"}},
 			{text = "File browser", value = {go_to_url = "file_browser"}},
 			{text = "Display settings", value = {go_to_url = "adjust_display"}},
@@ -147,7 +147,7 @@ function app.menu_builders:file_browser(dir)
 	end
 	--log("opening dir "..dir)
 	local dirstat = dynawa.file.dir_stat(dir)
-	local menu = {banner = "File browser: "..dir, items={}, always_refresh = true, allow_shortcut = "Dir: "..dir}
+	local menu = {banner = "File browser: "..dir, items={}}
 	if not dirstat then
 		table.insert(menu.items,{text="[Invalid directory]"})
 	else
@@ -243,8 +243,8 @@ function app.menu_builders:apps()
 		banner = "Apps", items = {
 			{text = "Running Apps", value = {go_to_url = "apps_running"}},
 			{text = "Non-running Apps on SD card", value = {go_to_url = "apps_on_card"}},
-			{text = "Auto-starting Apps", value = {go_to_url = "apps_autostart"}},
-			{text = "Switchable Apps (cycled using SWITCH button)", value = {go_to_url = "apps_switchable"}},
+			{text = "Autostarting Apps", value = {go_to_url = "apps_autostart"}},
+			{text = "Reorder switchable Apps (cycled using SWITCH button)", value = {go_to_url = "apps_switchable"}},
 		}
 	}
 	return menudesc
@@ -324,10 +324,14 @@ function app.menu_builders:app(id)
 		return menudesc
 	end
 	local menudesc = {banner = "App: "..app.name, items = {}}
-	table.insert(menudesc.items,{text = "Switch to this app", selected = function(_self,args)
-		log("Switching to front")
-		app:switching_to_front()
-	end})
+	if dynawa.app_manager:can_be_switchable(app) then
+		table.insert(menudesc.items,{text = "Switch to this App", selected = function(_self,args)
+			log("Switching to front")
+			app:switching_to_front()
+		end})
+	else
+		table.insert(menudesc.items,{text = "Cannot switch to this App (provides no graphical output)"})
+	end
 	table.insert(menudesc.items,{text = "Id: "..app.id})
 	local nicefname = app.filename:gsub("/"," /")
 	table.insert(menudesc.items,{text = "Filename:"..nicefname})	
@@ -341,7 +345,7 @@ function app.menu_builders:app(id)
 	else
 		table.insert(menudesc.items,{text = "Autostart: "..auto, selected = function(_self,args)
 			local menu = assert(args.menu)
-			menu.window:pop()
+			menu.window:pop():_delete()
 			if auto == "disabled" then --set to autostart
 				dynawa.app_manager:enable_autostart(app)
 			else -- cancel autostart
@@ -350,24 +354,98 @@ function app.menu_builders:app(id)
 			self:open_menu_by_url("app:"..app.id)
 		end})
 	end
+	if dynawa.app_manager:can_be_switchable(app) then
+		local switchable = "no"
+		if dynawa.app_manager:is_switchable(app) then
+			switchable = "yes"
+		end
+		table.insert(menudesc.items,{text = "Switchable: "..switchable, selected = function(_self,args)
+			local menu = assert(args.menu)
+			menu.window:pop():_delete()
+			if switchable == "yes" then
+				for i,id in ipairs(dynawa.settings.switchable) do
+					if id == app.id then
+						table.remove(dynawa.settings.switchable,i)
+						break
+					end
+				end
+			else
+				table.insert(dynawa.settings.switchable,app.id)
+				if not dynawa.app_manager:is_autostarting(app) then
+					dynawa.app_manager:enable_autostart(app)
+				end
+			end
+			self:open_menu_by_url("app:"..app.id)
+			dynawa.file.save_settings()
+		end})
+	end
 	return menudesc
 end
 
-function app.menu_builders:apps_switchable()
+function app.menu_builders:apps_switchable(index)
 	local menudesc = {banner = "Switchable Apps", items = {}}
-	for i,fname in ipairs(dynawa.settings.switchable) do
-		local app = assert(dynawa.app_manager:app_by_id(fname))
+	for i,app in ipairs(dynawa.app_manager:all_switchable_apps()) do
 		local name = app.name
 		if app.name ~= app.id then
 			name = name.." ("..app.id..")"
 		end
-		table.insert(menudesc.items,{text=name})
+		table.insert(menudesc.items,{text=name, value={go_to_url="apps_switchable_item:"..app.id}})
 	end
 	if not next(menudesc.items) then
 		table.insert(menudesc.items,{text="No switchable Apps"})
-	else
-		table.insert(menudesc.items,{text="#todo: re-order & disable", value={val="xxx"}})
+	end
+	if index then
+		menudesc.active_item_index = assert(tonumber(index))
 	end
 	return menudesc
 end
 
+function app.menu_builders:apps_switchable_item(id)
+	assert(id)
+	local app = dynawa.app_manager:app_by_id(id)
+	local menudesc = {banner = "Switchable App: "..app.name, items = {}}
+	if not dynawa.app_manager:is_switchable(app) then
+		--Safeguard - something has changed before the user clicked in the previous menu.
+		table.insert(menudesc.items,{text = "This App is no longer switchable"})
+		return menudesc
+	end
+	local switchable = dynawa.settings.switchable
+	local index
+	for i,id0 in ipairs(switchable) do
+		if id0 == id then
+			index = i
+			break
+		end
+	end
+	assert(index, "App id is not present in switchables table")
+	local function back_to_switchables(newindex)
+			if switchable[index] ~= id then
+				dynawa.popup:error("App is no longer switchable")
+				return
+			end
+			table.remove(switchable,index)
+			table.insert(switchable,newindex,id)
+			dynawa.file.save_settings()
+			dynawa.window_manager:pop():_delete()
+			dynawa.window_manager:pop():_delete()
+			self:open_menu_by_url("apps_switchable:"..newindex)
+	end
+	if index > 1 then
+		table.insert(menudesc.items,{text = "Move to top", selected = function (_self,args)
+			back_to_switchables(1)
+		end})
+		table.insert(menudesc.items,{text = "Move one slot up", selected = function (_self,args)
+			back_to_switchables(index - 1)
+		end})
+	end
+	if index < #switchable then
+		table.insert(menudesc.items,{text = "Move to bottom", selected = function (_self,args)
+			back_to_switchables(#switchable)
+		end})
+		table.insert(menudesc.items,{text = "Move one slot down", selected = function (_self,args)
+			back_to_switchables(index + 1)
+		end})
+	end
+	table.insert(menudesc.items,{text="Show App details", value={go_to_url="app:"..id}})
+	return menudesc
+end

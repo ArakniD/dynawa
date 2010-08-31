@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.7", settings_revision = 100826.1}
+dynawa.version = {wristOS="0.7", settings_revision = 100831.6}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -113,43 +113,4 @@ _G.private_main_handler = function(hw_event)
 end
 
 dynawa.app_manager:start_everything()
-
---[[
-
---create the table for handling the lowest level incoming hardware messages
------------------------------------------------------------
------------------------------------------------------------
-local tbl={}
-dynawa.message_vectors = tbl
-tbl.button_down = function (message)
-	dynawa.button_message(message)
-end
-
-tbl.button_up = tbl.button_down
-
-tbl.button_hold = tbl.button_down
-
-tbl.timer_fired = function (message)
-	local handle = assert(message.handle,"HW message of type timer_fired has no handle")
-	local message = dynawa.hardware_vectors[handle]
-	if not message then
-		log("Timer "..tostring(handle).." should fire but its vector is unknown")
-	else
-		assert(message.hardware == "timer")
-		if not message.autorepeat then
-			dynawa.hardware_vectors[handle] = nil
-		end
-		message.sender = nil
-		dynawa.message.send(message)
-	end
-end
-
-tbl.bluetooth = function (message)
-	message.receiver = dynawa.apps["/_sys/apps/bluetooth/"]
-	dynawa.message.send(message)
-end
-
-tbl=nil
---]]
-
 

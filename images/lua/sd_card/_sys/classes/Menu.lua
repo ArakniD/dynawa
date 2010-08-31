@@ -25,7 +25,11 @@ function class:_init(desc)
 			self.active_item = menuitem
 		end
 	end
-	self.active_item = self.active_item or self.items[1] --can be nil if no items!
+	if desc.active_item_index then
+		self.active_item = assert(self.items[desc.active_item_index], "Invalid item index")
+	else
+		self.active_item = self.active_item or self.items[1] --can be nil if no items!
+	end
 	self.window = Class.Window()
 end
 

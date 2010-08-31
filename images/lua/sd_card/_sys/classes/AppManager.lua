@@ -8,8 +8,8 @@ function class:_init()
 		"/_sys/apps/window_manager/window_manager_app.lua",
 		"/_sys/apps/superman/superman_app.lua",
 		"/_sys/apps/popup/popup_app.lua",
-		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
 		"/_sys/apps/sandman/sandman_app.lua",
+		"/_sys/apps/bluetooth_manager/bt_manager_app.lua",
 	}
 end
 
@@ -87,6 +87,15 @@ function class:all_autostarting_apps()
 	return apps
 end
 
+--Returns all switchable Apps (actual apps, not IDs)
+function class:all_switchable_apps()
+	local result = {}
+	for i, id in ipairs(dynawa.settings.switchable) do
+		table.insert(result, assert(self:app_by_id(id)))
+	end
+	return result
+end
+
 function class:is_autostarting(app0)
 	assert(app0.is_app)
 	for i,id in ipairs(self:all_autostarting_apps()) do
@@ -113,6 +122,17 @@ function class:start_everything()
 	dynawa.window_manager:show_default()
 end
 
+function class:is_switchable(app)
+	assert(app.is_app)
+	for i, id in ipairs(dynawa.settings.switchable) do
+		if app.id == id then
+			return true
+		end
+	end
+	return false
+end
+
+--Is this the "required" App (whose autostart cannot be disabled)?
 function class:is_required(app)
 	assert(app.is_app)
 	for i,fname in ipairs(self.required_apps) do
@@ -121,6 +141,12 @@ function class:is_required(app)
 		end
 	end
 	return false
+end
+
+function class:can_be_switchable(app)
+	--The App must override its inherited "switching_to_front" method in order to be switchable
+	assert(app.is_app)
+	return (app.switching_to_front ~= assert(Class.App.switching_to_front))
 end
 
 local function get_sd_apps_except(dirname,running,result)
@@ -158,7 +184,7 @@ function class:enable_autostart(app)
 	assert(app.is_app)
 	assert(not self:is_autostarting(app))
 	table.insert(dynawa.settings.autostart,app.filename)
-	table.insert(dynawa.settings.switchable,app.id)
+	--table.insert(dynawa.settings.switchable,app.id)
 	dynawa.file.save_settings()
 end
 
