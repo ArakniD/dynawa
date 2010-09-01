@@ -15,7 +15,7 @@
 - beeper
 - setjmp/longjmp nefunguje pokud je thumb (lua/src/ldo.c)
 - BC4 - GPIO wakeup
-- USB detect GPIO IRQ
+- USB detect GPIO IRQ (+ charging monitor)
 - rotace display
 - RTC presnost
 - SD DMA access

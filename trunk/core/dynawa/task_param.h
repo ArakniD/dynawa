@@ -9,6 +9,9 @@
 #define TASK_BUTTON_PRI     3
 #define TASK_BUTTON_STACK   256
 
+#define TASK_BATTERY_PRI     2
+#define TASK_BATTERY_STACK   256
+
 #define TASK_BT_MAIN_PRI     4
 #define TASK_BT_MAIN_STACK   8192
 

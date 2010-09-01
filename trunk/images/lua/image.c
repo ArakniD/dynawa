@@ -84,6 +84,7 @@ void Run( ) // this task gets called as soon as we boot up.
 
     event_init(100);
 
+
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();
 
@@ -96,6 +97,8 @@ void Run( ) // this task gets called as soon as we boot up.
     //test();
     scrWriteRect(0,126,40,127,0xffffff);
     scrWriteRect(80,126,120,127,0xffffff);
+
+    battery_init();
 
     button_init();
     bt_init();
