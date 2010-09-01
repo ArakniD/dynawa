@@ -62,7 +62,8 @@ static int l_battery_stats (lua_State *L) {
     TRACE_LUA("dynawa.x.battery_stats()\r\n");
 
     gasgauge_stats stats;
-    gasgauge_get_stats (&stats);
+    //gasgauge_get_stats (&stats);
+    battery_get_stats (&stats);
 
     lua_newtable(L);
 

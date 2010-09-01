@@ -24,11 +24,37 @@ int gasgauge_init () {
     AT91C_BASE_PIOA->PIO_OER = CHARGEEN_PIN;
     AT91C_BASE_PIOA->PIO_SODR = CHARGEEN_PIN; //set to log1
 
-/*
-    AT91C_BASE_PIOA->PIO_PER = USBPEN2_PIN;                          // PIO Enable Register - allow PIO to control pin PP3
-    AT91C_BASE_PIOA->PIO_OER = USBPEN2_PIN;                          // PIO Output Enable Register - sets pin P3 to outputs
-    AT91C_BASE_PIOA->PIO_CODR = USBPEN2_PIN;
-*/
+   AT91C_BASE_PIOA->PIO_PER = USBPEN2_PIN;                          // PIO Enable Register - allow PIO to control pin PP3
+   AT91C_BASE_PIOA->PIO_OER = USBPEN2_PIN;                          // PIO Output Enable Register - sets pin P3 to outputs
+   AT91C_BASE_PIOA->PIO_CODR = USBPEN2_PIN;
+
+#if 0 
+    //measure pack voltage:
+    i2cMasterWrite(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), 1);
+    i2cMasterWrite(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), 2);
+    i2cMasterWrite(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_OPmode<<10)|(I2CGG_REG_OPmode), 0);
+
+    i2cMasterWrite(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_ADconfig<<10)|(I2CGG_REG_ADconfig), 0x80);
+
+    //i2cMasterWrite(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_ITctrl<<10)|(I2CGG_REG_ITctrl), I2CGG_DEFVAL_ITctrl);
+
+    i2cMasterWrite(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPctrl<<10)|(I2CGG_REG_VPctrl), I2CGG_DEFVAL_VPctrl);
+
+    //b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPctrl<<10)|(I2CGG_REG_VPctrl), I2CMASTER_READ);
+
+    //TRACE_ALL("gas gauge ADC Vpack ON:VPctrl=%x\n\r",b); 
+    //delayms(300);
+#endif
+}
+
+int gasgauge_charge(bool on) {
+    if (on) {
+        AT91C_BASE_PIOA->PIO_CODR = CHARGEEN_PIN; //enable
+        AT91C_BASE_PIOA->PIO_SODR = USBPEN2_PIN;
+    } else {
+        AT91C_BASE_PIOA->PIO_SODR = CHARGEEN_PIN; //disable
+        AT91C_BASE_PIOA->PIO_CODR = USBPEN2_PIN;
+    }
 }
 
 int gasgauge_get_stats (gasgauge_stats *stats) {
@@ -68,7 +94,7 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
         {
             TRACE_INFO("Charged.\n\r");
             //chargedone=1;
-            AT91C_BASE_PIOA->PIO_SODR = CHARGEEN_PIN; //disable
+            //AT91C_BASE_PIOA->PIO_SODR = CHARGEEN_PIN; //disable
             stats->state = GASGAUGE_STATE_CHARGED;
         } else {
 
@@ -79,3 +105,42 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
     return 0;
 }
 
+/*
+void volt_meas(void)
+{
+  // divider 0,18032786885245901639344262295082
+  // ref: 3.3V
+  // k= 17,87109375
+  //volatile AT91PS_PIO  pPIO = AT91C_BASE_PIOA; 
+  //volatile AT91PS_TC pTC = AT91C_BASE_TC0;
+  volatile AT91PS_ADC pADC = AT91C_BASE_ADC;
+  uint32_t result;
+  static uint32_t filt;
+  static char buf[32];
+  
+  pADC->ADC_CR = 0x1;//rst
+  pADC->ADC_MR =  0x0f1f3f10; //mck/30
+  pADC->ADC_CHDR=0xffffffff;
+  //pADC->ADC_CHER= AT91C_ADC_CH5;
+  //pADC->ADC_CHER= AT91C_ADC_CH4;//usb sense
+  pADC->ADC_CHER= AT91C_ADC_CH7;//current sense
+  
+  pADC->ADC_IDR = 0xffffffff;
+  
+  
+    pADC->ADC_CR = 0x2;//start conversion
+    
+    while (!(pADC->ADC_SR&AT91C_ADC_DRDY)) asm volatile ("nop");
+    
+    result = (pADC->ADC_LCDR);
+    result = (result*8);
+    filt = (7*result + filt)/8;
+    
+    
+    //srprintf(buf,"Volt:%d ",filt);
+    fontSetCharPos(0,8);
+    TRACE_SCR("%d  ",filt);
+        
+  
+}  
+*/
