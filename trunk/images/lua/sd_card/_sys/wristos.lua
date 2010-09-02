@@ -20,6 +20,7 @@ dynawa.busy = function(percentage) --todo: Rewrite!
 		busy_last = ticks
 		--start + 4, wide 46, high 8
 		dynawa.bitmap.show_partial(busy_bitmaps[busy_count],nil,nil,nil,nil,53,48)
+		--log("Busy -> activity")
 		if dynawa.app_manager then
 			local sandman = dynawa.app_manager:app_by_id("dynawa.sandman")
 			if sandman then

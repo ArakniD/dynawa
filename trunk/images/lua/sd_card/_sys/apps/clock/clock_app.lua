@@ -167,6 +167,7 @@ function app:gfx_init()
 end
 
 function app:handle_event_battery_status(event)
+	log("Clock received battery status update")
 	local x,y = 139,0
 	if event.critical then
 		self.window:show_bitmap_at(icons.bitmaps.battery_critical,x,y)

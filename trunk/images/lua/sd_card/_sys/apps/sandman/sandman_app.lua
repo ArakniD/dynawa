@@ -14,12 +14,14 @@ function app:start()
 end
 
 function app:activity(force)
+	--log("Sandman: Activity")
 	if self.sleeping then
 		log("Waking up!")
-		dynawa.window_manager:stack_cleanup()
+		assert(not dynawa.window_manager:peek(),"There should be no windows on stack during sleep")
+		--dynawa.window_manager:stack_cleanup()
 		dynawa.devices.display.power(1)
 		self.sleeping = false
-		dynawa.busy()
+		self:activity()
 		dynawa.window_manager:show_default()
 	else
 		local delay = assert(dynawa.settings.display.autosleep) * 1000
@@ -27,6 +29,7 @@ function app:activity(force)
 		local tstamp = dynawa.ticks()
 		if not force and (tstamp - self.last_timestamp < 500) then
 			--Ignore activity if not sleeping and received it less then 500 ms after previous activity and not "forced".
+			--log("Sandman: Activity ignored")
 			return
 		end
 		if self.last_handle then
@@ -36,11 +39,13 @@ function app:activity(force)
 			return
 		end
 		self.last_timestamp = tstamp
+		--log("Sandman: Next timed @ "..tstamp)
 		self.last_handle = dynawa.devices.timers:timed_event{delay = delay, timestamp = tstamp, receiver = self}
 	end
 end
 
 function app:handle_event_timed_event(event)
+	log("Sandman: Timed event "..event.timestamp.." x "..tostring(self.last_timestamp))
 	if event.timestamp ~= self.last_timestamp then
 		--New timed event was triggered by Sandman AFTER his previous event fired! Ignore previous event.
 		return
@@ -69,7 +74,7 @@ local function time_to_text(num)
 end
 
 function app:switching_to_front()
-	local times = {0,15,30,45,60,120,300}
+	local times = {0,5,10,15,20,30,45,60,120,300}
 	local menudef = {
 		banner = "Display autosleep: "..time_to_text(assert(dynawa.settings.display.autosleep)),
 		items = {},
