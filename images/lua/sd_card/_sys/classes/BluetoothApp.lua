@@ -30,6 +30,26 @@ function class:delete_activity(id)
 	self.activities[id] = nil
 end
 
+--In the case of BT Apps, this is called whenever the App's name in BT Manager's App list is clicked
+--Default is to return the BT App's Activities list
+function class:handle_event_do_menu()
+	local menudesc = {banner = self.name.." activities:"}
+	local items = assert(self:activity_items())
+	menudesc.items = items
+	self:new_menuwindow(menudesc):push()
+end
+
+--This should return a SHORT textual representation of BT App's current status.
+--Each BT App must override this to at least return the empty string (i.e. status is irrelevant).
+function class:status_text()
+	return ("NO_STATUS")
+end
+
+--Returns an arrray of Activities for the given App. Array can be empty.
+function class:activity_items()
+	return {}
+end
+
 local protocol_codes = {
 	hci = 1,
 	l2cap = 2,
@@ -68,11 +88,11 @@ function class:handle_event_socket_find_service_result(socket,channel)
 end
 
 function class:handle_bt_event_turned_on()
-	--BT hardware was just turned on
+	--BT hardware was just turned on, i.e. it IS already up and running at this moment.
 end
 
 function class:handle_bt_event_turning_off()
-	--BT hardware *WILL BE* turned off now
+	--BT hardware *WILL BE* turned off right now. Act accordingly. The BT is still running but there is no time to send any "last piece of data", just shut everything down cleanly.
 end
 
 return class

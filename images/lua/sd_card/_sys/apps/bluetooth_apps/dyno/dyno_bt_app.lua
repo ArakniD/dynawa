@@ -1,5 +1,5 @@
-app.name = "OpenWatch"
-app.id = "dynawa.bt.openwatch"
+app.name = "Dyno BT"
+app.id = "dynawa.dyno"
 
 local function to_word(num) --Convert integer to 2 byte word
 	return string.char(math.floor(num / 256))..string.char(num%256)
@@ -29,7 +29,7 @@ function app:handle_bt_event_turned_on()
 		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
 		local act = self:new_activity()
 		act.bdaddr = bdaddr
-		act.name = device.name.." "..act.id
+		act.name = "Phone with "..device.name
 		self:activity_start(act)
 	end
 end
@@ -355,3 +355,28 @@ function app:info(txt)
 	dynawa.devices.vibrator:alert()
 end
 
+function app:activity_items()
+	local items = {}
+	for id, act in pairs(self.activities) do
+		local item = {text = act.name}
+		if act.status ~= "connected" then
+			item.textcolor = {255,0,0}
+		end
+		table.insert(items,item)
+	end
+	table.sort(items, function(a,b)
+		return (a.text < b.text)
+	end)
+	return items
+end
+
+function app:status_text()
+	local num,nconn = 0,0
+	for id,act in pairs(self.activities) do
+		num = num + 1
+		if act.status == "connected" then
+			nconn = nconn + 1
+		end
+	end
+	return (nconn.. " out of "..num.." phones connected")
+end

@@ -16,7 +16,7 @@ end
 function app:activity(force)
 	--log("Sandman: Activity")
 	if self.sleeping then
-		log("Waking up!")
+		--log("Waking up!")
 		assert(not dynawa.window_manager:peek(),"There should be no windows on stack during sleep")
 		--dynawa.window_manager:stack_cleanup()
 		dynawa.devices.display.power(1)

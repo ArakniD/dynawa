@@ -60,6 +60,10 @@ function class:handle_event_do_menu()
 	dynawa.popup:error("No context menu defined for "..self)
 end
 
+function class:menu_item_selected()
+	return false
+end
+
 function class:menu_cancelled(menu)
 	local peek = dynawa.window_manager:peek()
 	assert (menu.window == peek, "Top menu window mismatch ("..menu.window.."/"..peek..")")

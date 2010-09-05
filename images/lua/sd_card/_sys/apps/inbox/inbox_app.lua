@@ -29,8 +29,8 @@ function app:start()
 	table.insert(self.prefs.storage.calendar,{header = {"Meet Vaclav Klaus (%s)",os.time() + 60*60*24*7 + 1000},
 			body={"At Prague Castle"}})]]
 	local my_events
-	dynawa.app_manager:after_app_start("dynawa.bt.openwatch",function (openwatch)
-		openwatch.events:register_for_events(self, function(ev)
+	dynawa.app_manager:after_app_start("dynawa.dyno",function (dyno)
+		dyno.events:register_for_events(self, function(ev)
 			if not ev.type == "from_phone" then
 				return false
 			end
