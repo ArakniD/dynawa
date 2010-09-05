@@ -27,19 +27,54 @@ function app:all_bt_apps() --iterator
 	return all_bt_apps_iterator, assert(dynawa.app_manager.all_apps), nil
 end
 
+local btapps_item_selected = function(_self,args)
+	args.menu.window:pop():_delete()
+	local app_id = assert(args.item.value.app_id)
+	local app = assert(dynawa.app_manager:app_by_id(app_id))
+	app:handle_event_do_menu()
+end
+
 function app:menu_action_bt_apps(args)
-	local menu = {banner = "Bluetooth Apps:", items = {}}
+	local menudesc = {banner = "Bluetooth Apps:", item_selected = btapps_item_selected}
 	local items = {}
 	for app_id, app in self:all_bt_apps() do
-		table.insert(items,app.name)
+		local status = assert(app:status_text())
+		local desc = app.name
+		if status ~= "" then
+			desc = desc ..  " ("..status..")"
+		end
+		table.insert(items,{text = desc, value = {app_id = app_id}})
 	end
-	table.sort(items)
-	for i,item in ipairs(items) do
-		table.insert(menu.items, {text = item})
+	table.sort(items, function (a,b)
+		return (a.text < b.text)
+	end)
+	menudesc.items = items
+	self:new_menuwindow(menudesc):push()
+end
+
+local btactivities_item_selected = function(_self,args)
+end
+
+function app:menu_action_bt_activities(args)
+	local menudesc = {banner = "Bluetooth Activities:", items = {}}
+	local apps = {}
+	for app_id, app in self:all_bt_apps() do
+		local app_item = {name = app.name}
+		app_item.activity_items = app:activity_items()
+		if next(app_item.activity_items) then
+			table.insert(apps,app_item)
+		end
 	end
-	local menuwin = self:new_menuwindow(menu)
-	menuwin.menu:render()
-	menuwin:push()
+	table.sort(apps, function (a,b)
+		return (a.name < b.name)
+	end)
+	for i, app in ipairs(apps) do
+		table.insert(menudesc.items,{text = "- "..app.name..":"})
+		for j, act in ipairs(app.activity_items) do
+			table.insert(menudesc.items, act)
+		end
+	end
+	self:new_menuwindow(menudesc):push()
 end
 
 function app:switching_to_front()
@@ -47,16 +82,16 @@ function app:switching_to_front()
 		banner = "Bluetooth debug menu",
 		items = {
 			{
-				text = "Bluetooth apps", value = {jump = "bt_apps"},
-			},
-			{
-				text = "Known connections", value = {jump = "bt_connections"},
-			},
-			{
 				text = "BT on", value = {jump = "bt_on"},
 			},
 			{
 				text = "BT off", value = {jump = "bt_off"},
+			},
+			{
+				text = "Bluetooth Apps", value = {jump = "bt_apps"},
+			},
+			{
+				text = "Bluetooth Activities", value = {jump = "bt_activities"},
 			},
 --[[			{
 				text = "Send 'Hello'", value = {jump = "send_openwatch_hello"},
@@ -126,7 +161,10 @@ function app:menu_action_send_openwatch_struct()
 end
 
 function app:menu_item_selected(args)
-	local value = assert(args.item.value)
+	local value = args.item.value
+	if not value then
+		return
+	end
 	self["menu_action_"..value.jump](self,value)
 end
 

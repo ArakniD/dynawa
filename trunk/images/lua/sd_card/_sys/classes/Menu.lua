@@ -25,6 +25,9 @@ function class:_init(desc)
 			self.active_item = menuitem
 		end
 	end
+	if not next(self.items) then
+		table.insert(self.items,Class.MenuItem{text = "(No items in this menu)"})
+	end
 	if desc.active_item_index then
 		self.active_item = assert(self.items[desc.active_item_index], "Invalid item index")
 	else
