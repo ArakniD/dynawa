@@ -71,11 +71,14 @@ int accel_read(int16_t *x, int16_t *y, int16_t *z, bool lock) {
     if (lock) 
         spi_lock();
 
+/*
     while(1) {
         uint8_t s = accel_reg_read8(ACCEL_REG_STATUS_REG);
         if (s & 0x08)
             break;
     }
+*/
+
 #if 1 
     *x = accel_reg_read16(ACCEL_REG_OUTX_L);
     *y = accel_reg_read16(ACCEL_REG_OUTY_L);
