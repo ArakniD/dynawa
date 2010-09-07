@@ -40,14 +40,14 @@ function class:switching_to_front()
 	dynawa.popup:error(self.." generates no graphical output by default.")
 end
 
---This is acceptable default for trivial Apps (one window plus standard menuwindows on top of that)
+--This is acceptable default for trivial Apps (one window plus zero or more standard menuwindows on top of that)
 function class:switching_to_back()
 	local win = dynawa.window_manager:pop_and_delete_menuwindows()
 	if win then
 		assert(win:pop().app == self, "The first popped non-menu window does not belong to this app.")
 	end
 	local peek = dynawa.window_manager:peek()
-	assert (not peek or peek.app ~= self, "After popping one non-menu window, there are still other windows of mine on stack")
+	assert (not peek or peek.app ~= self, "After popping one non-menu window, there are still other windows of mine on stack. You have to override the default trivial switching_to_back() App method with something more suitable for this App.")
 end
 
 function class:handle_event_button(event)
@@ -70,8 +70,7 @@ function class:menu_cancelled(menu)
 	--[[if #dynawa.window_manager.stack == 1 then --This is the ONLY window on stack
 		return
 	end]]
-	local win = menu.window:pop()
-	win:_delete()
+	menu.window:pop():_delete()
 end
 
 function class:load_data()
