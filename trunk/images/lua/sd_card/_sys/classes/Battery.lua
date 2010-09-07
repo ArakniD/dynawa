@@ -22,6 +22,15 @@ function class:_init()
 	log_file("REBOOT")
 end
 
+function class:handle_hw_event(event)
+	event.type = nil
+	log ("-----Battery HW event:")
+	for k,v in pairs(event) do
+		log (k.." = "..tostring(v))
+	end
+	log("-----------")
+end
+
 function class:voltage_to_percent(v)
 	-- 3000 - 4150
 	local pct = (v - self.pct0) / (self.pct100 - self.pct0) * 100
@@ -41,8 +50,9 @@ function class:status()
 	status.voltage = assert(stat.voltage)
 	status.current = assert(stat.current)
 	status.percentage = self:voltage_to_percent(status.voltage)
-	if stat.state == 1 then
-		status.charging = true --#todo
+	if stat.state == 1 or stat.state == 0 then
+		--When no battery is present, status is set to "charging"
+		status.charging = true
 	end
 	if status.voltage <= self.critical_voltage and not status.charging then
 		status.critical = true

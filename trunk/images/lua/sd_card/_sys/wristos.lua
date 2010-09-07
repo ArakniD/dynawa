@@ -101,6 +101,10 @@ hw_vectors.bluetooth = function (event)
 	dynawa.devices.bluetooth:handle_hw_event(event)
 end
 
+hw_vectors.battery = function (event)
+	dynawa.devices.battery:handle_hw_event(event)
+end
+
 _G.private_main_handler = function(hw_event)
 	--log(tostring(hw_event.type))
 
