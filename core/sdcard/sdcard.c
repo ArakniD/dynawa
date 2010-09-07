@@ -37,6 +37,8 @@
 
 #define SPI_DMA     1
 
+#define SPI_SD_CHANNEL  1
+
 uint8_t ver2_card = false;  //!< Flag to indicate version 2.0 SD card
 uint8_t sdhc_card = false;  //!< Flag to indicate version SDHC card
 uint32_t sd_numsectors; //!< Total number of sectors on card
@@ -83,17 +85,19 @@ uint8_t sd_card_detect(void)
 void sd_command(uint8_t cmd, uint32_t arg)
 {
     //TRACE_SD("SDCMD[%d]",cmd);
-    spi_byte(0xff,0);        // dummy byte
-    spi_byte(cmd | 0x40,0);  // send command
-    spi_byte(arg>>24,0);     // send argument
-    spi_byte(arg>>16,0);
-    spi_byte(arg>>8,0);
-    spi_byte(arg,0);
+    //spi_lock();
+
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);        // dummy byte
+    spi_byte(SPI_SD_CHANNEL, cmd | 0x40,0);  // send command
+    spi_byte(SPI_SD_CHANNEL, arg>>24,0);     // send argument
+    spi_byte(SPI_SD_CHANNEL, arg>>16,0);
+    spi_byte(SPI_SD_CHANNEL, arg>>8,0);
+    spi_byte(SPI_SD_CHANNEL, arg,0);
     
     switch(cmd)
     {
     	case SD_GO_IDLE_STATE:
-    	    spi_byte(0x95,1); // CRC for CMD0
+    	    spi_byte(SPI_SD_CHANNEL, 0x95,1); // CRC for CMD0
     	    break;
     	/*
     	 * CRC for CMD8 always enabled see:
@@ -101,12 +105,13 @@ void sd_command(uint8_t cmd, uint32_t arg)
     	 * chapter 7.2.2 Bus Transfer Protection
     	 */
     	case SD_SEND_IF_COND:
-    		spi_byte(0x87,1); // CRC for CMD8, argument 0x000001AA, see sd_init
+    		spi_byte(SPI_SD_CHANNEL, 0x87,1); // CRC for CMD8, argument 0x000001AA, see sd_init
     		break;
     		
     	default:
-    		spi_byte(0xFF,1); // send dummy CRC for all other commands
+    		spi_byte(SPI_SD_CHANNEL, 0xFF,1); // send dummy CRC for all other commands
     }
+    //spi_unlock();
 }
 
 /**
@@ -119,10 +124,14 @@ void sd_send_dummys(void)
 {
     uint8_t i;
     
+    //spi_lock();
+
     for(i=0; i < 9; i++)
-        spi_byte(0xff,0);
+        spi_byte(SPI_SD_CHANNEL, 0xff,0);
     
-    spi_byte(0xff,1);
+    spi_byte(SPI_SD_CHANNEL, 0xff,1);
+
+    //spi_unlock();
 }
 
 /**
@@ -134,13 +143,19 @@ void sd_send_dummys(void)
  */
 uint8_t sd_get_response(void)
 {
-    uint32_t tmout = timeval + 1000;    // 1 second timeout
+    //uint32_t tmout = timeval + 1000;    // 1 second timeout
+    uint32_t tmout = Timer_tick_count() + 1000;    // 1 second timeout
     uint8_t b = 0xff;
 
-    while ((b == 0xff) && (timeval < tmout)) 
+    //spi_lock();
+
+    //while ((b == 0xff) && (timeval < tmout)) 
+    while ((b == 0xff) && (Timer_tick_count() < tmout)) 
     {
-        b = spi_byte(0xff,0); //TRACE_SD("x");
+        b = spi_byte(SPI_SD_CHANNEL, 0xff,0); //TRACE_SD("x");
     }
+    //spi_unlock();
+
     return b;
 }
 
@@ -153,13 +168,20 @@ uint8_t sd_get_response(void)
  */
 uint8_t sd_get_datatoken(void)
 {
-    uint32_t tmout = timeval + 1000;    // 1 second timeout
+    //uint32_t tmout = timeval + 1000;    // 1 second timeout
+    uint32_t tmout = Timer_tick_count() + 1000;    // 1 second timeout
     uint8_t b = 0xff;
 
-    while ((b != SD_STARTBLOCK_READ) && (timeval < tmout)) 
+    //spi_lock();
+
+    //while ((b != SD_STARTBLOCK_READ) && (timeval < tmout)) 
+    while ((b != SD_STARTBLOCK_READ) && (Timer_tick_count() < tmout)) 
     {
-        b = spi_byte(0xff,0);
+        b = spi_byte(SPI_SD_CHANNEL, 0xff,0);
     }
+
+    //spi_unlock();
+
     return b;
 }
 
@@ -189,6 +211,7 @@ int8_t sd_init(void)
     memset(spi_dummy_buff_out, 0xff, 512);
 #endif
 
+    spi_lock();
     for(retries = 0, resp = 0; (retries < 5) && (resp != SD_R1_IDLE_STATE) ; retries++)
     {
         // send CMD0 to reset card
@@ -227,6 +250,7 @@ int8_t sd_init(void)
         // verify that we're compatible
         if ( (r7reply & 0x00000fff) != 0x01AA )
         {
+            spi_unlock();
             TRACE_SD("Voltage range mismatch\n");
             return SD_E_VOLT;  // voltage range mismatch, unsuable card
         }
@@ -282,6 +306,7 @@ int8_t sd_init(void)
 
     if (!resp)
     {
+        spi_unlock();
         TRACE_SD("not valid\n");
         return SD_E_INIT;          // init failure
     }
@@ -327,6 +352,7 @@ int8_t sd_init(void)
 
     sd_info();
 
+    spi_unlock();
     TRACE_SD("Init SD card OK\n");
     return SD_OK;   
 }
@@ -379,32 +405,37 @@ uint32_t sd_info(void)
     {
         TRACE_SD("CID read\n");
 
-        TRACE_SD("Manufacturer ID: %02x\r\n",spi_byte(0xff,0));
+        TRACE_SD("Manufacturer ID: %02x\r\n",spi_byte(SPI_SD_CHANNEL, 0xff,0));
 
-        w = spi_byte(0xff,0);
+        //spi_lock();
+
+        w = spi_byte(SPI_SD_CHANNEL, 0xff,0);
         w <<= 8;
-        w |= spi_byte(0xff,0);
-       TRACE_SD("OEM/Application ID: %02x\n",w);
+        w |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
+        TRACE_SD("OEM/Application ID: %02x\n",w);
 
         TRACE_SD("Product Name: ");
         for (i=0;i<6;i++) 
-            TRACE_SD("%c",spi_byte(0xff,0));
+            TRACE_SD("%c",spi_byte(SPI_SD_CHANNEL, 0xff,0));
 
-        TRACE_SD("\nProduct Revision: %02x\n",spi_byte(0xff,0));
+        TRACE_SD("\nProduct Revision: %02x\n",spi_byte(SPI_SD_CHANNEL, 0xff,0));
 
-        l = spi_byte(0xff,0);
+        l = spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
         TRACE_SD("Serial Number: %08lx (%ld)\n",l,l);
-        TRACE_SD("Manuf. Date Code: %02x\n",spi_byte(0xff,0));
+        TRACE_SD("Manuf. Date Code: %02x\n",spi_byte(SPI_SD_CHANNEL, 0xff,0));
 
+        //spi_unlock();
     }
 
-    spi_byte(0xff,0);    // skip checksum
+    //spi_lock();
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);    // skip checksum
+    //spi_unlock();
 
 #endif
     sd_send_dummys();
@@ -421,19 +452,25 @@ uint32_t sd_info(void)
         TRACE_SD("CSD read\n");
     }
 
+    //spi_lock();
+
     // we need C_SIZE (bits 62-73 (bytes ) and C_SIZE_MULT (bits 47-49)
     //  0,  8 , 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96,104,112,120
     // 16  15   14  13  12  11  10   9   8   7   6   5   4   3   2   1
 
     // read 1 byte [bits 127:120]
-    l = spi_byte(0xff,0);
+    l = spi_byte(SPI_SD_CHANNEL, 0xff,0);
 
 // MV b
-    spi_byte(0xff,0);   // taac
-    spi_byte(0xff,0);   // nsac
-    uint8_t trans_speed = spi_byte(0xff,0);
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);   // taac
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);   // nsac
+    uint8_t trans_speed = spi_byte(SPI_SD_CHANNEL, 0xff,0);
+
+    //spi_unlock();
+
     sd_clock = sd_tran_speed(trans_speed);
     TRACE_SD("TRANS_SPEED %x %d\r\n", trans_speed, sd_clock);
+    spi_set_clock(SPI_SD_CHANNEL, sd_clock);  
 // MV e
     
     //orig. if(l == 0) // CSD 1.0 structure
@@ -442,16 +479,18 @@ uint32_t sd_info(void)
     {
     	TRACE_SD("CSD 1.0\n");
 
+        //spi_lock();
     	   //orig skip next 5 bytes [bits 119:80]
         //orig  for (i=0;i<5;i++) 
-        //    spi_byte(0xff,0);  //last con
+        //    spi_byte(SPI_SD_CHANNEL, 0xff,0);  //last con
         
         //peter sladek:
         //skip next 4 bytes [bits 119:88]
     	  //MV for (i=0;i<4;i++) 
-    	  for (i=0;i<1;i++) 
-            spi_byte(0xff,0);  
-        w=spi_byte(0xff,0);  //bits [87:80]
+
+        for (i=0;i<1;i++) 
+            spi_byte(SPI_SD_CHANNEL, 0xff,0);  
+        w=spi_byte(SPI_SD_CHANNEL, 0xff,0);  //bits [87:80]
         // [83:80] = block len
         w &= 0x0f;
         if (w<9) { TRACE_ERROR("Block len error %d", w); }
@@ -459,11 +498,11 @@ uint32_t sd_info(void)
         block_len = (1 << w);   
         
         // get dword from [bits 79:56] 
-        l = spi_byte(0xff,0);
+        l = spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
 
         // shift down to to access [bits 73:62]
         l >>= 6;
@@ -471,9 +510,11 @@ uint32_t sd_info(void)
         TRACE_SD("C_SIZE = %04x\n",csize);
 
         // get word from [bits 55:40]
-        w = spi_byte(0xff,0);
+        w = spi_byte(SPI_SD_CHANNEL, 0xff,0);
         w <<= 8;
-        w |= spi_byte(0xff,0);
+        w |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
+
+        //spi_unlock();
 
         // shift down to to access [bits 49:47]
         w >>= 7;
@@ -502,17 +543,19 @@ uint32_t sd_info(void)
     {
     	TRACE_SD("CSD 2.0\n");
     	
+        //spi_lock();
         // skip next 6 bytes [bits 119:72]
         //MV for (i=0;i<6;i++) 
         for (i=0;i<3;i++) 
-            spi_byte(0xff,0);
+            spi_byte(SPI_SD_CHANNEL, 0xff,0);
         
         // get dword from [bits 71:48] 
-        l = spi_byte(0xff,0);
+        l = spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
         l <<= 8;
-        l |= spi_byte(0xff,0);
+        l |= spi_byte(SPI_SD_CHANNEL, 0xff,0);
+        //spi_unlock();
 
         l &= 0x0000ffff; // mask c_size field
         
@@ -558,6 +601,7 @@ int8_t sd_readsector(uint32_t lba,
     
     TRACE_SD("SDrd%ld   ", lba);
 
+    spi_lock();
     if(sdhc_card)
     	 // on new High Capacity cards, the lba is sent
     	sd_command(SD_READ_SINGLE_BLOCK,lba);
@@ -570,22 +614,30 @@ int8_t sd_readsector(uint32_t lba,
     if (sd_get_response() != 0) // if no valid token
     {
         sd_send_dummys(); // cleanup and  
+        spi_unlock();
         return SD_ERROR;   // return error code
     }
 
     if (sd_get_datatoken() != SD_STARTBLOCK_READ) // if no valid token
     {
         sd_send_dummys(); // cleanup and  
+        spi_unlock();
         return SD_ERROR;   // return error code
     }
 
     uint8_t *b = buffer;
+    //spi_lock();
 #if SPI_DMA
-    spi_rw_bytes(buffer, spi_dummy_buff_out, 512, 0);
+    spi_rw_bytes(SPI_SD_CHANNEL, spi_dummy_buff_out, buffer, 512, 0);
 #else
     for (i=0; i<512 ; i++)             // read sector data
-        *buffer++ = spi_byte(0xff,0);
+        *buffer++ = spi_byte(SPI_SD_CHANNEL, 0xff,0);
 #endif
+        
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);    // ignore dummy checksum
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);    // ignore dummy checksum
+    //spi_unlock();
+
 #if 0
     int s = 0;
     for (i=0; i<512 ; i++) {
@@ -602,11 +654,9 @@ int8_t sd_readsector(uint32_t lba,
         while(1);
     }
 #endif
-        
-    spi_byte(0xff,0);    // ignore dummy checksum
-    spi_byte(0xff,0);    // ignore dummy checksum
 
     sd_send_dummys();     // cleanup
+    spi_unlock();
 
     // Invoke callback
     if (fCallback != 0) {
@@ -658,6 +708,7 @@ int8_t sd_writesector(uint32_t lba,
 
     TRACE_SD("SDwr%ld   ", lba);
 
+    spi_lock();
     if(sdhc_card)
     	 // on new High Capacity cards, the lba is sent
     	sd_command(SD_WRITE_BLOCK,lba);
@@ -670,50 +721,62 @@ int8_t sd_writesector(uint32_t lba,
     if (sd_get_response() != 0) // if no valid token
     {
         sd_send_dummys(); // cleanup and
+        spi_unlock();
         return SD_ERROR;   // return error code
     }
 
-    spi_byte(0xfe,0);    // send data token
+    //spi_lock();
+    spi_byte(SPI_SD_CHANNEL, 0xfe,0);    // send data token
 
 #if SPI_DMA
-    spi_rw_bytes(spi_dummy_buff_in, buffer, 512, 0);
+    spi_rw_bytes(SPI_SD_CHANNEL, buffer, spi_dummy_buff_in, 512, 0);
 #else
     for (i=0;i<512;i++)             // write sector data
     {
-        spi_byte(*buffer++,0);
+        spi_byte(SPI_SD_CHANNEL, *buffer++,0);
     }
 #endif
 
-    spi_byte(0xff,0);    // send dummy checksum
-    spi_byte(0xff,0);    // send dummy checksum
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);    // send dummy checksum
+    spi_byte(SPI_SD_CHANNEL, 0xff,0);    // send dummy checksum
+    //spi_unlock();
 
     if ( (sd_get_response()&0x0F) != 0x05) // if no valid token
     {
         sd_send_dummys(); // cleanup and
+        spi_unlock();
         return SD_ERROR;   // return error code
     }
 
+    //spi_lock();
     //
     // wait while the card is busy
     // writing the data
     //
-    tmout = timeval + 1000;
+    //tmout = timeval + 1000;
+    tmout = Timer_tick_count() + 1000;
 
     // wait for the SO pin to go high
     while (1)
     {
-        uint8_t b = spi_byte(0xff,0);
+        uint8_t b = spi_byte(SPI_SD_CHANNEL, 0xff,0);
 
         if (b == 0xff) break;   // check SO high
         
-        if (timeval > tmout)    // if timeout
+        //if (timeval > tmout)    // if timeout
+        if (Timer_tick_count() > tmout)    // if timeout
         {
+            //spi_unlock();
             sd_send_dummys();   // cleanup and
+            spi_unlock();
             return SD_ERROR;    // return failure
         }
 
     }
+    //spi_unlock();
+
     sd_send_dummys(); // cleanup  
+    spi_unlock();
     
     // Invoke callback
     if (fCallback != 0) {

@@ -27,7 +27,8 @@
 #include "types.h"
 
 void spi_init(void);
-uint16_t spi_byte(uint16_t dout, uint8_t last);
+uint16_t spi_byte(uint8_t channel, uint16_t dout, uint8_t last);
+uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint16_t len, uint8_t last);
 
 //extern void spi_irq_endrxtx(void);
 #endif /*SPI_H_*/

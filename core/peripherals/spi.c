@@ -37,6 +37,7 @@ SPI pSPI = SPI_BASE;
 SPI_PIO pSPI_PIO = SPI_PIO_BASE;  
 
 xSemaphoreHandle spi_semaphore;
+xSemaphoreHandle spi_mutex;
 
 static spi_scbr = (0x4 << 8);
 
@@ -50,6 +51,12 @@ extern void (SPIIsr_Wrapper)(void);
 */
 void spi_init(void)
 {
+    //vSemaphoreCreateBinary(spi_mutex);
+    spi_mutex = xSemaphoreCreateMutex();
+    if (spi_mutex == NULL) {
+        panic();
+    }
+
     vSemaphoreCreateBinary(spi_semaphore);
     xSemaphoreTake(spi_semaphore, -1);
 
@@ -70,10 +77,13 @@ void spi_init(void)
 
     // SPI mode: master, fixed periph. sel., FDIV=0, fault detection disabled
     // with FDIV=0, spi clock = MCK / value in SCBR
-    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+    //pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS | ( 20 << 24 );
 
     //MV channel 1: accelerometer at -cs0, 16bits/transfer
-    pSPI->SPI_CSR[0] = AT91C_SPI_CPOL  | AT91C_SPI_BITS_16  | (32<<8) | (4<<16) | (1<<24);
+    //pSPI->SPI_CSR[0] = AT91C_SPI_CPOL  | AT91C_SPI_BITS_16  | (32<<8) | (4<<16) | (1<<24);
+    pSPI->SPI_CSR[0] = AT91C_SPI_CPOL  | AT91C_SPI_BITS_8  | (32<<8) | (4<<16) | (1<<24) | AT91C_SPI_CSAAT;
+
     // channel 2 is PA31, SD-Card
     //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
     pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
@@ -96,9 +106,57 @@ void spi_init(void)
 }
 
 void spi_close() {
+    vQueueDelete(spi_mutex);
     vQueueDelete(spi_semaphore);
 }
 
+void spi_lock() {
+    //TRACE_INFO(">>>spi_lock(%x)\r\n", xTaskGetCurrentTaskHandle());
+    xSemaphoreTake(spi_mutex, -1);
+/*
+    if(xSemaphoreTake(spi_mutex, 1000 / portTICK_RATE_MS) != pdTRUE) {
+        TRACE_ERROR("spi_lock timeout\r\n");
+        panic();
+    }
+*/
+    //TRACE_INFO("<<<spi_lock(%x)\r\n", xTaskGetCurrentTaskHandle());
+}
+
+void spi_unlock() {
+    //TRACE_INFO(">>>spi_unlock(%x)\r\n", xTaskGetCurrentTaskHandle());
+    xSemaphoreGive(spi_mutex);
+}
+
+int spi_set_clock(uint8_t channel, uint32_t clock) {
+
+    uint8_t div = MCK / clock;
+    if (div * clock < MCK) {
+        div++;
+    }
+    TRACE_INFO("spi_set_clock(%d, %d) %d\r\n", channel, clock, div);
+    //pSPI->SPI_CSR[channel] = (pSPI->SPI_CSR[channel] & ~AT91C_SPI_SCBR) || ((div << 8) & AT91C_SPI_SCBR);
+    return 0;
+}
+
+int spi_ready () {
+    int r;
+    if ( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_TXEMPTY ) ) // Make sure the unit is at rest before we re-begin
+    {
+        TRACE_SPI("AT91C_SPI_TXEMPTY\r\n");
+        while( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_TXEMPTY ) );
+        while( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RDRF ) ) {
+            TRACE_SPI("AT91C_SPI_RDRF\r\n");
+            r = AT91C_BASE_SPI->SPI_SR;
+        }
+        r = AT91C_BASE_SPI->SPI_RDR;
+    }
+
+    if ( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RDRF ) {
+        TRACE_SPI("AT91C_SPI_RDRF (2)\r\n");
+        r = AT91C_BASE_SPI->SPI_RDR;
+    }
+    return 0;
+}
 
 /**
  * Send and Receive an SPI byte.
@@ -110,18 +168,29 @@ void spi_close() {
  * \return         Byte received from SPI
  *
 */
-uint16_t spi_byte(uint16_t dout, uint8_t last)
+uint16_t spi_byte(uint8_t channel, uint16_t dout, uint8_t last)
 {
     uint16_t din;
 
+    //spi_lock();
+
+    int address = ~( 1 << channel );
+
+#if 0
+    spi_ready();
+#else
     while ( !( pSPI->SPI_SR & AT91C_SPI_TDRE ) ); // wait for channel ready
+#endif
 
     // activate required channel
-    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+    //pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS | ( 20 << 24 );
 
-    pSPI->SPI_MR  |= 0x00010000;  //NCPS1
+    //pSPI->SPI_MR  |= 0x00010000;  //NCPS1
+    pSPI->SPI_MR  |= ((address << 16) & AT91C_SPI_PCS);
+
     //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
-    pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    //X pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
     
     pSPI->SPI_TDR = dout;
 
@@ -132,24 +201,38 @@ uint16_t spi_byte(uint16_t dout, uint8_t last)
     if (last)
         pSPI->SPI_CR = AT91C_SPI_SPIEN | AT91C_SPI_LASTXFER;
 
+    //spi_unlock();
+
     return din;
 }
 
-uint16_t spi_rw_bytes(uint8_t *buff_in, uint8_t *buff_out, uint16_t len, uint8_t last)
+uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint16_t len, uint8_t last)
 {
-    TRACE_SPI("spi_rw_bytes(%x, %x, %d, %d)\r\n", buff_in, buff_out, len, last);
+    //TRACE_SPI("spi_rw_bytes(%x, %x, %d, %d)\r\n", buff_in, buff_out, len, last);
 
+    //spi_lock();
+
+    int address = ~( 1 << channel );
+
+#if 0
+    spi_ready();
+#else
     while ( !( pSPI->SPI_SR & AT91C_SPI_TDRE ) ); // wait for channel ready
+#endif
 
     //TRACE_SPI("spi ready\r\n");
 
     // activate required channel
-    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+    //pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS;
+    pSPI->SPI_MR  = AT91C_SPI_MSTR | AT91C_SPI_PS_FIXED | AT91C_SPI_MODFDIS | ( 20 << 24 );
 
-    pSPI->SPI_MR  |= 0x00010000;  //NCPS1
+    //pSPI->SPI_MR  |= 0x00010000;  //NCPS1
+    pSPI->SPI_MR  |= ((address << 16) & AT91C_SPI_PCS);
+
     //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
-    pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    //X pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
     
+
     pSPI->SPI_RPR = (uint32_t)buff_in;
     pSPI->SPI_RCR = (uint32_t)len;
     pSPI->SPI_RNPR = (uint32_t)0;
@@ -169,7 +252,8 @@ uint16_t spi_rw_bytes(uint8_t *buff_in, uint8_t *buff_out, uint16_t len, uint8_t
     //TRACE_SPI("spi wait\r\n");
 #if 1
     if ( xSemaphoreTake(spi_semaphore, -1) != pdTRUE) {
-        TRACE_SPI("xSemaphoreTake err\r\n");
+        TRACE_ERROR("xSemaphoreTake err\r\n");
+        //spi_unlock();
         return 0;
     }
 #else
@@ -182,6 +266,8 @@ uint16_t spi_rw_bytes(uint8_t *buff_in, uint8_t *buff_out, uint16_t len, uint8_t
 
     if (last)
         pSPI->SPI_CR = AT91C_SPI_SPIEN | AT91C_SPI_LASTXFER;
+
+    //spi_unlock();
 
     return len;
 }

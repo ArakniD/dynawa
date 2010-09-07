@@ -1,0 +1,13 @@
+#ifndef BATTERY_H_
+#define BATTERY_H_
+
+#include "gasgauge.h"
+#include "types.h"
+
+#define BATTERY_STATE_NO_CHARGE    GASGAUGE_STATE_NO_CHARGE
+#define BATTERY_STATE_CHARGING     GASGAUGE_STATE_CHARGING
+#define BATTERY_STATE_CHARGED      GASGAUGE_STATE_CHARGED
+#define BATTERY_STATE_CRITICAL     100
+
+#endif // BATTERY_H_
+

@@ -12,6 +12,7 @@
 #include <peripherals/pmc/pmc.h>
 #include <utils/delay.h>
 #include "oled.h"
+#include "types.h"
 
 void oledWriteCommand(uint16_t cmd, uint16_t param)
 {
@@ -225,4 +226,6 @@ void oledScreen(int16_t scrscrX1, int16_t scrscrY1, int16_t scrscrX2, int16_t sc
 
 }
 
-
+void oled_screen_state(bool on) {
+    oledWriteCommand(DISP_ON_OFF, on ? 0x01 : 0x00);  
+}

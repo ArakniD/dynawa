@@ -221,11 +221,35 @@ static void prvSetupHardware( void )
 #endif
 }
 
-int toggle;
+#ifdef CFG_PM
+static int toggle;
+static uint32_t total_time_slept = 0;
+
 void vApplicationIdleHook( void )
 {
-    TRACE_INFO("vApplicationIdleHook\r\n");
+    //TRACE_INFO("vApplicationIdleHook\r\n");
     toggle = !toggle; // prevent the function from being optimized away?
+
+    // disable PIT (FreeRTOS ticks)
+    //AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITEN;
+    AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITIEN;
+
+    /* disable CPU clock
+        Task_sleep() can't be used
+        Semaphore/Queue get funcs with timeout can't be used
+    */
+    uint32_t sleep_time = Timer_tick_count();
+    //TRACE_INFO("going to sleep %d\r\n", sleep_time);
+    AT91C_BASE_PMC->PMC_SCDR = AT91C_PMC_PCK;
+    // CPU in idle mode now, waiting for IRQ
+
+    uint32_t wakeup_time = Timer_tick_count();
+    uint32_t time_slept = wakeup_time - sleep_time;
+    total_time_slept += time_slept;
+    //TRACE_INFO("waking up %d %d %d %d%%\r\n", wakeup_time, time_slept, total_time_slept, total_time_slept * 100 / wakeup_time);
+    // enable PIT (FreeRTOS ticks)
+    AT91C_BASE_PITC->PITC_PIMR |= AT91C_PITC_PITIEN;
 }
+#endif
 
 

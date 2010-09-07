@@ -14,7 +14,7 @@
 extern xQueueHandle button_queue;
 #endif
 
-extern volatile portTickType xTickCount;
+//extern volatile portTickType xTickCount;
 
 extern Button button[NUM_BUTTONS];
 
@@ -30,7 +30,8 @@ void button_isr(void* context) {
         if (!button[button_id].down) {
             button[button_id].down = true;
 
-            TRACE_INFO("ticks %d\r\n", xTickCount);
+            //TRACE_INFO("ticks %d\r\n", xTickCount);
+            TRACE_INFO("ticks %d\r\n", Timer_tick_count());
 #if !defined(BUTTON_TASK)
             //Timer_stop(&button[button_id].timer);
             Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);

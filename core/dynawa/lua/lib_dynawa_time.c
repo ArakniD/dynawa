@@ -32,7 +32,11 @@ static int l_get (lua_State *L) {
 static int l_milliseconds (lua_State *L) {
     TRACE_LUA("dynawa.time.milliseconds\r\n");
 
+#ifdef CFG_PM
+    lua_pushnumber(L, Timer_tick_count());
+#else
     lua_pushnumber(L, xTaskGetTickCount());
+#endif
     return 1;
 }
 
