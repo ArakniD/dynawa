@@ -57,18 +57,21 @@ void i2cWriteByte(uint8_t data)
 {  
     volatile AT91PS_TWI pTWI = AT91C_BASE_TWI;
     uint32_t s1,s2;
-    uint32_t tmout = timeval + 50;    // 50ms second timeout
+    //uint32_t tmout = timeval + 50;    // 50ms second timeout
+    uint32_t tmout = Timer_tick_count() + 50;    // 50ms second timeout
 
     pTWI->TWI_CR = AT91C_TWI_START | AT91C_TWI_STOP;
     pTWI->TWI_THR = data;
 
 
-    while (!((s1=pTWI->TWI_SR)&AT91C_TWI_TXRDY_MASTER)) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return;
+    //while (!((s1=pTWI->TWI_SR)&AT91C_TWI_TXRDY_MASTER)) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return;
+    while (!((s1=pTWI->TWI_SR)&AT91C_TWI_TXRDY_MASTER)) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return;
     //crc:
     //pTWI->TWI_THR = 0xCA;
     //while (!((pTWI->TWI_SR)&AT91C_TWI_TXRDY_MASTER));
 
-    while (!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)) if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return;
+    //while (!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)) if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return;
+    while (!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)) if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return;
 }
 
 void i2cMultipleWriteByteInit(void)
@@ -100,19 +103,22 @@ uint8_t i2cReadByte(void)
     uint8_t rec;
     uint32_t to;
     uint32_t s1,s2;
-    uint32_t tmout = timeval + 50;    // 50ms second timeout
+    //uint32_t tmout = timeval + 50;    // 50ms second timeout
+    uint32_t tmout = Timer_tick_count() + 50;    // 50ms second timeout
     //if (stop) pTWI->TWI_CR = AT91C_TWI_STOP; //else pTWI->TWI_CR &= ~(AT91C_TWI_STOP);
     //if (start) pTWI->TWI_CR = AT91C_TWI_START; //else pTWI->TWI_CR &= ~(AT91C_TWI_START);
     pTWI->TWI_CR = AT91C_TWI_START | AT91C_TWI_STOP;
 
     //pTWI->TWI_THR = data;
     to=500000;
-    while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    //while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return 0;
     //if (!to) TRACE_ALL("I2C error:TWI_RXRDY");
 
     rec = pTWI->TWI_RHR;
     to=500000;
-    while ((!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)))  if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    //while ((!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)))  if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    while ((!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)))  if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return 0;
     //if (!to) TRACE_ALL("I2C error:TWI_TXCOMP_MASTER"); 
     return rec;  
 }
@@ -121,7 +127,8 @@ void i2cMultipleReadByteStart(void)
 {
     volatile AT91PS_TWI pTWI = AT91C_BASE_TWI;
     uint32_t s1,s2;
-    uint32_t tmout = timeval + 50;    // 50ms second timeout
+    //uint32_t tmout = timeval + 50;    // 50ms second timeout
+    uint32_t tmout = Timer_tick_count() + 50;    // 50ms second timeout
 
 
     pTWI->TWI_CR = AT91C_TWI_START;
@@ -136,8 +143,10 @@ uint8_t i2cMultipleReadByteRead(void)
     volatile AT91PS_TWI pTWI = AT91C_BASE_TWI;
     uint8_t rec;
     uint32_t s1,s2;
-    uint32_t tmout = timeval + 50;    // 50ms second timeout
-    while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    //uint32_t tmout = timeval + 50;    // 50ms second timeout
+    uint32_t tmout = Timer_tick_count() + 50;    // 50ms second timeout
+    //while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return 0;
     //if (!to) TRACE_ALL("I2C error:TWI_RXRDY");
     rec = pTWI->TWI_RHR;
     return rec;
@@ -146,15 +155,18 @@ uint8_t i2cMultipleReadByteRead(void)
 uint8_t i2cMultipleReadByteEnd(void)
 {
     volatile AT91PS_TWI pTWI = AT91C_BASE_TWI;
-    uint32_t tmout = timeval + 50;    // 50ms second timeout
+    //uint32_t tmout = timeval + 50;    // 50ms second timeout
+    uint32_t tmout = Timer_tick_count() + 50;    // 50ms second timeout
     uint32_t s1,s2;
     pTWI->TWI_CR = AT91C_TWI_STOP;
     uint8_t rec=0;
     //to=500000;
-    while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    //while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    while ((!((s1=pTWI->TWI_SR)&AT91C_TWI_RXRDY))) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return 0;
     //if (!to) TRACE_ALL("I2C error:TWI_RXRDY");
     rec = pTWI->TWI_RHR;
-    while ((!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)))  if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    //while ((!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)))  if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return 0;
+    while ((!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)))  if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) return 0;
     return rec;
 }
 

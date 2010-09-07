@@ -17,7 +17,7 @@ xQueueHandle button_queue;
 static xTaskHandle button_task_handle;
 #endif
 
-extern volatile portTickType xTickCount;
+//extern volatile portTickType xTickCount;
 
 int button_pio[NUM_BUTTONS] = {
     32 + 18, 32 + 31, 32 + 21, 32 + 24, 32 + 27
@@ -36,7 +36,8 @@ void button_timer_handler(void* context) {
         button[button_id].timer_started = false;
 
         TRACE_INFO("butt held %d\r\n", button_id);
-        TRACE_INFO("ticks %d\r\n", xTickCount);
+        //TRACE_INFO("ticks %d\r\n", xTickCount);
+        TRACE_INFO("ticks %d\r\n", Timer_tick_count());
 
         ev.type = EVENT_BUTTON;
         ev.data.button.type = EVENT_BUTTON_HOLD;

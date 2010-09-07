@@ -146,8 +146,8 @@ static xList xPendingReadyList;							/*< Tasks that have been readied while the
 
 /* File private variables. --------------------------------*/
 static volatile unsigned portBASE_TYPE uxCurrentNumberOfTasks	= ( unsigned portBASE_TYPE ) 0;
-//MVstatic volatile portTickType xTickCount							= ( portTickType ) 0;
-volatile portTickType xTickCount							= ( portTickType ) 0;
+static volatile portTickType xTickCount							= ( portTickType ) 0;
+//MV volatile portTickType xTickCount							= ( portTickType ) 0;
 static unsigned portBASE_TYPE uxTopUsedPriority					= tskIDLE_PRIORITY;
 static volatile unsigned portBASE_TYPE uxTopReadyPriority		= tskIDLE_PRIORITY;
 static volatile signed portBASE_TYPE xSchedulerRunning			= pdFALSE;

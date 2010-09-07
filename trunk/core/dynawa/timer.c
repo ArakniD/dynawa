@@ -23,8 +23,7 @@ the specific language governing permissions and limitations under the License.
 // debug
 #include "utils/time.h"
 
-#define TIMER_CYCLES_PER_MS 47
-
+uint32_t Timer_tick_count();
 
 static bool sync = true;
 static bool timer_processing = false;
@@ -35,7 +34,10 @@ extern Timer_Manager *p_timer_manager;
 // extern
 void TimerIsr_Wrapper( );
 
+uint32_t _timer_tick_count = 0;
+
 static xSemaphoreHandle timer_mutex;
+
 
 /**
   Make a new timer.
@@ -90,7 +92,8 @@ void Timer_setHandler(Timer *timer, TimerHandler handler, void *context )
 int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
 {
 // debug
-    timer->started = timeval;
+    //timer->started = timeval;
+    timer->started = Timer_tick_count();
     timer->value = millis;
 
     timer->timeCurrent = 0;
@@ -389,4 +392,23 @@ void Timer_setProcessingFlag(bool state)
         while(1);
     }
     timer_processing = state;
+}
+
+static uint32_t last_tick_count = 0;
+uint32_t Timer_tick_count() {
+#if 0
+    return timeval;
+#else
+    unsigned int mask = 0x1 << timer_manager.channel_id;
+    timer_manager.tc->TC_IDR = AT91C_TC_CPCS; 
+    uint32_t ticks = _timer_tick_count + timer_manager.tc->TC_CV / TIMER_CYCLES_PER_MS;
+    timer_manager.tc->TC_IER = AT91C_TC_CPCS; 
+    //TRACE_INFO("ticks: %x\r\n", ticks);
+/*
+    if (ticks < last_tick_count) {
+        panic();
+    last_tick_count = ticks;
+*/
+    return ticks;
+#endif
 }

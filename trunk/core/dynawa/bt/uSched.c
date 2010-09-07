@@ -22,6 +22,7 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "uSched.h"
 #include "debug/trace.h"
 #include "bt.h"
+#include "timer.h"
 
 //static HANDLE WakeUpEvent = NULL;
 static xQueueHandle WakeUpEvent;
@@ -162,7 +163,11 @@ TIME GetTime(void)
 
     return ((TIME)((tb.time * 1000000) + (tb.millitm * 1000)));
 */
+#ifdef CFG_PM
+    return Timer_tick_count() * 1000;
+#else
     return xTaskGetTickCount() * 1000; 
+#endif
 }
 
 void * StartTimer(TIME delay, void (*fn) (void))
@@ -258,6 +263,20 @@ void InitMicroSched(void (* initTask)(void), void (* task)(void))
 	uTask = task;
 }
 
+#ifdef CFG_PM
+void bt_sched_timer_handler(void* context) {
+    TRACE_INFO("bt_sched_timer_handler butt\r\n");
+
+    portBASE_TYPE xHigherPriorityTaskWoken;
+    uint16_t event = 1;
+
+    xQueueSendFromISR(WakeUpEvent, &event, &xHigherPriorityTaskWoken);
+
+    if(xHigherPriorityTaskWoken) {
+        portYIELD_FROM_ISR();
+    }
+}
+#endif
 
 void MicroSched(void)
 {
@@ -265,6 +284,12 @@ void MicroSched(void)
 	TIME now;
     bt_command bt_cmd;
     bt_command *bt_cmd_ptr = NULL;
+
+#ifdef CFG_PM
+    Timer timer;
+    Timer_init(&timer, 0);
+    Timer_setHandler(&timer, bt_sched_timer_handler, NULL);
+#endif
 
     TRACE_BT("MicroSched\r\n");
 	if (!terminationFlag && (uInitTask != NULL))
@@ -341,7 +366,15 @@ void MicroSched(void)
 // TODO calc timeout in ticks
                     uint16_t event;
                     //TRACE_BT("wakeup event in %dms\r\n", time_sub(timedEvents->when, now) / 1000);
+
+
+#ifdef CFG_PM
+                    Timer_start(&timer, time_sub(timedEvents->when, now) / 1000, false, false);
+                    xQueueReceive(WakeUpEvent, &event, -1); 
+                    Timer_stop(&timer);
+#else
                     xQueueReceive(WakeUpEvent, &event, time_sub(timedEvents->when, now) / 1000); 
+#endif
 				}
             }
             if (bt_get_command(&bt_cmd)) {

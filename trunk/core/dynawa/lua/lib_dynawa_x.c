@@ -82,12 +82,37 @@ static int l_battery_stats (lua_State *L) {
     return 1;
 }
 
+static int l_accel_stats (lua_State *L) {
+
+    TRACE_LUA("dynawa.x.accel_stats()\r\n");
+
+    int16_t x = 0, y = 0, z = 0;
+    accel_read(&x, &y, &z, true);
+
+    lua_newtable(L);
+
+    lua_pushstring(L, "x");
+    lua_pushnumber(L, x);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "y");
+    lua_pushnumber(L, y);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "z");
+    lua_pushnumber(L, z);
+    lua_settable(L, -3);
+
+    return 1;
+}
+
 static const struct luaL_reg x [] = {
     {"adc", l_adc},
     {"display_power", l_display_power},
     {"display_brightness", l_display_brightness},
     {"vibrator_set", l_vibrator_set},
     {"battery_stats", l_battery_stats},
+    {"accel_stats", l_accel_stats},
     {NULL, NULL}  /* sentinel */
 };
 

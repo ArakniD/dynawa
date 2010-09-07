@@ -27,7 +27,7 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "abcsp.h"
 #include "debug/trace.h"
 
-extern volatile portTickType xTickCount;
+//extern volatile portTickType xTickCount;
 
 #define SERIAL_CHANNEL 0
 
@@ -166,7 +166,8 @@ void txThreadFunc(void)
 	{
 		//event = WaitForMultipleObjects(NO_OF_TX_EVENTS, txEvents, FALSE, INFINITE);
         //TRACE_BT("txevent wait\r\n");
-        TRACE_INFO("txevent wait %d\r\n", xTickCount);
+        //TRACE_INFO("txevent wait %d\r\n", xTickCount);
+        TRACE_INFO("txevent wait %d\r\n", Timer_tick_count());
         xQueueReceive(txEvents, &event, portMAX_DELAY); 
         //TRACE_BT("txevent\r\n");
         //event = NEW_TX_DATA_EVENT;
@@ -639,7 +640,8 @@ void rxThreadFunc(void)
             }
 #else
             // Polling every 10ms
-            TRACE_SER("Read %d\r\n", xTickCount);
+            //TRACE_SER("Read %d\r\n", xTickCount);
+            TRACE_SER("Read %d\r\n", Timer_tick_count());
             int waitCount = 0;
             while (1) {
                 int rcr;
@@ -661,7 +663,8 @@ void rxThreadFunc(void)
                 // TODO: Wait for DMA data
                 //TRACE_BT("WAITTING\r\n");
                 if (waitCount == 0) {
-                    TRACE_INFO("WAITTING %d\r\n", xTickCount);
+                    //TRACE_INFO("WAITTING %d\r\n", xTickCount);
+                    TRACE_INFO("WAITTING %d\r\n", Timer_tick_count());
                 }
                 if (1 || waitCount < 40) {
                 //if (waitCount < 40) {

@@ -26,6 +26,8 @@
 #define TIMER_COUNT 8
 #define TIMER_MARGIN 2
 
+#define TIMER_CYCLES_PER_MS 47
+
 typedef void (*TimerHandler)( void *context ); /**< A handler for timers. */
 
 /**

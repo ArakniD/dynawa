@@ -1,4 +1,5 @@
 #include "core.h"
+#include "timer.h"
 #include "led.h"
 //#include "appled.h"
 #include <debug/trace.h>
@@ -34,7 +35,9 @@ void usb( void* parameters );
 void usb_msd( void* parameters );
 void bcsp( void* parameters );
 
+Timer sys_timer;
 bool in_panic_handler = false;
+
 void panic(void) {
 
     ledrgb_open();
@@ -72,17 +75,28 @@ void test() {
 
 void Run( ) // this task gets called as soon as we boot up.
 {
-    //TRACE_INFO("Run\n\r");
+    TRACE_INFO("Run\n\r");
+
+    Timer_init(&sys_timer, 0);
+    Timer_setHandler(&sys_timer, NULL, NULL);
+    Timer_start(&sys_timer, 24 * 3600, true, false);
+    TRACE_INFO("sys timer ok\n\r");
 
     spi_init();
+    TRACE_INFO("spi_init ok\n\r");
     if ( sd_init() != SD_OK ) {
         TRACE_ERROR("SD card init failed!\r\n");
     }
+    TRACE_INFO("sd_init ok\n\r");
     i2c_init();
+    TRACE_INFO("i2c_init ok\n\r");
     rtc_init();
+    TRACE_INFO("rtc_init ok\n\r");
     gasgauge_init();
+    TRACE_INFO("gasgauge_init ok\n\r");
 
     event_init(100);
+    TRACE_INFO("event_init ok\n\r");
 
 
     //System* sys = System::get();
@@ -91,17 +105,24 @@ void Run( ) // this task gets called as soon as we boot up.
     ledrgb_open();
     ledrgb_set(0x7, 0, 0, 0);
     ledrgb_close();
+    TRACE_INFO("ledrgb ok\n\r");
 
     display_power(1);
+    TRACE_INFO("display_power ok\n\r");
 
     //test();
     scrWriteRect(0,126,40,127,0xffffff);
     scrWriteRect(80,126,120,127,0xffffff);
 
     battery_init();
+    TRACE_INFO("battery_init ok\n\r");
+    accel_init();
+    TRACE_INFO("accel_init ok\n\r");
 
     button_init();
+    TRACE_INFO("button_init ok\n\r");
     bt_init();
+    TRACE_INFO("bt_init ok\n\r");
     //bt_open();
 
 /*
@@ -136,6 +157,7 @@ void Run( ) // this task gets called as soon as we boot up.
     //Task_create( lua, "LUA", 8192, 1, NULL );
 #endif
     //Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
+
     xTaskCreate(lua_event_loop, (signed char*)"lua", TASK_STACK_SIZE(TASK_LUA_STACK), NULL, TASK_LUA_PRI, NULL);
 
 #if 0

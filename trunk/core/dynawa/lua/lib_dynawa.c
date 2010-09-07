@@ -19,7 +19,11 @@ static int l_peek (lua_State *L) {
 static int l_ticks (lua_State *L) {
     TRACE_LUA("l_ticks\r\n");
 
+#ifdef CFG_PM
+    lua_pushnumber(L, Timer_tick_count());
+#else
     lua_pushnumber(L, xTaskGetTickCount());
+#endif
     return 1;
 }
 

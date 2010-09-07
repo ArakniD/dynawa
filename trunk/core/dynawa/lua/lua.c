@@ -401,12 +401,37 @@ int lua_event_loop (void) {
                 TRACE_ERROR("Uknown bt event %x\r\n", ev.data.bt.type);
             }
             break;
+        case EVENT_BATTERY:
+            TRACE_LUA("EVENT_BATTERY state %d\r\n", ev.data.battery.state);
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "battery");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "state");
+            lua_pushnumber(L, ev.data.battery.state);
+            lua_settable(L, -3);
+            break;
+        case EVENT_ACCEL:
+            TRACE_LUA("EVENT_ACCEL gesture %d\r\n", ev.data.accel.gesture);
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "accel");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "gesture");
+            lua_pushnumber(L, ev.data.accel.gesture);
+            lua_settable(L, -3);
+            break;
         default:
             TRACE_ERROR("Uknown event %x\r\n", ev.type);
         }
 
         Led_setState(&led, 1);
-        unsigned long ticks = xTaskGetTickCount();
+        //unsigned long ticks = xTaskGetTickCount();
+        unsigned long ticks = Timer_tick_count();
 
         //if (lua_pcall(L, #in, #out, err handler) != 0)
         error = lua_pcall(L, 1, 0, 0);
@@ -416,7 +441,8 @@ int lua_event_loop (void) {
 */
 
         Led_setState(&led, 0);
-        ticks = xTaskGetTickCount() - ticks;
+        //ticks = xTaskGetTickCount() - ticks;
+        ticks = Timer_tick_count() - ticks;
         TRACE_LUA("error %d %d\r\n", error, ticks);
 
         if (error) {

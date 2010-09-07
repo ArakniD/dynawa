@@ -102,7 +102,8 @@ void Spi_init( )
         // AT91C_SPI_FDIV | // Select Master Clock / 32 - PS DON'T EVER SET THIS>>>>  SAM7 BUG
         AT91C_SPI_MODFDIS | // Disable fault detect
         // AT91C_SPI_LLB | // Enable loop back test
-        ( ( 0x0 << 24 ) & AT91C_SPI_DLYBCS ) ;  // Delay between chip selects
+        //MV( ( 0x0 << 24 ) & AT91C_SPI_DLYBCS ) ;  // Delay between chip selects
+        ( ( 20 << 24 ) & AT91C_SPI_DLYBCS ) ;  // Delay between chip selects
 
     AT91C_BASE_SPI->SPI_IDR = 0x3FF; // All interupts are off
 
@@ -132,7 +133,13 @@ void Spi_init( )
     AT91C_BASE_PIOA->PIO_PDR = 
         SPI_PIO_MISO | 
         SPI_PIO_MOSI | 
-        SPI_PIO_SPCK;
+        SPI_PIO_SPCK |
+        SPI_PIO_NPCS;
+
+    AT91C_BASE_PIOA->PIO_OER = 
+        SPI_PIO_MOSI | 
+        SPI_PIO_SPCK |
+        SPI_PIO_NPCS;
 
     // Kill the pull up on the Input
     AT91C_BASE_PIOA->PIO_PPUDR = SPI_PIO_MISO;
@@ -144,7 +151,8 @@ void Spi_init( )
     AT91C_BASE_PIOA->PIO_ASR = 
         SPI_PIO_MISO | 
         SPI_PIO_MOSI | 
-        SPI_PIO_SPCK;
+        SPI_PIO_SPCK |
+        SPI_PIO_NPCS;
 
     // Elsewhere need to do this for the select lines
     // AT91C_BASE_PIOB->PIO_BSR = 
@@ -183,6 +191,11 @@ int Spi_configure( Spi *spi, int bits, int clockDivider, int delayBeforeSPCK, in
     // Set the values
     AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] = 
         AT91C_SPI_NCPHA | // Clock Phase TRUE
+
+// MV
+        //AT91C_SPI_CPOL |
+
+
         ( ( ( bits - 8 ) << 4 ) & AT91C_SPI_BITS ) | // Transfer bits
         ( ( clockDivider << 8 ) & AT91C_SPI_SCBR ) | // Serial Clock Baud Rate Divider (255 = slow)
         ( ( delayBeforeSPCK << 16 ) & AT91C_SPI_DLYBS ) | // Delay before SPCK
@@ -210,7 +223,7 @@ int Spi_readWriteBlock( Spi *spi, unsigned char* buffer, int count )
     if ( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RDRF )
         r = AT91C_BASE_SPI->SPI_RDR;
 
-    AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] |= AT91C_SPI_CSAAT; // Make the CS line hang around
+    //AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] |= AT91C_SPI_CSAAT; // Make the CS line hang around
 
     int writeIndex = 0;
     unsigned char* writeP = buffer;
@@ -227,7 +240,46 @@ int Spi_readWriteBlock( Spi *spi, unsigned char* buffer, int count )
         *readP++ = (unsigned char)( AT91C_BASE_SPI->SPI_RDR & 0xFF );
     }
 
-    AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] &= ~AT91C_SPI_CSAAT;
+    //AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] &= ~AT91C_SPI_CSAAT;
+
+    return 0;
+}
+int Spi_readWriteBlock16( Spi *spi, uint16_t *buffer, int count )
+{
+    if( !Spi_valid(spi))
+        return 0;
+    int r;
+    int address = ~( 1 << spi->_channel );
+
+    if ( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_TXEMPTY ) ) // Make sure the unit is at rest before we re-begin
+    {
+        while( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_TXEMPTY ) );
+        while( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RDRF ) )
+            r = AT91C_BASE_SPI->SPI_SR;
+        r = AT91C_BASE_SPI->SPI_RDR;
+    }
+
+    if ( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RDRF )
+        r = AT91C_BASE_SPI->SPI_RDR;
+
+    //AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] |= AT91C_SPI_CSAAT; // Make the CS line hang around
+
+    int writeIndex = 0;
+    uint16_t* writeP = buffer;
+    uint16_t* readP = buffer;
+
+    while ( writeIndex < count ) // Do the read write
+    {
+        writeIndex++;
+        AT91C_BASE_SPI->SPI_TDR = ( *writeP++ & 0xFFFF ) | 
+            ( ( address << 16 ) &  AT91C_SPI_TPCS ) | 
+            (int)( ( writeIndex == count ) ? AT91C_SPI_LASTXFER : 0 );
+
+        while ( !( AT91C_BASE_SPI->SPI_SR & AT91C_SPI_RDRF ) );
+        *readP++ = (uint16_t)( AT91C_BASE_SPI->SPI_RDR & 0xFFFF );
+    }
+
+    //AT91C_BASE_SPI->SPI_CSR[ spi->_channel ] &= ~AT91C_SPI_CSAAT;
 
     return 0;
 }

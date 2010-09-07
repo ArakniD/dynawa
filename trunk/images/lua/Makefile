@@ -18,6 +18,7 @@ CONFIG_OPTS = \
 	-DCFG_USB \
 	-DCFG_USB_SER \
 	-DCFG_RTC \
+	-DCFG_PM \
 	-DBUTTON_TASK \
 	-DCFG_CONSOLE_USB
 
@@ -182,6 +183,7 @@ MONITOR_SRC = \
   $(MONITOR)/argsdispatch.c \
   $(MONITOR)/monitor.c
 
+#  $(UTILS)/time.c
 THUMB_SRC= \
   ../../core/startup/extras.c \
   $(FREERTOS)/tasks.c \
@@ -203,7 +205,6 @@ THUMB_SRC= \
   $(USB)/common/core/USBConfigurationDescriptor.c \
   $(USB)/common/core/USBInterfaceRequest.c \
   $(UTILS)/rprintf.c \
-  $(UTILS)/time.c \
   $(UTILS)/delay.c \
   $(SCREEN)/font.c \
   $(LUA)/lapi.c \
@@ -240,6 +241,7 @@ THUMB_SRC= \
   $(DYNAWA)/usbserial.c \
   $(DYNAWA)/serial.c \
   $(DYNAWA)/main.c \
+  $(DYNAWA)/sleep.c \
   $(DYNAWA)/io.c \
   $(DYNAWA)/led.c \
   $(DYNAWA)/lua/lua.c \
@@ -257,6 +259,7 @@ THUMB_SRC= \
   $(DYNAWA)/display.c \
   $(DYNAWA)/button.c \
   $(DYNAWA)/battery.c \
+  $(DYNAWA)/accel.c \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
   $(FAT_SRC) \
@@ -273,7 +276,6 @@ THUMB_SRC= \
   $(DYNAWA)/bt/bt_spp.c \
   $(PERIPHERALS)/serial.c \
   $(PERIPHERALS)/spi.c \
-  $(DYNAWA)/spi.c \
   $(PERIPHERALS)/pmc/pmc.c \
   $(PERIPHERALS)/usart/usart.c \
   $(PERIPHERALS)/aic/aic.c \
@@ -333,6 +335,7 @@ ARM_SRC= \
   $(USB)/device/core/USBD_UDPHS.c \
   $(DYNAWA)/serial_isr.c \
   $(DYNAWA)/button_isr.c \
+  $(DYNAWA)/accel_isr.c \
   $(DYNAWA)/timer_isr.c \
   $(DYNAWA)/analogin_isr.c \
   $(DYNAWA)/bt/bt_isr.c \

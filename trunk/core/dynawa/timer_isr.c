@@ -25,7 +25,9 @@ the specific language governing permissions and limitations under the License.
 
 #define MIN_DELAY_TICKS     2
 
-extern volatile portTickType xTickCount;
+//extern volatile portTickType xTickCount;
+
+extern uint32_t _timer_tick_count;
 
 //extern Timer_Manager timer_manager;
 Timer_Manager *p_timer_manager;
@@ -40,8 +42,12 @@ void Timer_Isr( void )
     int status = manager->tc->TC_SR;
     if ( status & AT91C_TC_CPCS )
     {
-        TRACE_TMR(">>>Timer_Isr %d\r\n", xTickCount);
+        //TRACE_TMR(">>>Timer_Isr %d\r\n", xTickCount);
+        TRACE_TMR(">>>Timer_Isr %d\r\n", Timer_tick_count());
         int rc =  manager->tc->TC_RC;
+
+        _timer_tick_count += rc / TIMER_CYCLES_PER_MS;
+
         manager->tc->TC_RC = 0xffff;
         manager->servicing = true;
         TIMER_DBG_PROCESSING(true);
@@ -80,7 +86,8 @@ void Timer_Isr( void )
                 if ( timer->repeat ) {
                     timer->timeCurrent += timer->timeInitial;
                     // debug
-                    timer->started = timeval;
+                    //timer->started = timeval;
+                    timer->started = Timer_tick_count();
                 } else {
                     // remove it if necessary (do this first!)
                     if ( manager->previous == NULL )
@@ -164,7 +171,8 @@ void Timer_Isr( void )
         jitter = manager->tc->TC_CV;
         manager->servicing = false;
         TIMER_DBG_PROCESSING(false);
-        TRACE_TMR("<<<Timer_Isr %d\r\n", xTickCount);
+        //TRACE_TMR("<<<Timer_Isr %d\r\n", xTickCount);
+        TRACE_TMR("<<<Timer_Isr %d\r\n", Timer_tick_count());
     }
     //unsigned int mask = 0x1 << manager->channel_id;
     //AT91C_BASE_AIC->AIC_ICCR = mask;

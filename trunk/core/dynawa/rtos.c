@@ -82,7 +82,11 @@ Task::sleep(10); // wait 10 millis each time through the loop
 */
 void Task_sleep( int ms ) // static
 {
+#ifdef CFG_PM
+    sleep(ms);
+#else
     vTaskDelay( ms / portTICK_RATE_MS );
+#endif
 }
 
 /**
