@@ -50,7 +50,8 @@ function class:status()
 	status.voltage = assert(stat.voltage)
 	status.current = assert(stat.current)
 	status.percentage = self:voltage_to_percent(status.voltage)
-	if stat.state == 1 or stat.state == 0 then
+	if stat.state == 1 then
+	--if stat.state == 1 or stat.state == 0 then
 		--When no battery is present, status is set to "charging"
 		status.charging = true
 	end
