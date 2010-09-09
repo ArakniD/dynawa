@@ -81,6 +81,8 @@ dynawa.devices.battery = Class.Battery()
 
 dynawa.devices.bluetooth = Class.Bluetooth()
 
+dynawa.devices.accelerometer = Class.Accelerometer()
+
 dynawa.app_manager = Class.AppManager()
 
 local hw_vectors = {}
@@ -103,6 +105,10 @@ end
 
 hw_vectors.battery = function (event)
 	dynawa.devices.battery:handle_hw_event(event)
+end
+
+hw_vectors.accel = function (event)
+	dynawa.devices.accelerometer:handle_hw_event(event)
 end
 
 _G.private_main_handler = function(hw_event)
