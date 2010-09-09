@@ -87,6 +87,7 @@ load_classes{
 	"AppManager",
 	"Vibrator",
 	"Battery",
+	"Accelerometer",
 }
 
 if dynawa.debug then

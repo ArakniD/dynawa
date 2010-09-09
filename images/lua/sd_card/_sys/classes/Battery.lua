@@ -50,9 +50,9 @@ function class:status()
 	status.voltage = assert(stat.voltage)
 	status.current = assert(stat.current)
 	status.percentage = self:voltage_to_percent(status.voltage)
-	if stat.state == 1 then
-	--if stat.state == 1 or stat.state == 0 then
-		--When no battery is present, status is set to "charging"
+	if stat.state == 1 or stat.voltage == 0 then
+		--When no battery is present (voltage == 0), status is set to "charging"
+		--#todo In the production version, this should be changed to display nasty warning about battery not working.
 		status.charging = true
 	end
 	if status.voltage <= self.critical_voltage and not status.charging then
