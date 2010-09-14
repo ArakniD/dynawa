@@ -43,7 +43,7 @@ void Timer_Isr( void )
     if ( status & AT91C_TC_CPCS )
     {
         //TRACE_TMR(">>>Timer_Isr %d\r\n", xTickCount);
-        TRACE_TMR(">>>Timer_Isr %d\r\n", Timer_tick_count());
+        TRACE_TMR(">>>Timer_Isr %d\r\n", Timer_tick_count_nonblock());
         int rc =  manager->tc->TC_RC;
 
         _timer_tick_count += rc / TIMER_CYCLES_PER_MS;
@@ -87,7 +87,7 @@ void Timer_Isr( void )
                     timer->timeCurrent += timer->timeInitial;
                     // debug
                     //timer->started = timeval;
-                    timer->started = Timer_tick_count();
+                    timer->started = Timer_tick_count_nonblock();
                 } else {
                     // remove it if necessary (do this first!)
                     if ( manager->previous == NULL )
@@ -149,7 +149,7 @@ void Timer_Isr( void )
 
             if (manager->nextTime < 0) {
                 TRACE_ERROR("timer: nextTime < 0\r\n");
-                //panic();
+                //panic("Timer_Isr");
                 manager->nextTime = manager->tc->TC_CV + MIN_DELAY_TICKS;
             }
 #endif
@@ -172,7 +172,7 @@ void Timer_Isr( void )
         manager->servicing = false;
         TIMER_DBG_PROCESSING(false);
         //TRACE_TMR("<<<Timer_Isr %d\r\n", xTickCount);
-        TRACE_TMR("<<<Timer_Isr %d\r\n", Timer_tick_count());
+        TRACE_TMR("<<<Timer_Isr %d\r\n", Timer_tick_count_nonblock());
     }
     //unsigned int mask = 0x1 << manager->channel_id;
     //AT91C_BASE_AIC->AIC_ICCR = mask;

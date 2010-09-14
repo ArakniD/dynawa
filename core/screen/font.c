@@ -75,6 +75,16 @@ void fontSetCharPos(scr_coord_t x, scr_coord_t y)
   fontCurrPosY=y;
 }
 
+void fontSetCarridgeReturnPosX(scr_coord_t x)
+{
+  fontCarridgeReturnPosX=x;
+}
+
+void fontSetColor(scr_color_t fg, scr_color_t bg) {
+    fontColor = fg;
+    fontBgColor = bg;
+}
+
 void fontPutChar(char c)
 {
     unsigned int row=0;

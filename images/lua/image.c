@@ -38,13 +38,63 @@ void bcsp( void* parameters );
 Timer sys_timer;
 bool in_panic_handler = false;
 
-void panic(void) {
-
+void panic(const char* msg) {
+/*
     ledrgb_open();
     ledrgb_set(0x7, 0xe0, 0, 0);
+*/
+    oled_screen_state(true);
+
+    scrWriteRect(0, 0, 159, 127, SCR_COLOR_RED);
+
+    fontSetColor(SCR_COLOR_WHITE, SCR_COLOR_RED);
+    fontSetCharPos(10, 10);
+    fontSetCarridgeReturnPosX(10);
 
     in_panic_handler = true;
-    TRACE_ERROR("!!!PANIC!!! %x\r\n", xTaskGetCurrentTaskHandle());
+    xTaskHandle current_task= xTaskGetCurrentTaskHandle();
+    TRACE_SCR("PANIC\r\n");
+    TRACE_ERROR("!!!PANIC!!!\r\n");
+    if (msg) {
+        TRACE_SCR("\r\n%s", msg);
+        TRACE_ERROR("%s\r\n", msg);
+    }
+    if (current_task) {
+        TRACE_SCR("\r\nthandle: %x\r\ntname: %s", current_task, xTaskGetName(current_task));
+        TRACE_ERROR("thandle: %x\r\ntname: %s\r\n", current_task, xTaskGetName(current_task));
+    }
+    AT91C_BASE_AIC->AIC_IDCR = 0xffffffff;
+
+    uint32_t count;
+    while(1) {
+        if (!(count % 10000))
+            TRACE_ERROR("*");
+        count++;
+    }
+    TRACE_ERROR("!!!PANIC2!!!\r\n");
+}
+
+void panic_abort(unsigned int abort_type, unsigned int abort_mem) {
+/*
+    ledrgb_open();
+    ledrgb_set(0x7, 0xe0, 0, 0);
+*/
+    oled_screen_state(true);
+
+    scrWriteRect(0, 0, 159, 127, SCR_COLOR_RED);
+    
+    fontSetColor(SCR_COLOR_WHITE, SCR_COLOR_RED);
+    fontSetCharPos(10, 10);
+    fontSetCarridgeReturnPosX(10);
+
+    in_panic_handler = true;
+    xTaskHandle current_task= xTaskGetCurrentTaskHandle();
+    TRACE_ERROR("!!!ABORT!!! %x %x %x\r\n", abort_type, abort_mem, current_task);
+    TRACE_SCR("ABORT\r\n\r\ntype: %d\r\naddr: %x", abort_type, abort_mem);
+    if (current_task) {
+        TRACE_SCR("\r\nthandle: %x\r\ntname: %s", current_task, xTaskGetName(current_task));
+    }
+
     uint32_t count;
     while(1) {
         if (!(count % 10000))
@@ -82,6 +132,10 @@ void Run( ) // this task gets called as soon as we boot up.
     Timer_start(&sys_timer, 24 * 3600, true, false);
     TRACE_INFO("sys timer ok\n\r");
 
+    //scrInit();
+    //oledInitHw();
+    //TRACE_INFO("scrInit ok\n\r");
+
     spi_init();
     TRACE_INFO("spi_init ok\n\r");
     if ( sd_init() != SD_OK ) {
@@ -97,7 +151,6 @@ void Run( ) // this task gets called as soon as we boot up.
 
     event_init(100);
     TRACE_INFO("event_init ok\n\r");
-
 
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();
@@ -158,6 +211,12 @@ void Run( ) // this task gets called as soon as we boot up.
 #endif
     //Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
 
+/*
+    audio_play();
+    while(1) {
+        asm volatile ("nop");
+    };
+*/
     xTaskCreate(lua_event_loop, (signed char*)"lua", TASK_STACK_SIZE(TASK_LUA_STACK), NULL, TASK_LUA_PRI, NULL);
 
 #if 0
@@ -277,6 +336,7 @@ void bc( void* p )
     }
 }
 
+#if 0
 void lua( void* p )
 {
     (void)p;
@@ -290,6 +350,7 @@ void lua( void* p )
 
     led_loop();
 }
+#endif
 
 #if defined(USB_COMPOSITE)
 /// Use for power management

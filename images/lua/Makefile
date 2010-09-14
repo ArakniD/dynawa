@@ -18,7 +18,7 @@ CONFIG_OPTS = \
 	-DCFG_USB \
 	-DCFG_USB_SER \
 	-DCFG_RTC \
-	-DCFG_PM \
+	-D_CFG_PM \
 	-DBUTTON_TASK \
 	-DCFG_CONSOLE_USB
 
@@ -260,6 +260,7 @@ THUMB_SRC= \
   $(DYNAWA)/button.c \
   $(DYNAWA)/battery.c \
   $(DYNAWA)/accel.c \
+  $(DYNAWA)/audio.c \
   $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
   $(FAT_SRC) \
@@ -276,6 +277,8 @@ THUMB_SRC= \
   $(DYNAWA)/bt/bt_spp.c \
   $(PERIPHERALS)/serial.c \
   $(PERIPHERALS)/spi.c \
+  $(PERIPHERALS)/ssc.c \
+  $(PERIPHERALS)/dac7311.c \
   $(PERIPHERALS)/pmc/pmc.c \
   $(PERIPHERALS)/usart/usart.c \
   $(PERIPHERALS)/aic/aic.c \
@@ -334,11 +337,9 @@ ARM_SRC= \
   $(USB)/device/core/USBD_OTGHS.c \
   $(USB)/device/core/USBD_UDPHS.c \
   $(DYNAWA)/serial_isr.c \
-  $(DYNAWA)/button_isr.c \
-  $(DYNAWA)/accel_isr.c \
   $(DYNAWA)/timer_isr.c \
   $(DYNAWA)/analogin_isr.c \
-  $(DYNAWA)/bt/bt_isr.c \
+  $(DYNAWA)/audio_isr.c \
   $(PERIPHERALS)/spi_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \

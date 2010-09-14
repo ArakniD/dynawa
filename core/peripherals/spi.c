@@ -54,7 +54,7 @@ void spi_init(void)
     //vSemaphoreCreateBinary(spi_mutex);
     spi_mutex = xSemaphoreCreateMutex();
     if (spi_mutex == NULL) {
-        panic();
+        panic("spi_init");
     }
 
     vSemaphoreCreateBinary(spi_semaphore);
@@ -116,7 +116,7 @@ void spi_lock() {
 /*
     if(xSemaphoreTake(spi_mutex, 1000 / portTICK_RATE_MS) != pdTRUE) {
         TRACE_ERROR("spi_lock timeout\r\n");
-        panic();
+        panic("spi_lock");
     }
 */
     //TRACE_INFO("<<<spi_lock(%x)\r\n", xTaskGetCurrentTaskHandle());

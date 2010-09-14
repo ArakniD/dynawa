@@ -7,7 +7,7 @@
 void SpuriousIsr_Handler( void )
 {
     TRACE_ERROR("defaultSpuriousHandler\r\n");
-    //panic();
+    //panic("SpuriousIsr_Handler");
     //while (1);
     AT91C_BASE_AIC->AIC_EOICR = 0;
 }
@@ -27,7 +27,7 @@ void defaultSpuriousHandler( void )
 void defaultFiqHandler( void )
 {
     TRACE_ERROR("defaultFiqHandler\r\n");
-    panic();
+    panic("defaultFiqHandler");
     //while (1);
 }
 
@@ -37,6 +37,6 @@ void defaultFiqHandler( void )
 void defaultIrqHandler( void )
 {
     TRACE_ERROR("defaultIrqHandler\r\n");
-    panic();
+    panic("defaultIrqHandler");
     //while (1);
 }

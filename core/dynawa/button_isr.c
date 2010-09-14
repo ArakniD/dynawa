@@ -31,7 +31,7 @@ void button_isr(void* context) {
             button[button_id].down = true;
 
             //TRACE_INFO("ticks %d\r\n", xTickCount);
-            TRACE_INFO("ticks %d\r\n", Timer_tick_count());
+            TRACE_INFO("ticks %d\r\n", Timer_tick_count_nonblock());
 #if !defined(BUTTON_TASK)
             //Timer_stop(&button[button_id].timer);
             Timer_start(&button[button_id].timer, BUTTON_HOLD_TIMEOUT, false, false);

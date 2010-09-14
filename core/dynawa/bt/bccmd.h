@@ -14,6 +14,7 @@
 #define BCCMDVARID_WARM_RESET       0x4002
 #define BCCMDVARID_PS               0x7003
 
+#define PSKEY_BDADDR                0x1
 #define PSKEY_ANAFREQ               0x1fe
 #define PSKEY_BAUDRATE              0x1be
 #define PSKEY_UART_CONFIG_BCSP      0x1bf

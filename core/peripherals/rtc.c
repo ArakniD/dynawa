@@ -15,7 +15,7 @@ static xSemaphoreHandle rtc_mutex;
 int rtc_init() {
     rtc_mutex = xSemaphoreCreateMutex();
     if(rtc_mutex == NULL)
-        panic();
+        panic("rtc_init");
     return 0;
 }
 

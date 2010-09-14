@@ -38,14 +38,17 @@ void Io_Isr( AT91S_PIO* basePio )
     {
         unsigned int i = 0;
         Io_InterruptSource* is;
-        while( status != 0  && i < Io_isrSourceCount )
+        //while( status != 0  && i < Io_isrSourceCount )
+        while( status != 0  && i < MAX_INTERRUPT_SOURCES)
         {
             is = &(Io_isrSources[i]);
             if( is->port == basePio) // Source is configured on the same controller
             {
                 if ((status & is->mask) != 0) // Source has PIOs whose statuses have changed
                 {
-                    is->handler(is->context); // callback the handler
+                    if (is->handler) {
+                        is->handler(is->context); // callback the handler
+                    }
                     status &= ~(is->mask);    // mark this channel as serviced
                 }
             }
@@ -66,6 +69,13 @@ void IoBIsr_Wrapper( )
 {
     portSAVE_CONTEXT();        // Save the context of the interrupted task.
     Io_Isr( AT91C_BASE_PIOB ); // execute the handler
+    portRESTORE_CONTEXT();     // Restore the context of whichever task will execute next.
+}
+
+void IoCIsr_Wrapper( )
+{
+    portSAVE_CONTEXT();        // Save the context of the interrupted task.
+    Io_Isr( AT91C_BASE_PIOC ); // execute the handler
     portRESTORE_CONTEXT();     // Restore the context of whichever task will execute next.
 }
 

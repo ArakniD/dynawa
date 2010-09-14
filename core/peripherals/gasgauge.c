@@ -24,9 +24,11 @@ int gasgauge_init () {
     AT91C_BASE_PIOA->PIO_OER = CHARGEEN_PIN;
     AT91C_BASE_PIOA->PIO_SODR = CHARGEEN_PIN; //set to log1
 
+    // USBPEN2_PIN high => 500mA charging
    AT91C_BASE_PIOA->PIO_PER = USBPEN2_PIN;                          // PIO Enable Register - allow PIO to control pin PP3
    AT91C_BASE_PIOA->PIO_OER = USBPEN2_PIN;                          // PIO Output Enable Register - sets pin P3 to outputs
-   AT91C_BASE_PIOA->PIO_CODR = USBPEN2_PIN;
+   AT91C_BASE_PIOA->PIO_SODR = USBPEN2_PIN;
+   //AT91C_BASE_PIOA->PIO_CODR = USBPEN2_PIN;
 
 #if 0 
     //measure pack voltage:

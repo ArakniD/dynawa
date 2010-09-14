@@ -106,6 +106,15 @@ static int l_accel_stats (lua_State *L) {
     return 1;
 }
 
+static int l_audio_play (lua_State *L) {
+
+    TRACE_LUA("dynawa.x.audio_play()\r\n");
+
+    audio_play();
+
+    return 0;
+}
+
 static const struct luaL_reg x [] = {
     {"adc", l_adc},
     {"display_power", l_display_power},
@@ -113,6 +122,7 @@ static const struct luaL_reg x [] = {
     {"vibrator_set", l_vibrator_set},
     {"battery_stats", l_battery_stats},
     {"accel_stats", l_accel_stats},
+    {"audio_play", l_audio_play},
     {NULL, NULL}  /* sentinel */
 };
 

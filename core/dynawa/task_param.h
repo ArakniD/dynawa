@@ -7,13 +7,13 @@
 #define TASK_STARTER_STACK  1024
 
 #define TASK_BUTTON_PRI     3
-#define TASK_BUTTON_STACK   256
+#define TASK_BUTTON_STACK   512
 
 #define TASK_BATTERY_PRI     2
-#define TASK_BATTERY_STACK   256 // not less!
+#define TASK_BATTERY_STACK   512 // not less!
 
 #define TASK_ACCEL_PRI     2
-#define TASK_ACCEL_STACK   256
+#define TASK_ACCEL_STACK   512
 
 #define TASK_BT_MAIN_PRI     4
 #define TASK_BT_MAIN_STACK   8192
@@ -29,6 +29,6 @@
 #define TASK_LUA_STACK     16384
 
 #define TASK_DISPLAY_BRIGHTNESS_PRI     2
-#define TASK_DISPLAY_BRIGHTNESS_STACK   256
+#define TASK_DISPLAY_BRIGHTNESS_STACK   512
 
 #endif // TASK_PARAM_H

@@ -6,14 +6,30 @@
 #include "queue.h"
 #include "task_param.h"
 
-#define PIO_ACCEL  (32 + 20)
-
-void accel_isr(void* context);
+#define PIO_ACCEL  IO_PB20
 
 static xTaskHandle accel_task_handle;
 xQueueHandle accel_queue;
 
 static Io accel_io;
+
+static bool accel_wakeup_pin_high = false;
+
+void accel_io_isr_handler(void* context) {
+    accel_wakeup_pin_high = !accel_wakeup_pin_high;
+
+    if (!accel_wakeup_pin_high) {
+        return;
+    }
+
+    portBASE_TYPE xHigherPriorityTaskWoken;
+    uint8_t ev = 1;
+    xQueueSendFromISR(accel_queue, &ev, &xHigherPriorityTaskWoken);
+
+    if(xHigherPriorityTaskWoken) {
+        portYIELD_FROM_ISR();
+    }
+}
 
 static void accel_task( void* p ) {
     TRACE_INFO("accel task %x\r\n", xTaskGetCurrentTaskHandle());
@@ -55,7 +71,7 @@ int accel_init () {
     accel_queue = xQueueCreate(1, sizeof(uint8_t));
 
     Io_init(&accel_io, PIO_ACCEL, IO_GPIO, INPUT);
-    Io_addInterruptHandler(&accel_io, accel_isr, NULL);
+    Io_addInterruptHandler(&accel_io, accel_io_isr_handler, NULL);
 
     if (xTaskCreate( accel_task, "accel", TASK_STACK_SIZE(TASK_ACCEL_STACK), NULL, TASK_ACCEL_PRI, &accel_task_handle ) != 1 ) {
         return -1;
