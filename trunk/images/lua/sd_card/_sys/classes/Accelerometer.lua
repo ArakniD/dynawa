@@ -6,7 +6,13 @@ end
 
 function class:handle_hw_event(event)
 	--So far, there is only one accelerometer HW event, signalling "the state was changed"
-	self:broadcast_update()
+	--self:broadcast_update()
+    event.type = nil
+    log ("-----Accelerometer HW event:")
+    for k,v in pairs(event) do
+        log (k.." = "..tostring(v))
+    end
+    log("-----------")
 end
 
 function class:status()

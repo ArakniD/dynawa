@@ -36,6 +36,7 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "debug/trace.h"
 
 
+#define SET_BDADDR                  0
 #define SET_HOST_UART_HW_FLOW       0
 #define SET_HOST_WAKE_UART_BREAK    0
 #define SET_HOST_WAKE_PIO           1
@@ -44,9 +45,6 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #define TX_POWER            2
 
 #define BT_COMMAND_QUEUE_LEN 10
-
-//void bt_isr_wrapper();
-void bt_isr(void *context);
 
 xSemaphoreHandle bt_wakeup_semaphore;
 xQueueHandle bt_wakeup_queue;
@@ -85,32 +83,46 @@ static unsigned long baudRate = 460800;
 #define USART_BAUDRATE_CD    0x0ebf
 #endif
 
+static struct bd_addr this_device_bdaddr;
+
+uint16_t bt_ps_set_bdaddr(uint16_t index) {
+    return this_device_bdaddr.addr[index] || (this_device_bdaddr.addr[index + 1] << 8);
+}
+
 static ps_setrq_count;
 static struct bccmd_index_value {
-    uint16_t index, value;
+    uint16_t index, (*func_value)(), value;
 } ps_setrq[] = {
-    {0, 9},
-    {5, PSKEY_ANAFREQ},
-    {6, 1},
-    {8, 0x6590},
+    {0, NULL, 9},
+    {5, NULL, PSKEY_ANAFREQ},
+    {6, NULL, 1},
+    {8, NULL, 0x6590},
 
-    {0, 9},
-    {1, 9},
-    {5, PSKEY_BAUDRATE},
-    {6, 1},
-    {8, USART_BAUDRATE_CD},
+    {0, NULL, 9},
+    {1, NULL, 9},
+    {5, NULL, PSKEY_BAUDRATE},
+    {6, NULL, 1},
+    {8, NULL, USART_BAUDRATE_CD},
+#if SET_BDADDR
+    {0, NULL, 11},
+    {5, NULL, PSKEY_BDADDR},
+    {6, NULL, 3},
+    {8, bt_ps_set_bdaddr, 0},
+    {9, bt_ps_set_bdaddr, 2},
+    {10, bt_ps_set_bdaddr, 4},
+#endif
 #if SET_HOST_UART_HW_FLOW
-    {0, 9},
-    {5, PSKEY_UART_CONFIG_BCSP},
-    {6, 1},
-    {8, 0x0802}, // hw flow on (default 0x0806)
+    {0, NULL, 9},
+    {5, NULL, PSKEY_UART_CONFIG_BCSP},
+    {6, NULL, 1},
+    {8, NULL, 0x0802}, // hw flow on (default 0x0806)
 #endif
 
 #if SET_HOST_WAKE_UART_BREAK
-    {0, 9},
-    {5, PSKEY_UART_HOST_WAKE_SIGNAL},
-    {6, 1},
-    {8, 3}, /*  
+    {0, NULL, 9},
+    {5, NULL, PSKEY_UART_HOST_WAKE_SIGNAL},
+    {6, NULL, 1},
+    {8, NULL, 3}, /*  
         bit 0 - 3
         0 - repeated byte sequence (only for H4DS)
         1 - positive pulse on PIO
@@ -122,11 +134,11 @@ static struct bccmd_index_value {
             1 => PIO[1] 
             ...
             */
-    {0, 12},
-    {5, PSKEY_UART_HOST_WAKE},
-    {6, 4},     
-    {8, 0x0001},    // 1 enable, 4 - disable
-    {9, 0x01f4},    /* Sleep_Delay = 500ms
+    {0, NULL, 12},
+    {5, NULL, PSKEY_UART_HOST_WAKE},
+    {6, NULL, 4},     
+    {8, NULL, 0x0001},    // 1 enable, 4 - disable
+    {9, NULL, 0x01f4},    /* Sleep_Delay = 500ms
         Sleep_Delay: Milliseconds after tx to host or rx from host,
 after which host will be assumed to have gone into
 deep sleep state. (Range 1 -> 65535)
@@ -135,47 +147,47 @@ recommended that this is greater than the
 acknowledge delay (set by PSKEY_UART_ACK_TIMEOUT)
                     */
 
-    {10, 0x0001},   /* Break_Length = 5ms (1 - 1000)
+    {10, NULL, 0x0001},   /* Break_Length = 5ms (1 - 1000)
 Duration of wake signal in milliseconds (Range 1 -> 1000)
                     */
-    {11, 0x0020},   /* Pause_Length = 32ms (0 - 1000)
+    {11, NULL, 0x0020},   /* Pause_Length = 32ms (0 - 1000)
 Pause_Length: Milliseconds between end of wake signal and sending data
 to the host. (Range 0 -> 1000.)
                     */
 
 #elif SET_HOST_WAKE_PIO
-    {0, 9},
-    {5, PSKEY_UART_HOST_WAKE_SIGNAL},
-    {6, 1},
-    {8, 0x1}, // enable PIO #0 POSITIVE EDGE (pppp0001)
+    {0, NULL, 9},
+    {5, NULL, PSKEY_UART_HOST_WAKE_SIGNAL},
+    {6, NULL, 1},
+    {8, NULL, 0x1}, // enable PIO #0 POSITIVE EDGE (pppp0001)
 
-    {0, 12},
-    {5, PSKEY_UART_HOST_WAKE},
-    {6, 4},
-    {8, 0x0001},    // 1 enable, 4 - disable
-    //{9, 0x01f4},    // sleep timeout = 500ms
-    {9, 0x01f4},    // sleep timeout = 500ms
-    {10, 0x0005},   // break len = 5ms
-    {11, 0x0020},   // pause length = 32ms
+    {0, NULL, 12},
+    {5, NULL, PSKEY_UART_HOST_WAKE},
+    {6, NULL, 4},
+    {8, NULL, 0x0001},    // 1 enable, 4 - disable
+    //{9, NULL, 0x01f4},    // sleep timeout = 500ms
+    {9, NULL, 0x01f4},    // sleep timeout = 500ms
+    {10, NULL, 0x0005},   // break len = 5ms
+    {11, NULL, 0x0020},   // pause length = 32ms
 #endif
 
 #if SET_TX_POWER
-    {0, 9},
-    {5, PSKEY_LC_MAX_TX_POWER},
-    {6, 1},
-    {8, TX_POWER},
+    {0, NULL, 9},
+    {5, NULL, PSKEY_LC_MAX_TX_POWER},
+    {6, NULL, 1},
+    {8, NULL, TX_POWER},
 
-    {0, 9},
-    {5, PSKEY_LC_DEFAULT_TX_POWER},
-    {6, 1},
-    {8, TX_POWER},
+    {0, NULL, 9},
+    {5, NULL, PSKEY_LC_DEFAULT_TX_POWER},
+    {6, NULL, 1},
+    {8, NULL, TX_POWER},
 
-    {0, 9},
-    {5, PSKEY_LC_MAX_TX_POWER_NO_RSSI},
-    {6, 1},
-    {8, TX_POWER},
+    {0, NULL, 9},
+    {5, NULL, PSKEY_LC_MAX_TX_POWER_NO_RSSI},
+    {6, NULL, 1},
+    {8, NULL, TX_POWER},
 #endif
-    {0, 0}
+    {0, NULL, 0}
 };
 
 /* -------------------- The task -------------------- */
@@ -288,7 +300,7 @@ void phybusif_output(struct pbuf *p, u16_t len)
     u8_t *msg = malloc(len);
     if (msg == NULL) {
         TRACE_ERROR("NOMEM\r\n");
-        panic();
+        panic("phybusif_output 1");
         return;
     }
     // TODO: pbuf2buf()
@@ -299,7 +311,7 @@ void phybusif_output(struct pbuf *p, u16_t len)
     while (remain) {
         if (q == NULL) {
             TRACE_ERROR("PBUF=NULL\r\n");
-            panic();
+            panic("phybusif_output 2");
             return;
         }
         int offset = count ? 0 : 1; // to ignore payload[0] = packet type
@@ -484,7 +496,12 @@ static void u_bt_task(bt_command *cmd)
                     while(1) {
                         struct bccmd_index_value *ps_setrq_value = &ps_setrq[ps_setrq_count];        
                         if (ps_setrq_value->index) {
-                            bccmd[ps_setrq_value->index] = ps_setrq_value->value;
+                            uint16_t value;
+                            if (ps_setrq_value->func_value) {
+                                bccmd[ps_setrq_value->index] = (*ps_setrq_value->func_value)(ps_setrq_value->value);
+                            } else {
+                                bccmd[ps_setrq_value->index] = ps_setrq_value->value;
+                            }
                             ps_setrq_count++;
                         } else if (bccmd) {
                             queueMessage(BCCMD_CHANNEL, 1, size, bccmd);
@@ -494,7 +511,7 @@ static void u_bt_task(bt_command *cmd)
                             size = sizeof(uint16_t) * len;
                             bccmd = malloc(size);
                             if (bccmd == NULL) {
-                                panic();
+                                panic("u_bt_task 1");
                             }
                             memset(bccmd, 0, size);
 
@@ -526,7 +543,7 @@ static void u_bt_task(bt_command *cmd)
                 StartTimer(250000, restartHandler);
                 break;
             default:
-                panic();
+                panic("u_bt_task 2");
         }
 	}
     TRACE_BT("u_bt_task end\r\n");
@@ -598,12 +615,41 @@ static void restartHandler()
 volatile AT91PS_PIO  pPIOB = AT91C_BASE_PIOB;
 volatile AT91PS_PIO  pPIOA = AT91C_BASE_PIOA;
 
+//extern volatile portTickType xTickCount;
+
+static bool bt_wakeup_pin_high = false;
+
+void bt_io_isr_handler(void *context) {
+
+    bt_wakeup_pin_high = !bt_wakeup_pin_high;
+
+    if (!bt_wakeup_pin_high) {
+        return;
+    }
+
+    //TRACE_INFO("bt_io_isr_handler %d\r\n", xTickCount);
+    TRACE_INFO("bt_io_isr_handler %d\r\n", Timer_tick_count_nonblock());
+    portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+
+    uint16_t event = 1;
+    xQueueSendFromISR(bt_wakeup_queue, &event, &xHigherPriorityTaskWoken);
+/*
+    xSemaphoreGiveFromISR(bt_wakeup_semaphore, &xHigherPriorityTaskWoken);
+
+    //AT91C_BASE_PIOB->PIO_IDR = BC_WAKEUP_MASK; 
+
+*/
+    if( xHigherPriorityTaskWoken ) {
+        portYIELD_FROM_ISR();
+    }
+}
+
 void bt_task(void *p)
 //int bcsp_main()
 {
     TRACE_BT("bt_task %x\r\n", xTaskGetCurrentTaskHandle());
 
-    bt_wakeup_queue = xQueueCreate(1, 2);
+    bt_wakeup_queue = xQueueCreate(1, sizeof(uint16_t));
     vSemaphoreCreateBinary(bt_wakeup_semaphore);
     xSemaphoreTake(bt_wakeup_semaphore, -1);
 
@@ -758,21 +804,10 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     Task_sleep(10);
 
     pPIOB->PIO_PDR = BCBOOT0_MASK | BCBOOT1_MASK | BCBOOT2_MASK;
-#if 1
     Io_init(&bt_gpio, IO_PB23, IO_GPIO, INPUT);
-    Io_addInterruptHandler(&bt_gpio, bt_isr, NULL);
+// TODO: Io_addInterruptHandler() max 8 handlers!!! To be moved to bt_init() probably
+    Io_addInterruptHandler(&bt_gpio, bt_io_isr_handler, NULL);
     //AT91C_BASE_PIOB->PIO_IDR = BC_WAKEUP_MASK;
-#else
-
-    pPIOB->PIO_PER = BC_WAKEUP_MASK;
-    pPIOB->PIO_ODR = BC_WAKEUP_MASK;
-    pPIOB->PIO_IDR = BC_WAKEUP_MASK;
-
-    //AIC_ConfigureIT(AT91C_ID_PIOB, AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 3, bt_isr_wrapper);
-    AIC_ConfigureIT(AT91C_ID_PIOB, AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 3, bt_isr_wrapper);
-    pPIOB->PIO_IER = BC_WAKEUP_MASK;
-    AT91C_BASE_AIC->AIC_IECR = 1 << AT91C_ID_PIOB;
-#endif
 
     ps_setrq_count = 0;
 
@@ -793,7 +828,7 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
         CloseMicroSched();
     }
 
-#if 0
+#if 1
     Io_removeInterruptHandler(&bt_gpio);
 #else
     pPIOB->PIO_PDR = BC_WAKEUP_MASK;
@@ -864,6 +899,52 @@ int bt_wait_for_data(void) {
     }
 */
     return 1;
+}
+
+
+/*
+// PSKEY_BDADDR
+&0001 = 0000 a5a5 005b 0002
+
+human readable
+00:02:5b:00:a5:a5
+
+00:02:5b - Cambridge Silicon
+*/
+
+#include <ff.h>
+
+int bt_read_bdaddr_from_disk (const char *path, struct bd_addr *bdaddr) {
+    FATFS fatfs;
+    FRESULT f;
+    int err = 0;
+
+    if ((f = disk_initialize (0)) != FR_OK) {
+        f_printerror (f);
+        return 1;
+    }
+    if ((f = f_mount (0, &fatfs)) != FR_OK) {
+        f_printerror (f);
+        return 1;
+    }
+
+    FILE *file = fopen(path, "r");
+
+    if (file == NULL) {
+        err = 1;
+    } else {
+        int res = fscanf(file, "%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx", &bdaddr->addr[0], &bdaddr->addr[1], &bdaddr->addr[2], &bdaddr->addr[3], &bdaddr->addr[4], &bdaddr->addr[5]);
+
+        if (res == EOF || res != 6)
+            err = 1;
+
+        fclose(file);
+    }
+
+    if ((f = f_mount (0, NULL)) != FR_OK) {
+        f_printerror (f);
+    }
+    return err;
 }
 
 // commands 

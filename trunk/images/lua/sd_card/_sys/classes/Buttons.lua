@@ -23,6 +23,8 @@ function class:update_matrix(event)
 	else
 		assert(action == "button_hold")
 		self.matrix[button] = 0 - dynawa.ticks()
+        log("dynawa.x.audio_play()")
+        dynawa.x.audio_play()
 	end
 --[[	for k,v in pairs(self.matrix) do
 		log(k..":"..v)

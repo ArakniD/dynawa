@@ -872,7 +872,7 @@ err_t link_key_not(void *arg, struct bd_addr *bdaddr, u8_t *key)
 
     struct bt_bdaddr_link_key *ev_bdaddr_link_key = malloc(sizeof(struct bt_bdaddr_link_key));
     if (ev_bdaddr_link_key == NULL) {
-        panic(); 
+        panic("link_key_not"); 
     }
     byte_memcpy(&ev_bdaddr_link_key->bdaddr, bdaddr, sizeof(struct bd_addr));
     memcpy(&ev_bdaddr_link_key->link_key, key, sizeof(struct bt_link_key));
@@ -905,7 +905,7 @@ err_t link_key_req(void *arg, struct bd_addr *bdaddr)
     struct bd_addr *ev_bdaddr = malloc(sizeof(struct bd_addr));
     
     if (ev_bdaddr == NULL) {
-        panic(); 
+        panic("link_key_req"); 
     }
 
     byte_memcpy(ev_bdaddr, bdaddr, sizeof(struct bd_addr));
@@ -1563,7 +1563,7 @@ void _bt_rfcomm_send(bt_socket *sock, struct pbuf *p) {
     struct rfcomm_pcb *pcb = sock->pcb;
 
     if (pcb == NULL) {
-        panic();
+        panic("_bt_rfcomm_send");
     }
 
     // TODO: check if pcb valid

@@ -35,8 +35,10 @@ extern Timer_Manager *p_timer_manager;
 void TimerIsr_Wrapper( );
 
 uint32_t _timer_tick_count = 0;
+uint32_t _timer_tick_count2 = 0;
 
 static xSemaphoreHandle timer_mutex;
+static xSemaphoreHandle tick_count_mutex;
 
 
 /**
@@ -106,9 +108,10 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
 
     TRACE_TMR(">>Timer_start %x %d %d %d %d\r\n", timer, millis, repeat, freeOnStop, timer_manager.servicing);
     // this could be a lot smarter - for example, modifying the current period?
-    if (sync && !timer_manager.servicing ) 
+    if (sync && !timer_manager.servicing ) {
         Task_enterCritical();
         //xSemaphoreTake(timer_mutex, -1);
+    }
 
     TIMER_DBG_PROCESSING(true);
     if ( !timer_manager.running )
@@ -195,9 +198,10 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
     }
 
     TIMER_DBG_PROCESSING(false);
-    if (sync && !timer_manager.servicing ) 
+    if (sync && !timer_manager.servicing ) {
         Task_exitCritical();
         //xSemaphoreGive(timer_mutex);
+    }
 
     TRACE_TMR("<<Timer_start %x\r\n", timer);
     return CONTROLLER_OK;
@@ -210,9 +214,10 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
 int Timer_stop( Timer *timer )
 {
     TRACE_TMR(">>Timer_stop %x\r\n", timer);
-    if (sync && !timer_manager.servicing ) 
+    if (sync && !timer_manager.servicing ) {
         Task_enterCritical();
         //xSemaphoreTake(timer_mutex, -1);
+    }
     TIMER_DBG_PROCESSING(true);
 
 // MV TODO: reschedule timer?
@@ -228,7 +233,8 @@ int Timer_stop( Timer *timer )
             TRACE_TMR("found %x %d\r\n", timer, timer_manager.servicing);
             if (te == te->next) {
                 TRACE_ERROR("TIMER infinite loop %x %x\r\n", timer, te); 
-                while(1);
+                //while(1);
+                panic("Timer_stop 1");
             }
             // remove the entry from the list
             if ( te == timer_manager.first ) {
@@ -262,15 +268,17 @@ int Timer_stop( Timer *timer )
 
             if (te == te->next) {
                 TRACE_ERROR("TIMER2 infinite loop %x %x\r\n", timer, te); 
-                while(1);
+                //while(1);
+                panic("Timer_stop 2");
             }
         }
     }
 
     TIMER_DBG_PROCESSING(false);
-    if (sync && !timer_manager.servicing ) 
+    if (sync && !timer_manager.servicing ) {
         Task_exitCritical();
         //xSemaphoreGive(timer_mutex);
+    }
 
     TRACE_TMR("<<Timer_stop %x\r\n", timer);
     return CONTROLLER_OK;
@@ -303,6 +311,7 @@ void Timer_setTimeTarget( int target )
 
 int Timer_managerInit(int timerindex)
 {
+    tick_count_mutex = xSemaphoreCreateMutex();
     timer_mutex = xSemaphoreCreateMutex();
     if(timer_mutex == NULL) {
         return CONTROLLER_ERROR_INSUFFICIENT_RESOURCES;
@@ -382,6 +391,7 @@ void Timer_managerDeinit( )
     AT91C_BASE_PMC->PMC_PCDR = mask; // power down
 
     vQueueDelete(timer_mutex);
+    vQueueDelete(tick_count_mutex);
 }
 
 // MV
@@ -389,26 +399,93 @@ void Timer_setProcessingFlag(bool state)
 {
     if (state && timer_processing) {
         TRACE_ERROR("TIMER REENTERED!!!\r\n");
-        while(1);
+        //while(1);
+        panic("Timer_setProcessingFlag");
     }
     timer_processing = state;
 }
 
-static uint32_t last_tick_count = 0;
+//static uint32_t last_tick_count = 0;
+
 uint32_t Timer_tick_count() {
-#if 0
-    return timeval;
+#if 1
+    return _timer_tick_count2;
 #else
     unsigned int mask = 0x1 << timer_manager.channel_id;
+    xSemaphoreTake(tick_count_mutex, -1);
     timer_manager.tc->TC_IDR = AT91C_TC_CPCS; 
     uint32_t ticks = _timer_tick_count + timer_manager.tc->TC_CV / TIMER_CYCLES_PER_MS;
     timer_manager.tc->TC_IER = AT91C_TC_CPCS; 
+    xSemaphoreGive(tick_count_mutex);
     //TRACE_INFO("ticks: %x\r\n", ticks);
 /*
     if (ticks < last_tick_count) {
-        panic();
+        panic("Timer_tick_count");
     last_tick_count = ticks;
 */
     return ticks;
 #endif
+}
+
+uint32_t Timer_tick_count_nonblock() {
+#if 1
+    return _timer_tick_count2;
+#else
+    unsigned int mask = 0x1 << timer_manager.channel_id;
+    //xSemaphoreTake(tick_count_mutex, -1);
+    timer_manager.tc->TC_IDR = AT91C_TC_CPCS; 
+    uint32_t ticks = _timer_tick_count + timer_manager.tc->TC_CV / TIMER_CYCLES_PER_MS;
+    timer_manager.tc->TC_IER = AT91C_TC_CPCS; 
+    //xSemaphoreGive(tick_count_mutex);
+    //TRACE_INFO("ticks: %x\r\n", ticks);
+/*
+    if (ticks < last_tick_count) {
+        panic("Timer_tick_count_nonblock");
+    last_tick_count = ticks;
+*/
+    return ticks;
+#endif
+}
+
+uint32_t Timer_tick_count_nonblock2() {
+#if 1
+    return _timer_tick_count2;
+#else
+    unsigned int mask = 0x1 << timer_manager.channel_id;
+    //xSemaphoreTake(tick_count_mutex, -1);
+    taskENTER_CRITICAL();
+    timer_manager.tc->TC_IDR = AT91C_TC_CPCS; 
+    uint32_t ticks = _timer_tick_count + timer_manager.tc->TC_CV / TIMER_CYCLES_PER_MS;
+    timer_manager.tc->TC_IER = AT91C_TC_CPCS; 
+    taskEXIT_CRITICAL();
+    //xSemaphoreGive(tick_count_mutex);
+    //TRACE_INFO("ticks: %x\r\n", ticks);
+/*
+    if (ticks < last_tick_count) {
+        panic("Timer_tick_count_nonblock");
+    last_tick_count = ticks;
+*/
+    return ticks;
+#endif
+}
+
+uint32_t Timer_tick_count_nonblock3() {
+    uint32_t ticks = _timer_tick_count + timer_manager.tc->TC_CV / TIMER_CYCLES_PER_MS;
+    return ticks;
+}
+
+void Timer_tick_count_sleep() {
+    _timer_tick_count = 0;
+}
+
+uint32_t Timer_tick_count_wakeup(uint32_t delta) {
+    //timer_manager.tc->TC_IDR = AT91C_TC_CPCS; 
+    //uint32_t delta = _timer_tick_count + timer_manager.tc->TC_CV / TIMER_CYCLES_PER_MS;
+    //timer_manager.tc->TC_IER = AT91C_TC_CPCS; 
+    _timer_tick_count2 += delta;
+    return delta;
+}
+
+void vApplicationTickHook( void ) {
+    _timer_tick_count2++;
 }

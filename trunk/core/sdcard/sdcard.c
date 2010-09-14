@@ -615,6 +615,7 @@ int8_t sd_readsector(uint32_t lba,
     {
         sd_send_dummys(); // cleanup and  
         spi_unlock();
+        TRACE_ERROR("sd_readsector() error: cmd response timeout\r\n");
         return SD_ERROR;   // return error code
     }
 
@@ -622,6 +623,7 @@ int8_t sd_readsector(uint32_t lba,
     {
         sd_send_dummys(); // cleanup and  
         spi_unlock();
+        TRACE_ERROR("sd_readsector() error: data packet timeout\r\n");
         return SD_ERROR;   // return error code
     }
 
@@ -722,6 +724,7 @@ int8_t sd_writesector(uint32_t lba,
     {
         sd_send_dummys(); // cleanup and
         spi_unlock();
+        TRACE_ERROR("sd_writesector() error: cmd response timeout\r\n");
         return SD_ERROR;   // return error code
     }
 
@@ -745,6 +748,7 @@ int8_t sd_writesector(uint32_t lba,
     {
         sd_send_dummys(); // cleanup and
         spi_unlock();
+        TRACE_ERROR("sd_writesector() error: data response timeout\r\n");
         return SD_ERROR;   // return error code
     }
 
@@ -769,6 +773,7 @@ int8_t sd_writesector(uint32_t lba,
             //spi_unlock();
             sd_send_dummys();   // cleanup and
             spi_unlock();
+            TRACE_ERROR("sd_writesector() error: busy timeout\r\n");
             return SD_ERROR;    // return failure
         }
 

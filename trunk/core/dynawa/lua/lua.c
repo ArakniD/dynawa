@@ -62,7 +62,7 @@ int lua_event_loop (void) {
         TRACE_ERROR("lua: %s\r\n", lua_tostring(L, -1));
         lua_pop(L, 1);
         lua_close(L);
-        panic();
+        panic("_sys/boot.lua");
     }
 
     ticks = xTaskGetTickCount() - ticks;
@@ -425,6 +425,18 @@ int lua_event_loop (void) {
             lua_pushnumber(L, ev.data.accel.gesture);
             lua_settable(L, -3);
             break;
+        case EVENT_AUDIO:
+            TRACE_LUA("EVENT_AUDIO\r\n");
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "audio");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "data");
+            lua_pushnumber(L, ev.data.audio.data);
+            lua_settable(L, -3);
+            break;
         default:
             TRACE_ERROR("Uknown event %x\r\n", ev.type);
         }
@@ -448,7 +460,7 @@ int lua_event_loop (void) {
         if (error) {
             TRACE_ERROR("lua: %s", lua_tostring(L, -1));
             lua_pop(L, 1);
-            panic();
+            panic("lua error");
         }
         //fflush(stdout);
     }
@@ -456,7 +468,7 @@ int lua_event_loop (void) {
     return 0;  
 }
 
-
+#if 0
 char *my_gets (char *buff, int len) {
   
   char b[256];
@@ -617,6 +629,6 @@ int lua_main (void) {
   lua_close(L);
   return 0;  
 }
-
+#endif
 
 

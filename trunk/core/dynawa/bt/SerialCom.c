@@ -167,7 +167,7 @@ void txThreadFunc(void)
 		//event = WaitForMultipleObjects(NO_OF_TX_EVENTS, txEvents, FALSE, INFINITE);
         //TRACE_BT("txevent wait\r\n");
         //TRACE_INFO("txevent wait %d\r\n", xTickCount);
-        TRACE_INFO("txevent wait %d\r\n", Timer_tick_count());
+        //TRACE_INFO("txevent wait %d\r\n", Timer_tick_count());
         xQueueReceive(txEvents, &event, portMAX_DELAY); 
         //TRACE_BT("txevent\r\n");
         //event = NEW_TX_DATA_EVENT;
@@ -573,6 +573,11 @@ void rxThreadFunc(void)
 	uint16_t		numberToRead;
     int         ringBuffCycle = 0;
 
+// TEST
+xSemaphoreHandle sleep_sem;
+vSemaphoreCreateBinary(sleep_sem);
+xSemaphoreTake(sleep_sem, -1);
+
 	rxData = rxBuf;
 	rxSize = 0;
 
@@ -641,7 +646,7 @@ void rxThreadFunc(void)
 #else
             // Polling every 10ms
             //TRACE_SER("Read %d\r\n", xTickCount);
-            TRACE_SER("Read %d\r\n", Timer_tick_count());
+            //TRACE_SER("Read %d\r\n", Timer_tick_count());
             int waitCount = 0;
             while (1) {
                 int rcr;
@@ -664,11 +669,12 @@ void rxThreadFunc(void)
                 //TRACE_BT("WAITTING\r\n");
                 if (waitCount == 0) {
                     //TRACE_INFO("WAITTING %d\r\n", xTickCount);
-                    TRACE_INFO("WAITTING %d\r\n", Timer_tick_count());
+                    //TRACE_INFO("WAITTING %d\r\n", Timer_tick_count());
                 }
                 if (1 || waitCount < 40) {
                 //if (waitCount < 40) {
-                    Task_sleep(10);
+                    //Task_sleep(10);
+                    sleep2(sleep_sem, 10);
                     waitCount++;
                 } else {
                     //Serial_waitForData(SERIAL_CHANNEL, -1);
@@ -726,6 +732,7 @@ void rxThreadFunc(void)
 		}
 	}	/*	end while	*/
 
+vQueueDelete(sleep_sem);
     vTaskDelete(NULL);
 }
 

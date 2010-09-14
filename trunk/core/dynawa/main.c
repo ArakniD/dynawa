@@ -222,14 +222,15 @@ static void prvSetupHardware( void )
 }
 
 #ifdef CFG_PM
-static int toggle;
+//static int toggle;
 static uint32_t total_time_slept = 0;
 
 void vApplicationIdleHook( void )
 {
     //TRACE_INFO("vApplicationIdleHook\r\n");
-    toggle = !toggle; // prevent the function from being optimized away?
+    //toggle = !toggle; // prevent the function from being optimized away?
 
+    vTaskSuspendAll();
     // disable PIT (FreeRTOS ticks)
     //AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITEN;
     AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITIEN;
@@ -238,18 +239,36 @@ void vApplicationIdleHook( void )
         Task_sleep() can't be used
         Semaphore/Queue get funcs with timeout can't be used
     */
-    uint32_t sleep_time = Timer_tick_count();
+    //uint32_t sleep_time = Timer_tick_count_nonblock();
+    //uint32_t sleep_time = Timer_tick_count_nonblock2();
+    uint32_t sleep_time = Timer_tick_count_nonblock3();
+    //OK uint32_t sleep_time = Timer_tick_count();
+
     //TRACE_INFO("going to sleep %d\r\n", sleep_time);
+    //OK Timer_tick_count_sleep();
     AT91C_BASE_PMC->PMC_SCDR = AT91C_PMC_PCK;
     // CPU in idle mode now, waiting for IRQ
 
-    uint32_t wakeup_time = Timer_tick_count();
+    //OK Timer_tick_count_wakeup();
+
+    //uint32_t wakeup_time = Timer_tick_count_nonblock();
+    uint32_t wakeup_time = Timer_tick_count_nonblock3();
+    //uint32_t wakeup_time = Timer_tick_count_nonblock2();
+    //OK uint32_t wakeup_time = Timer_tick_count();
+
     uint32_t time_slept = wakeup_time - sleep_time;
     total_time_slept += time_slept;
+    Timer_tick_count_wakeup(time_slept);
     //TRACE_INFO("waking up %d %d %d %d%%\r\n", wakeup_time, time_slept, total_time_slept, total_time_slept * 100 / wakeup_time);
     // enable PIT (FreeRTOS ticks)
     AT91C_BASE_PITC->PITC_PIMR |= AT91C_PITC_PITIEN;
+    xTaskResumeAll();
 }
 #endif
+
+void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTaskName ) {
+    panic("stack overflow");
+}
+
 
 

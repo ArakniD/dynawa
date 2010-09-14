@@ -13,7 +13,7 @@ void abort_dump() {
 */
     //TRACE_ERROR("\r\nABORT %x %x\r\n", &__abort_typ, &__abort_mem);
     AT91C_BASE_AIC->AIC_IDCR = 0xffffffff;
-    TRACE_ERROR("\r\nABORT %x %x\r\n", __abort_typ, __abort_mem);
-    panic();
+    //TRACE_ERROR("\r\nABORT %x %x\r\n", __abort_typ, __abort_mem);
+    panic_abort(__abort_typ, __abort_mem);
 }
 

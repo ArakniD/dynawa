@@ -58,7 +58,7 @@ static int l_cmd (lua_State *L) {
 
             bt_lua_socket *sock = bt_socket_new();
             if (sock == NULL) {
-                panic();
+                panic("bt_socket_new");
             }
 
             sock->ref_lua_socket = ref_lua_socket;

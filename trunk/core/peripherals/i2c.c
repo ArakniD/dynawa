@@ -180,7 +180,7 @@ static xSemaphoreHandle i2c_mutex;
 int i2c_init() {
     i2c_mutex = xSemaphoreCreateMutex();
     if(i2c_mutex == NULL)
-        panic();
+        panic("i2c_init");
     return 0;
 }
 

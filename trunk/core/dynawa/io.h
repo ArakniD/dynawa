@@ -1,19 +1,19 @@
 /*********************************************************************************
 
- Copyright 2006-2009 MakingThings
+  Copyright 2006-2009 MakingThings
 
- Licensed under the Apache License, 
- Version 2.0 (the "License"); you may not use this file except in compliance 
- with the License. You may obtain a copy of the License at
+  Licensed under the Apache License, 
+  Version 2.0 (the "License"); you may not use this file except in compliance 
+  with the License. You may obtain a copy of the License at
 
- http://www.apache.org/licenses/LICENSE-2.0 
- 
- Unless required by applicable law or agreed to in writing, software distributed
- under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- CONDITIONS OF ANY KIND, either express or implied. See the License for
- the specific language governing permissions and limitations under the License.
+http://www.apache.org/licenses/LICENSE-2.0 
 
-*********************************************************************************/
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for
+the specific language governing permissions and limitations under the License.
+
+ *********************************************************************************/
 
 
 #ifndef IO_H
@@ -27,69 +27,72 @@
 #define INPUT false
 #define INVALID_PIN 1024 // a value too large for any pin
 
+#define MAX_INTERRUPT_SOURCES 8
+
 /**
   Control any of the 35 Input/Output signals on the Make Controller.
-  
+
   Each of the signals on the Make Controller can be used as a digital in/out, and many
   can be used as part of one of the peripherals on the board (serial, usb, etc).  The Io 
   class allows you to easily control these signals.
-  
+
   \section Usage
   The most common way to use the Io system is to control pins as GPIO (general purpose in/out).
   To do this, create a new Io object, specifying that you want it to be a GPIO and whether it should
   be an input or an output.  Check the list of signal names at \ref IoIndices.
-  
+
   \code
   Io mysensor(IO_PA08, Io::GPIO, INPUT); // a new digital in on PA08, as a GPIO input
   bool isOn = mysensor.value(); // now read the input with the value() method
   \endcode
-  
+
   You can just as easily set it up as a digital out, and turn it on and off:
   \code
   Io myLED(IO_PA08, Io::GPIO, OUTPUT); // a new digital in on PA08, as a GPIO output
   myLED.on(); // turn it on
   myLED.off(); // turn it off
-  // or do it with setValue if you want to keep the state in a variable
-  bool state = true;
-  myLED.setValue(state); // turn it on
-  state = false;
-  myLED.setValue(state); // turn it off
-  
-  // we can even change it back into an input
-  myLED.setDirection(INPUT);
-  // hmm...the myLED name doesn't make so much sense now...oh well
-  \endcode
-  
-  \section Interrupts
-  You can also register to get notified automatically, when the status on an Io
-  line changes, rather than constantly reading the value to see if it has changed.  
-  This can be much more efficient - see addInterruptHandler() and removeInterruptHandler() 
-  for details.
-  
-  \section settings Additional Settings
-  Each Io pin also has some additional settings that can optionally be configured.
-  - \b Pullup - each signal has an optional pullup resistor that can be enabled.  To 
-  configure this, use the pullup() and setPullup() methods.
-  - <b>Glitch Filter</b> - each signal also has a glitch filter that can help reject 
-  short signals (most signals less than a master clock cycle, which is roughly 20 ns).
-  Check the filter() and setFilter() methods.
-  
-  \ingroup io
+// or do it with setValue if you want to keep the state in a variable
+bool state = true;
+myLED.setValue(state); // turn it on
+state = false;
+myLED.setValue(state); // turn it off
+
+// we can even change it back into an input
+myLED.setDirection(INPUT);
+// hmm...the myLED name doesn't make so much sense now...oh well
+\endcode
+
+\section Interrupts
+You can also register to get notified automatically, when the status on an Io
+line changes, rather than constantly reading the value to see if it has changed.  
+This can be much more efficient - see addInterruptHandler() and removeInterruptHandler() 
+for details.
+
+\section settings Additional Settings
+Each Io pin also has some additional settings that can optionally be configured.
+- \b Pullup - each signal has an optional pullup resistor that can be enabled.  To 
+configure this, use the pullup() and setPullup() methods.
+- <b>Glitch Filter</b> - each signal also has a glitch filter that can help reject 
+short signals (most signals less than a master clock cycle, which is roughly 20 ns).
+Check the filter() and setFilter() methods.
+
+\ingroup io
 */
 typedef enum { 
-IO_A,    /**< Peripheral A - refer to as Io::A */
-IO_B,    /**< Peripheral B - refer to as Io::B */
-IO_GPIO  /**< General Purpose IO - refer to as Io::GPIO */
+    IO_A,    /**< Peripheral A - refer to as Io::A */
+    IO_B,    /**< Peripheral B - refer to as Io::B */
+    IO_C,    /**< Peripheral C - refer to as Io::C */
+    IO_GPIO  /**< General Purpose IO - refer to as Io::GPIO */
 } Io_Peripheral;
 
 typedef void (*handler) (void*);
 
 typedef struct
 {
-void* context;
-void (*handler)(void*);
-unsigned int mask;
-AT91S_PIO* port;
+    void* context;
+    void (*handler)(void*);
+    unsigned int mask;
+    AT91S_PIO* port;
 } Io_InterruptSource;
 
 //static Io_InterruptSource isrSources[]; /// List of interrupt sources.
@@ -100,16 +103,17 @@ AT91S_PIO* port;
 
 typedef struct
 {
-  /**
-    Available options for peripheral config.
-    Each pin can be configured as a general purpose input or output, or
-    can be part of a peripheral (such as a serial port, etc.)
-  */
-  
-  Io_Peripheral peripheral;
-  unsigned int io_pin;
-  AT91S_PIO* basePort;
-  unsigned int mask;
+    /**
+      Available options for peripheral config.
+      Each pin can be configured as a general purpose input or output, or
+      can be part of a peripheral (such as a serial port, etc.)
+      */
+
+    Io_Peripheral peripheral;
+    unsigned int io_pin;
+    AT91S_PIO* basePort;
+    unsigned int mask;
+    int InterruptSourceIndex;
 } Io;
 
 //Io *Io_new( int pin = INVALID_PIN, Peripheral = GPIO, bool output = OUTPUT );
@@ -150,11 +154,11 @@ void Io_Isr( AT91S_PIO* basePio );
 
 /**
   \defgroup IoIndices IO Indices
-  Indices (0-63) for each of the processor's IO lines.  PA0-PA31 are represented
-  by indices 0 - 31, PB0-PB31 by indices 32 - 63.
+  Indices (0-95) for each of the processor's IO lines.  PA0-PA31 are represented
+  by indices 0 - 31, PB0-PB31 by indices 32 - 63, PC0-PC31 by indices 64 - 95.
   \ingroup Io
   @{
-*/
+  */
 
 
 #define IO_PA00  0 /**< IO 0, Port A */
@@ -223,10 +227,43 @@ void Io_Isr( AT91S_PIO* basePio );
 #define IO_PB30 ( 32 + 30 ) /**< IO 30, Port B */
 #define IO_PB31 ( 32 + 31 ) /**< IO 31, Port B */
 
+#define IO_PC00 ( 64 +  0 ) /**< IO 0, Port C */
+#define IO_PC01 ( 64 +  1 ) /**< IO 1, Port C */
+#define IO_PC02 ( 64 +  2 ) /**< IO 2, Port C */
+#define IO_PC03 ( 64 +  3 ) /**< IO 3, Port C */
+#define IO_PC04 ( 64 +  4 ) /**< IO 4, Port C */
+#define IO_PC05 ( 64 +  5 ) /**< IO 5, Port C */
+#define IO_PC06 ( 64 +  6 ) /**< IO 6, Port C */
+#define IO_PC07 ( 64 +  7 ) /**< IO 7, Port C */
+#define IO_PC08 ( 64 +  8 ) /**< IO 8, Port C */
+#define IO_PC09 ( 64 +  9 ) /**< IO 9, Port C */
+#define IO_PC10 ( 64 + 10 ) /**< IO 10, Port C */
+#define IO_PC11 ( 64 + 11 ) /**< IO 11, Port C */
+#define IO_PC12 ( 64 + 12 ) /**< IO 12, Port C */
+#define IO_PC13 ( 64 + 13 ) /**< IO 13, Port C */
+#define IO_PC14 ( 64 + 14 ) /**< IO 14, Port C */
+#define IO_PC15 ( 64 + 15 ) /**< IO 15, Port C */
+#define IO_PC16 ( 64 + 16 ) /**< IO 16, Port C */
+#define IO_PC17 ( 64 + 17 ) /**< IO 17, Port C */
+#define IO_PC18 ( 64 + 18 ) /**< IO 18, Port C */
+#define IO_PC19 ( 64 + 19 ) /**< IO 19, Port C */
+#define IO_PC20 ( 64 + 20 ) /**< IO 20, Port C */
+#define IO_PC21 ( 64 + 21 ) /**< IO 21, Port C */
+#define IO_PC22 ( 64 + 22 ) /**< IO 22, Port C */
+#define IO_PC23 ( 64 + 23 ) /**< IO 23, Port C */
+#define IO_PC24 ( 64 + 24 ) /**< IO 24, Port C */
+#define IO_PC25 ( 64 + 25 ) /**< IO 25, Port C */
+#define IO_PC26 ( 64 + 26 ) /**< IO 26, Port C */
+#define IO_PC27 ( 64 + 27 ) /**< IO 27, Port C */
+#define IO_PC28 ( 64 + 28 ) /**< IO 28, Port C */
+#define IO_PC29 ( 64 + 29 ) /**< IO 29, Port C */
+#define IO_PC30 ( 64 + 30 ) /**< IO 30, Port C */
+#define IO_PC31 ( 64 + 31 ) /**< IO 31, Port C */
+
 /* @} */
 
 /**
-\defgroup IoBits IO Bits
+  \defgroup IoBits IO Bits
   The values to use to create a mask to pass into any of the \b Bits style functions.  
   Your mask values need to be of type longlong since it needs to represent 64 bits, 
   for the 64 IO lines.
@@ -236,9 +273,9 @@ void Io_Isr( AT91S_PIO* basePio );
   \code
   longlong mymask = 0;
   mymask |= (IO_PA00_BIT | IO_PA03_BIT | IO_PA11_BIT);
-  // now disable the pullups for lines PA00, PA03, and PA11
-  Io_PullupDisableBits( mymask );
-  \endcode
+// now disable the pullups for lines PA00, PA03, and PA11
+Io_PullupDisableBits( mymask );
+\endcode
 \ingroup Io
 @{
 */
@@ -308,6 +345,39 @@ void Io_Isr( AT91S_PIO* basePio );
 #define IO_PB29_BIT 1LL<<0x3D /**< IO 29, Port B */
 #define IO_PB30_BIT 1LL<<0x3E /**< IO 30, Port B */
 #define IO_PB31_BIT 1LL<<0x3F /**< IO 31, Port B */
+
+#define IO_PC00_BIT 1LL<<0x40 /**< IO 0, Port C */
+#define IO_PC01_BIT 1LL<<0x41 /**< IO 1, Port C */
+#define IO_PC02_BIT 1LL<<0x42 /**< IO 2, Port C */
+#define IO_PC03_BIT 1LL<<0x43 /**< IO 3, Port C */
+#define IO_PC04_BIT 1LL<<0x44 /**< IO 4, Port C */
+#define IO_PC05_BIT 1LL<<0x45 /**< IO 5, Port C */
+#define IO_PC06_BIT 1LL<<0x46 /**< IO 6, Port C */
+#define IO_PC07_BIT 1LL<<0x47 /**< IO 7, Port C */
+#define IO_PC08_BIT 1LL<<0x48 /**< IO 8, Port C */
+#define IO_PC09_BIT 1LL<<0x49 /**< IO 9, Port C */
+#define IO_PC10_BIT 1LL<<0x4A /**< IO 10, Port C */
+#define IO_PC11_BIT 1LL<<0x4B /**< IO 11, Port C */
+#define IO_PC12_BIT 1LL<<0x4C /**< IO 12, Port C */
+#define IO_PC13_BIT 1LL<<0x4D /**< IO 13, Port C */
+#define IO_PC14_BIT 1LL<<0x4E /**< IO 14, Port C */
+#define IO_PC15_BIT 1LL<<0x4F /**< IO 15, Port C */
+#define IO_PC16_BIT 1LL<<0x50 /**< IO 16, Port C */
+#define IO_PC17_BIT 1LL<<0x51 /**< IO 17, Port C */
+#define IO_PC18_BIT 1LL<<0x52 /**< IO 18, Port C */
+#define IO_PC19_BIT 1LL<<0x53 /**< IO 19, Port C */
+#define IO_PC20_BIT 1LL<<0x54 /**< IO 20, Port C */
+#define IO_PC21_BIT 1LL<<0x55 /**< IO 21, Port C */
+#define IO_PC22_BIT 1LL<<0x56 /**< IO 22, Port C */
+#define IO_PC23_BIT 1LL<<0x57 /**< IO 23, Port C */
+#define IO_PC24_BIT 1LL<<0x58 /**< IO 24, Port C */
+#define IO_PC25_BIT 1LL<<0x59 /**< IO 25, Port C */
+#define IO_PC26_BIT 1LL<<0x5A /**< IO 26, Port C */
+#define IO_PC27_BIT 1LL<<0x5B /**< IO 27, Port C */
+#define IO_PC28_BIT 1LL<<0x5C /**< IO 28, Port C */
+#define IO_PC29_BIT 1LL<<0x5D /**< IO 29, Port C */
+#define IO_PC30_BIT 1LL<<0x5E /**< IO 30, Port C */
+#define IO_PC31_BIT 1LL<<0x5F /**< IO 31, Port C */
 
 /** @} */
 

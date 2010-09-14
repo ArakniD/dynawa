@@ -37,6 +37,18 @@
 #define MCK             47923200   //!< MCK (PLLRC div by 2)
 //@}
 
+
+// DAC7311
+
+#define DAC7311_PIO_BASE    AT91C_BASE_PIOA
+#define DAC7311_PIN_AUDIOSD     (1<<25)
+#define DAC7311_PIN_MUTE        (1<<0)
+
+// SSC Interface 
+
+#define BOARD_DAC7311_SSC   AT91C_BASE_SSC
+#define BOARD_DAC7311_SSC_ID       AT91C_ID_SSC
+
 /**
  * \def SPI interface
  * 
@@ -104,6 +116,9 @@
 #define OLED_PIO_NORES          AT91PS_PIO
 #define OLED_PIO_NORES_BASE     AT91C_BASE_PIOA
 #define OLED_PIN_NORES          (1<<29)
+#define OLED_PIO_SEL            AT91PS_PIO
+#define OLED_PIO_SEL_BASE       AT91C_BASE_PIOA
+#define OLED_PIN_SEL            (1<<24)
 
 
 #define NSRZZ_MASK (1<<28)

@@ -33,7 +33,7 @@ void buf2pbuf(u8_t *b, struct pbuf *p, int hdr_len, int param_len) {
     while (rem_len) {
         if (p == NULL) {
             TRACE_ERROR("PBUF=NULL\r\n");
-            panic();
+            panic("buf2pbuf");
             return;
         }
         int chunk_len = p->len;
@@ -84,7 +84,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
             TRACE_BT(">>>>> bc_hci_event_count %d\r\n", bc_hci_event_count);
             //if (bc_hci_event_count == 9)
             if (BUG && bc_hci_event_count == 5) {
-                panic();
+                panic("abcsp_delivermsg");
             }
             bc_hci_event_count++;
 /*
@@ -110,7 +110,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
             //if((p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL)) == NULL) {
             if((p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM)) == NULL) {
                 TRACE_ERROR("NOMEM\r\n");
-                panic();
+                panic("abcsp_delivermsg 1");
             } else {
                 buf2pbuf(messageBuffer->buffer, p, HCI_EVENT_HDR_LEN, param_len);
                 hci_event_input(p);
@@ -118,7 +118,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
 
                 TRACE_BT("<<<<< bc_hci_event_count %d\r\n", bc_hci_event_count);
                 if (BUG && bc_hci_event_count == 10) {
-                    panic();
+                    panic("abcsp_delivermsg");
                 }
             }
         } else {
@@ -176,7 +176,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
             //if((p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL)) == NULL) {
             if((p = pbuf_alloc(PBUF_RAW, len, PBUF_RAM)) == NULL) {
                 TRACE_ERROR("NOMEM\r\n");
-                panic();
+                panic("abcsp_delivermsg 2");
             } else {
                 buf2pbuf(messageBuffer->buffer, p, HCI_ACL_HDR_LEN, param_len);
                 hci_acl_input(p);
@@ -395,7 +395,7 @@ void abcsp_panic(abcsp * thisInstance, unsigned panicCode)
     (void)thisInstance;
 	//printf("abcsp_panic: %u\n", panicCode);
 	TRACE_ERROR("abcsp_panic: %u\r\n", panicCode);
-    panic();
+    panic("abcsp_panic");
 }
 
 

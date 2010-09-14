@@ -24,6 +24,8 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "bt.h"
 #include "timer.h"
 
+#define _CFG_PM
+
 //static HANDLE WakeUpEvent = NULL;
 static xQueueHandle WakeUpEvent;
 //CRITICAL_SECTION SchedulerMutex;
@@ -34,6 +36,11 @@ static int terminationFlag;
 
 #define BG_INT_1_FLAG_MASK	0x0001
 #define BG_INT_2_FLAG_MASK	0x0002
+
+#define WAKEUP_EVENT_GENERIC        10
+#define WAKEUP_EVENT_TIMED_EVENT    100
+#define WAKEUP_EVENT_BG_INT1        1000
+#define WAKEUP_EVENT_BG_INT2        1001
 
 void (* bgIntFunction1)(void);
 void (* bgIntFunction2)(void);
@@ -61,7 +68,7 @@ void register_bg_int(int bgIntNumber, void (* bgIntFunction)(void))
 		exit(0);
 */
 		TRACE_ERROR("PANIC: register_bg_int - unknown bgIntNumber (%d)!\n", bgIntNumber);
-        panic();
+        panic("bgIntNumber");
 	}
 	//LeaveCriticalSection(&SchedulerMutex);
     xSemaphoreGive(SchedulerMutex);
@@ -77,7 +84,7 @@ void bg_int1(void)
     xSemaphoreGive(SchedulerMutex);
     //TRACE_BT("bg_int1 Queue %x\r\n", xTaskGetCurrentTaskHandle());
 	//SetEvent(WakeUpEvent);
-    uint16_t event = 1;
+    uint16_t event = WAKEUP_EVENT_BG_INT1;
     //xQueueSend(WakeUpEvent, &event, portMAX_DELAY);
     xQueueSend(WakeUpEvent, &event, 0);
     //TRACE_BT("<<<bg_int1 %x\r\n", xTaskGetCurrentTaskHandle());
@@ -93,7 +100,7 @@ void bg_int2(void)
     xSemaphoreGive(SchedulerMutex);
     //TRACE_BT("bg_int2 Queue %x\r\n", xTaskGetCurrentTaskHandle());
 	//SetEvent(WakeUpEvent);
-    uint16_t event = 1;
+    uint16_t event = WAKEUP_EVENT_BG_INT2;
     //xQueueSend(WakeUpEvent, &event, portMAX_DELAY);
     xQueueSend(WakeUpEvent, &event, 0);
     //TRACE_BT("<<<bg_int2 %x\r\n", xTaskGetCurrentTaskHandle());
@@ -102,7 +109,7 @@ void bg_int2(void)
 void scheduler_wakeup(void)
 {
     TRACE_BT("scheduler_wakeup\r\n");
-    uint16_t event = 2;
+    uint16_t event = WAKEUP_EVENT_GENERIC;
     xQueueSend(WakeUpEvent, &event, 0);
 }
 
@@ -265,10 +272,10 @@ void InitMicroSched(void (* initTask)(void), void (* task)(void))
 
 #ifdef CFG_PM
 void bt_sched_timer_handler(void* context) {
-    TRACE_INFO("bt_sched_timer_handler butt\r\n");
+    //TRACE_INFO("bt_sched_timer_handler\r\n");
 
     portBASE_TYPE xHigherPriorityTaskWoken;
-    uint16_t event = 1;
+    uint16_t event = WAKEUP_EVENT_TIMED_EVENT;
 
     xQueueSendFromISR(WakeUpEvent, &event, &xHigherPriorityTaskWoken);
 
@@ -387,6 +394,9 @@ void MicroSched(void)
 	//CloseHandle(WakeUpEvent);
 	//DeleteCriticalSection(&SchedulerMutex);
 
+#ifdef CFG_PM
+    Timer_close(&timer);
+#endif
     // !!! TODO Purge timedEvents list
     while (timedEvents) {
         timedEvent = timedEvents;

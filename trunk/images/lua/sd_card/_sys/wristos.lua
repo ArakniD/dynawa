@@ -119,6 +119,12 @@ _G.private_main_handler = function(hw_event)
 		handler(hw_event)
 	else
 		log("No handler found for hw event '"..hw_event.type.."', ignored")
+        log ("-----Unknown HW event:")
+        hw_event.type = nil
+        for k,v in pairs(hw_event) do
+            log (k.." = "..tostring(v))
+        end
+        log("-----------")
 	end
 	dynawa.window_manager:update_display()
 end
