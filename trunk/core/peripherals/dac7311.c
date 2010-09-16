@@ -24,16 +24,19 @@
             | SSC_PERIOD(sampleSize * 8 * numChannels))
 */
 
-#define _DAC7311_TCMR(sampleSize) \
-    (AT91C_SSC_CKS_DIV \
-     | AT91C_SSC_CKO_DATA_TX \
-     | AT91C_SSC_START_FALL_RF \
-     | SSC_STTDLY(1) \
-     | SSC_PERIOD(sampleSize * 8))
-
+// ok (1)
 #define DAC7311_TCMR(sampleSize) \
     (AT91C_SSC_CKS_DIV \
      | AT91C_SSC_CKO_CONTINOUS \
+     | AT91C_SSC_CKI \
+     | SSC_STTDLY(0) \
+     | AT91C_SSC_START_CONTINOUS)
+
+// test
+#define _DAC7311_TCMR(sampleSize) \
+    (AT91C_SSC_CKS_DIV \
+     | AT91C_SSC_CKO_CONTINOUS \
+     | AT91C_SSC_CKI \
      | SSC_STTDLY(0) \
      | AT91C_SSC_START_CONTINOUS)
 
@@ -49,6 +52,14 @@
             | AT91C_SSC_FSOS_NEGATIVE)
 */
 
+// ok (1)
+#define DAC7311_TFMR(sampleSize) \
+    (SSC_DATLEN(sampleSize * 8) \
+     | AT91C_SSC_MSBF \
+     | SSC_DATNB(1) \
+     | AT91C_SSC_FSOS_LOW)
+
+// test
 #define _DAC7311_TFMR(sampleSize) \
     (SSC_DATLEN(sampleSize * 8) \
      | AT91C_SSC_MSBF \
@@ -56,11 +67,18 @@
      | SSC_FSLEN(sampleSize * 8) \
      | AT91C_SSC_FSOS_NEGATIVE)
 
-#define DAC7311_TFMR(sampleSize) \
-    (SSC_DATLEN(sampleSize * 8) \
-     | SSC_DATNB(1) \
-     | AT91C_SSC_FSOS_LOW)
+// Receiver
 
+#define DAC7311_RCMR(sampleSize) \
+    (AT91C_SSC_CKS_RK \
+     | SSC_STTDLY(0) \
+     | AT91C_SSC_START_FALL_RF)
+
+#define DAC7311_RFMR(sampleSize) \
+    (SSC_DATLEN(sampleSize * 8) \
+     | AT91C_SSC_MSBF \
+     | AT91C_SSC_LOOP \
+     | SSC_DATNB(1))
 
 //------------------------------------------------------------------------------
 //         Exported functions
@@ -90,6 +108,8 @@ void DAC7311_Enable(unsigned int  Fs,
     // Unmute channels
     DAC7311_SetMuteStatus(0);
 
+    SSC_Open(BOARD_DAC7311_SSC, BOARD_DAC7311_SSC_ID);
+
     // Configure the SSC
     SSC_Configure(BOARD_DAC7311_SSC,
             BOARD_DAC7311_SSC_ID,
@@ -99,6 +119,14 @@ void DAC7311_Enable(unsigned int  Fs,
             DAC7311_TCMR(sampleSize),
             DAC7311_TFMR(sampleSize));
     SSC_EnableTransmitter(BOARD_DAC7311_SSC);
+
+#if 0
+// Loop
+    SSC_ConfigureReceiver(BOARD_DAC7311_SSC,
+            DAC7311_RCMR(sampleSize),
+            DAC7311_RFMR(sampleSize));
+    SSC_EnableReceiver(BOARD_DAC7311_SSC);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -106,6 +134,7 @@ void DAC7311_Enable(unsigned int  Fs,
 //------------------------------------------------------------------------------
 void DAC7311_Disable()
 {
+    SSC_Close(BOARD_DAC7311_SSC, BOARD_DAC7311_SSC_ID);
     DAC7311_PIO_BASE->PIO_CODR = DAC7311_PIN_AUDIOSD;
 }
 

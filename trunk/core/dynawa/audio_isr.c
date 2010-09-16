@@ -6,6 +6,8 @@
 #include "debug/trace.h"
 
 extern uint32_t audio_start;
+extern uint16_t rcv_sample[];
+extern uint16_t sample[];
 
 //------------------------------------------------------------------------------
 /// Interrupt handler for the SSC. Loads the PDC with the audio data to stream.
@@ -15,7 +17,8 @@ static void audio_isr(void)
     unsigned int status = BOARD_DAC7311_SSC->SSC_SR;
     unsigned int size;
 
-    TRACE_INFO("audio_isr %d\r\n", Timer_tick_count_nonblock());
+    TRACE_INFO("audio_isr %d %x\r\n", Timer_tick_count_nonblock(), status);
+    TRACE_INFO("rcr %d %x\r\n", BOARD_DAC7311_SSC->SSC_RCR, rcv_sample[0]);
 
     // Last buffer sent
     if ((status & AT91C_SSC_TXBUFE) != 0) {
@@ -24,22 +27,25 @@ static void audio_isr(void)
         SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_ENDTX | AT91C_SSC_TXBUFE);
         BOARD_DAC7311_SSC->SSC_PTCR = AT91C_PDC_TXTDIS;
         //DisplayMenu();
+        DAC7311_Disable();
 
         event ev;
         ev.type = EVENT_AUDIO;
         ev.data.audio.data = Timer_tick_count_nonblock() - audio_start;
         event_post_isr(&ev);
     }
-/*
     // One buffer sent & more buffers to send
-    else if (remainingSamples > 0) {
+    //else if (remainingSamples > 0) {
+    else if (1) {
 
+        SSC_WriteBuffer(BOARD_DAC7311_SSC, (void *) sample, 60000);
+/*
         size = min(remainingSamples / (userWav->bitsPerSample / 8), 65535);
         SSC_WriteBuffer(BOARD_DAC7311_SSC, (void *) (WAV_FILE_ADDRESS + sizeof(WavHeader) + transmittedSamples), size);
         remainingSamples -= size * (userWav->bitsPerSample / 8);
         transmittedSamples += size * (userWav->bitsPerSample / 8);
-    }
 */
+    }
     // One buffer sent, no more buffers
     else {
         SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_ENDTX);

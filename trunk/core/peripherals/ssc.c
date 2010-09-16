@@ -34,6 +34,25 @@
 #include "ssc.h"
 //#include <utility/trace.h>
 
+void SSC_Open(AT91S_SSC *ssc, unsigned int id) {
+    // Enable SSC peripheral clock
+    AT91C_BASE_PMC->PMC_PCER = 1 << id;
+
+    // Reset, disable receiver & transmitter
+    ssc->SSC_CR = AT91C_SSC_RXDIS | AT91C_SSC_TXDIS | AT91C_SSC_SWRST;
+    Task_sleep(10);
+    ssc->SSC_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS;
+}
+
+void SSC_Close(AT91S_SSC *ssc, unsigned int id) {
+    // Reset, disable receiver & transmitter
+    ssc->SSC_CR = AT91C_SSC_RXDIS | AT91C_SSC_TXDIS;
+    ssc->SSC_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS;
+
+    // Disable SSC peripheral clock
+    AT91C_BASE_PMC->PMC_PCDR = 1 << id;
+}
+
 //------------------------------------------------------------------------------
 //         Exported functions
 //------------------------------------------------------------------------------
@@ -49,12 +68,14 @@ void SSC_Configure(AT91S_SSC *ssc,
                           unsigned int bitRate,
                           unsigned int masterClock)
 {
+#if 0
     // Enable SSC peripheral clock
     AT91C_BASE_PMC->PMC_PCER = 1 << id;
 
     // Reset, disable receiver & transmitter
     ssc->SSC_CR = AT91C_SSC_RXDIS | AT91C_SSC_TXDIS | AT91C_SSC_SWRST;
     ssc->SSC_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS;
+#endif
 
     // Configure clock frequency
     if (bitRate != 0) {
@@ -164,6 +185,12 @@ void SSC_DisableInterrupts(AT91S_SSC *ssc, unsigned int sources)
 void SSC_Write(AT91S_SSC *ssc, unsigned int frame)
 {
     while ((ssc->SSC_SR & AT91C_SSC_TXRDY) == 0);
+
+#if 0
+    int i;
+    for(i = 0; i < 1000; i++) asm volatile ("nop");
+#endif
+
     ssc->SSC_THR = frame;
 }
 

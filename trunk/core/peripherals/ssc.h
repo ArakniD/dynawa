@@ -77,24 +77,24 @@
 
 /// Calculates the value of the STTDLY field given the number of clock cycles
 /// before the first bit of a new frame is transmitted.
-#define SSC_STTDLY(bits)        (bits << 16)
+#define SSC_STTDLY(bits)        ((bits) << 16)
 
 /// Calculates the value of the PERIOD field of the Transmit Clock Mode Register
 /// of an SSC interface, given the desired clock divider.
-#define SSC_PERIOD(divider)     (((divider / 2) - 1) << 24)
+#define SSC_PERIOD(divider)     ((((divider) / 2) - 1) << 24)
 
 /// Calculates the value of the DATLEN field of the Transmit Frame Mode Register
 /// of an SSC interface, given the number of bits in one sample.
-#define SSC_DATLEN(bits)        (bits - 1)
+#define SSC_DATLEN(bits)        ((bits) - 1)
 
 /// Calculates the value of the DATNB field of the Transmit Frame Mode Register
 /// of an SSC interface, given the number of samples in one frame.
-#define SSC_DATNB(samples)      ((samples -1) << 8)
+#define SSC_DATNB(samples)      (((samples) - 1) << 8)
 
 /// Calculates the value of the FSLEN field of the Transmit Frame Mode Register
 /// of an SSC interface, given the number of transmit clock periods that the 
 /// frame sync signal should take.
-#define SSC_FSLEN(periods)      ((periods - 1) << 16)
+#define SSC_FSLEN(periods)      (((periods) - 1) << 16)
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
