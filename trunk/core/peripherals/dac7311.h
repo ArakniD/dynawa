@@ -5,6 +5,8 @@
 //         Exported functions
 //------------------------------------------------------------------------------
 
+#define DAC7311_LOOPBACK    0
+
 extern void DAC7311_Enable(unsigned int Fs,
                             unsigned int sampleSize,
                             unsigned int masterClock);
