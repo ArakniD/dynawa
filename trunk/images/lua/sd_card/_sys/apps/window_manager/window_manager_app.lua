@@ -40,6 +40,18 @@ function app:push(x)
 	log("Pushed "..x..", "..#(self.stack).." now on stack")
 end
 
+--For debugging only, #todo remove
+function app:log_windows()
+	local n = 0
+	local ids = {}
+	for win,id in pairs(self._windows) do
+		assert(win.id == id)
+		n = n + 1
+		table.insert(ids,tostring(win))
+	end
+	log(n.." windows registered: "..table.concat(ids,", "))
+end
+
 function app:pop()
 	local x = assert(table.remove(self.stack,1),"Nothing to pop from stack")
 	assert(x.is_window, "Should be window")
@@ -49,6 +61,7 @@ function app:pop()
 	if self.stack[1] then
 		self.stack[1].in_front = true
 	end
+	--self:log_windows()
 	return x
 end
 

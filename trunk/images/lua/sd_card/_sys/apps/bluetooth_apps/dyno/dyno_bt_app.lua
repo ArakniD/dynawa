@@ -1,6 +1,22 @@
 app.name = "Dyno BT"
 app.id = "dynawa.dyno"
 
+function app:start()
+	self.events = Class.EventSource("openwatch")
+	self.activities = {}
+	for bdaddr,device in pairs(dynawa.bluetooth_manager.devices) do
+		--log("Connecting to "..device.name)
+		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
+		
+		local act = {id = dynawa.unique_id()}
+		act.name = device.name
+		act.bdaddr = bdaddr
+		act.status = "bt_off"
+		self.activities[act.id] = act
+		--self:activity_start(act)
+	end
+end
+
 local function to_word(num) --Convert integer to 2 byte word
 	return string.char(math.floor(num / 256))..string.char(num%256)
 end
@@ -22,14 +38,9 @@ local function safe_string(str)
 end
 
 function app:handle_bt_event_turned_on()
-	--#todo
-	--currently, all activities are created and deletes with BT on/off, for each paired device!
-	for bdaddr,device in pairs(dynawa.bluetooth_manager.devices) do
-		log("Connecting to "..device.name)
+	for act_id,act in pairs(self.activities) do
+		log("Connecting to "..act.name)
 		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
-		local act = self:new_activity()
-		act.bdaddr = bdaddr
-		act.name = "Phone with "..device.name
 		self:activity_start(act)
 	end
 end
@@ -42,9 +53,8 @@ function app:handle_bt_event_turning_off()
 				activity.socket:close()
 			end
 			activity.socket = nil
-			self:delete_activity(activity)
 		end
-		activity.status = nil
+		activity.status = "bt_off"
 	end
 end
 
@@ -342,10 +352,6 @@ function app:handle_event_socket_find_service_result(sock0,channel)
 	socket:connect(activity.bdaddr, activity.channel)
 end
 
-function app:start()
-	self.events = Class.EventSource("openwatch")
-end
-
 function app:info(txt)
 	--[[if self.last_info == txt then
 		return
@@ -355,13 +361,30 @@ function app:info(txt)
 	dynawa.devices.vibrator:alert()
 end
 
+function app:activity_status_text(act)
+	--Returns short text and (optionally) color
+	local status = assert(act.status)
+	if status == "bt_off" then
+		return "BT off",{150,150,150}
+	end
+	if status == "connected" then
+		return "connected",{0,255,0}
+	end
+	if status == "waiting_for_reconnect" then
+		return "waiting before reconnect attempt",{255,127,0}
+	end
+	if status == "disabled" then --#todo
+		return "disabled",{150,150,150}
+	end
+	return status,{255,0,0}
+end
+
 function app:activity_items()
 	local items = {}
 	for id, act in pairs(self.activities) do
-		local item = {text = act.name}
-		if act.status ~= "connected" then
-			item.textcolor = {255,0,0}
-		end
+		local stat_txt, color = self:activity_status_text(act)
+		local item = {text = act.name.." ("..stat_txt..")"}
+		item.textcolor = color
 		table.insert(items,item)
 	end
 	table.sort(items, function(a,b)
