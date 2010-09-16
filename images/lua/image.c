@@ -211,12 +211,12 @@ void Run( ) // this task gets called as soon as we boot up.
 #endif
     //Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
 
-/*
+#if 1
     audio_play();
     while(1) {
         asm volatile ("nop");
     };
-*/
+#endif
     xTaskCreate(lua_event_loop, (signed char*)"lua", TASK_STACK_SIZE(TASK_LUA_STACK), NULL, TASK_LUA_PRI, NULL);
 
 #if 0
