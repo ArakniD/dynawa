@@ -6,8 +6,10 @@
 #include "debug/trace.h"
 
 extern uint32_t audio_start;
-extern uint16_t rcv_sample[];
 extern uint16_t sample[];
+#if DAC7311_LOOPBACK
+extern uint16_t rcv_sample[];
+#endif
 
 //------------------------------------------------------------------------------
 /// Interrupt handler for the SSC. Loads the PDC with the audio data to stream.
@@ -18,7 +20,9 @@ static void audio_isr(void)
     unsigned int size;
 
     TRACE_INFO("audio_isr %d %x\r\n", Timer_tick_count_nonblock(), status);
+#if DAC7311_LOOPBACK
     TRACE_INFO("rcr %d %x\r\n", BOARD_DAC7311_SSC->SSC_RCR, rcv_sample[0]);
+#endif
 
     // Last buffer sent
     if ((status & AT91C_SSC_TXBUFE) != 0) {
@@ -50,6 +54,7 @@ static void audio_isr(void)
     else {
         SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_ENDTX);
     }
+    AT91C_BASE_AIC->AIC_EOICR = 0; // Clear AIC to complete ISR processing
 }
 
 void audioIsr_Wrapper( void )

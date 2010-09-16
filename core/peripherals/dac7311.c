@@ -25,20 +25,36 @@
 */
 
 // ok (1)
-#define DAC7311_TCMR(sampleSize) \
-    (AT91C_SSC_CKS_DIV \
-     | AT91C_SSC_CKO_CONTINOUS \
-     | AT91C_SSC_CKI \
-     | SSC_STTDLY(0) \
-     | AT91C_SSC_START_CONTINOUS)
-
-// test
 #define _DAC7311_TCMR(sampleSize) \
     (AT91C_SSC_CKS_DIV \
      | AT91C_SSC_CKO_CONTINOUS \
      | AT91C_SSC_CKI \
      | SSC_STTDLY(0) \
      | AT91C_SSC_START_CONTINOUS)
+
+// test (ok) ?AT91C_SSC_CKI
+#define DAC7311_TCMR(sampleSize) \
+    (AT91C_SSC_CKS_DIV \
+     | AT91C_SSC_CKO_CONTINOUS \
+     | SSC_STTDLY(0) \
+     | AT91C_SSC_START_FALL_RF \
+     | SSC_PERIOD(sampleSize * 8 + 2))
+
+// test (ok)
+#define _DAC7311_TCMR(sampleSize) \
+    (AT91C_SSC_CKS_DIV \
+     | AT91C_SSC_CKO_CONTINOUS \
+     | AT91C_SSC_CKI \
+     | SSC_STTDLY(0) \
+     | AT91C_SSC_START_FALL_RF \
+     | SSC_PERIOD(sampleSize * 8 + 2))
+
+// test (nok)
+#define _DAC7311_TCMR(sampleSize) \
+    (AT91C_SSC_CKS_DIV \
+     | AT91C_SSC_CKO_CONTINOUS \
+     | SSC_STTDLY(1) \
+     | AT91C_SSC_START_FALL_RF)
 
 
 /// \internal Calculates the SSC Transmit Frame Mode Register value given the
@@ -53,19 +69,26 @@
 */
 
 // ok (1)
-#define DAC7311_TFMR(sampleSize) \
+#define _DAC7311_TFMR(sampleSize) \
     (SSC_DATLEN(sampleSize * 8) \
      | AT91C_SSC_MSBF \
      | SSC_DATNB(1) \
      | AT91C_SSC_FSOS_LOW)
 
-// test
-#define _DAC7311_TFMR(sampleSize) \
+// test (ok)
+#define DAC7311_TFMR(sampleSize) \
     (SSC_DATLEN(sampleSize * 8) \
      | AT91C_SSC_MSBF \
      | SSC_DATNB(1) \
      | SSC_FSLEN(sampleSize * 8) \
      | AT91C_SSC_FSOS_NEGATIVE)
+
+// test (nok)
+#define _DAC7311_TFMR(sampleSize) \
+    (SSC_DATLEN(sampleSize * 8) \
+     | AT91C_SSC_MSBF \
+     | SSC_DATNB(1) \
+     | AT91C_SSC_FSOS_LOW)
 
 // Receiver
 
