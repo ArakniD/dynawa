@@ -33,7 +33,6 @@ function class:_init(desc)
 	else
 		self.active_item = self.active_item or self.items[1] --can be nil if no items!
 	end
-	self.window = Class.Window()
 end
 
 function class:clear_cache()
