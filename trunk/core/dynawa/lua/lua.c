@@ -15,23 +15,26 @@
 #include "lib_dynawa_bt.h"
 
 #define TEST  0    
+#define LUA_LED 0 // !!! LED - PIO PA0 - AUDIO MUTE collision
 
 static FATFS fatfs;
 static FILINFO fileInfo;
 
 int lua_event_loop (void) {
 
-    Io led;
-
     TRACE_INFO("lua_event_loop %x\r\n", xTaskGetCurrentTaskHandle());
 
+#if LUA_LED
+    Io led;
     Led_init(&led);
     Led_setState(&led, 0);
+#endif
 
     int error;
 
     FRESULT f;
 
+    //no Task_sleep(10000);
     if ((f = disk_initialize (0)) != FR_OK) {
         f_printerror (f);
         TRACE_ERROR("disk_initialize\r\n");
@@ -441,7 +444,9 @@ int lua_event_loop (void) {
             TRACE_ERROR("Uknown event %x\r\n", ev.type);
         }
 
+#if LUA_LED
         Led_setState(&led, 1);
+#endif
         //unsigned long ticks = xTaskGetTickCount();
         unsigned long ticks = Timer_tick_count();
 
@@ -452,7 +457,9 @@ int lua_event_loop (void) {
         error = 0;
 */
 
+#if LUA_LED
         Led_setState(&led, 0);
+#endif
         //ticks = xTaskGetTickCount() - ticks;
         ticks = Timer_tick_count() - ticks;
         TRACE_LUA("error %d %d\r\n", error, ticks);

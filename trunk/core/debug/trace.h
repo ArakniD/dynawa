@@ -37,6 +37,7 @@
 #define TR_ERROR        
 #define TR_SCR  //screen
 //#define TR_FAT          
+#define TR_AUDIO
 //#define TR_BT          
 //#define TR_LUA          
 //#define TR_BMP          
@@ -89,6 +90,12 @@
 #else
     #define TRACE_FAT(...)      
 #endif // TR_FAT
+
+#if defined(TR_AUDIO)
+    #define TRACE_AUDIO(...)      rprintf(DBG,__VA_ARGS__)    
+#else
+    #define TRACE_AUDIO(...)      
+#endif // TR_AUDIO
 
 #if defined(TR_BT)
     //#define TRACE_BT(...)      rprintf(DBG, __VA_ARGS__)    

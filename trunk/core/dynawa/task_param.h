@@ -4,7 +4,7 @@
 #define TASK_STACK_SIZE(s)  ((s) / 4)
 
 #define TASK_STARTER_PRI    7
-#define TASK_STARTER_STACK  1024
+#define TASK_STARTER_STACK  2048
 
 #define TASK_BUTTON_PRI     3
 #define TASK_BUTTON_STACK   512

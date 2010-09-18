@@ -3,13 +3,15 @@
 #include "ssc.h"
 #include "rtos.h"
 #include "event.h"
+#include "audio.h"
 #include "debug/trace.h"
 
 extern uint32_t audio_start;
-extern uint16_t sample[];
-#if DAC7311_LOOPBACK
-extern uint16_t rcv_sample[];
-#endif
+
+extern audio_sample *audio_current_sample;
+extern uint32_t audio_current_sample_loop;
+extern uint32_t audio_current_sample_remaining;
+extern uint32_t audio_current_sample_transmitted;
 
 //------------------------------------------------------------------------------
 /// Interrupt handler for the SSC. Loads the PDC with the audio data to stream.
@@ -20,9 +22,6 @@ static void audio_isr(void)
     unsigned int size;
 
     TRACE_INFO("audio_isr %d %x\r\n", Timer_tick_count_nonblock(), status);
-#if DAC7311_LOOPBACK
-    TRACE_INFO("rcr %d %x\r\n", BOARD_DAC7311_SSC->SSC_RCR, rcv_sample[0]);
-#endif
 
     // Last buffer sent
     if ((status & AT91C_SSC_TXBUFE) != 0) {
@@ -37,22 +36,21 @@ static void audio_isr(void)
         ev.type = EVENT_AUDIO;
         ev.data.audio.data = Timer_tick_count_nonblock() - audio_start;
         event_post_isr(&ev);
-    }
     // One buffer sent & more buffers to send
-    //else if (remainingSamples > 0) {
-    else if (1) {
+    } else {
+        if (audio_current_sample_remaining == 0 && audio_current_sample_loop) {
+            audio_current_sample_remaining = audio_current_sample->length;
+            audio_current_sample_transmitted = 0;
+        }
+        if (audio_current_sample_remaining > 0) {
+            uint32_t size = min(audio_current_sample_remaining, 0xffff);
 
-        SSC_WriteBuffer(BOARD_DAC7311_SSC, (void *) sample, 60000);
-/*
-        size = min(remainingSamples / (userWav->bitsPerSample / 8), 65535);
-        SSC_WriteBuffer(BOARD_DAC7311_SSC, (void *) (WAV_FILE_ADDRESS + sizeof(WavHeader) + transmittedSamples), size);
-        remainingSamples -= size * (userWav->bitsPerSample / 8);
-        transmittedSamples += size * (userWav->bitsPerSample / 8);
-*/
-    }
-    // One buffer sent, no more buffers
-    else {
-        SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_ENDTX);
+            SSC_WriteBuffer(BOARD_DAC7311_SSC, (void *) &AUDIO_SAMPLE_DATA(audio_current_sample)[audio_current_sample_transmitted], size); // 2nd DMA buffer
+            audio_current_sample_remaining -= size;
+            audio_current_sample_transmitted += size;
+        } else {
+            SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_ENDTX);
+        }
     }
     AT91C_BASE_AIC->AIC_EOICR = 0; // Clear AIC to complete ISR processing
 }

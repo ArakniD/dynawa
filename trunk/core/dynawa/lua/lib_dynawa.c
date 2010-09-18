@@ -39,6 +39,7 @@ int dynawa_bitmap_register(lua_State *L);
 int dynawa_file_register(lua_State *L);
 int dynawa_time_register(lua_State *L);
 int dynawa_bt_register(lua_State *L);
+int dynawa_audio_register(lua_State *L);
 int dynawa_x_register(lua_State *L);
 
 struct {
@@ -51,6 +52,7 @@ struct {
     {"file", dynawa_file_register},
     {"time", dynawa_time_register},
     {"bt", dynawa_bt_register},
+    {"audio", dynawa_audio_register},
     {"x", dynawa_x_register},
     {NULL, NULL}  /* sentinel */
 };
