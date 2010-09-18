@@ -12,7 +12,7 @@ function class:_init(str)
 	self:force_full_update()
 	dynawa.window_manager:register_window(self)
 	self.size = assert(dynawa.devices.display.size)
-	log("Created "..self)
+	--log("Created "..self)
 end
 
 function class:_del()
