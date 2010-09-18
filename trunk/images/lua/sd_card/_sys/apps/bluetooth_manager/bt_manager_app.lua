@@ -3,8 +3,8 @@ app.id = "dynawa.bluetooth_manager"
 
 function app:start()
 	dynawa.bluetooth_manager = self
+	self.events = Class.EventSource("bluetooth_manager")
 	self.prefs = self:load_data() or {devices = {}}
-	self.devices = assert(self.prefs.devices)
 	self.hw = assert(dynawa.devices.bluetooth)
 	self.hw:register_for_events(self)
 	self.hw_status = "off"
@@ -109,7 +109,10 @@ function app:switching_to_front()
 				text = "Emulate random calendar_event", value = {jump = "random_calendar_event"},
 			},]]
 			{
-				text = "Delete all pairings", value = {jump = "delete_pairings"},
+				text = "Show paired devices", value = {jump = "show_pairings"},
+			},
+			{
+				text = "Delete all paired devices", value = {jump = "delete_pairings"},
 			},
 		},
 	}
@@ -169,9 +172,25 @@ function app:menu_item_selected(args)
 end
 
 function app:menu_action_delete_pairings()
-	self.prefs.devices = {}
+	for bdaddr, device in pairs(self.prefs.devices) do
+		dynawa.busy()
+		self.events:generate_event{type="removed_paired_device", device={link_key = assert(device.link_key), name = assert(device.name), bdaddr = bdaddr}}
+		self.prefs.devices[bdaddr] = nil
+	end
+	assert(not next(self.prefs.devices), "Device table should be empty")
 	self:save_data(self.prefs)
 	dynawa.popup:info("All pairings deleted")
+end
+
+function app:menu_action_show_pairings()
+	local menudesc = {banner = "Paired devices:",items = {}}
+	for bdaddr, device in pairs(self.prefs.devices) do
+		table.insert(menudesc.items,{text = device.name})
+	end
+	table.sort(menudesc.items, function(a,b)
+		return (a.text < b.text)
+	end)
+	self:new_menuwindow(menudesc):push()
 end
 
 function app:menu_action_bt_on(args)
@@ -198,12 +217,12 @@ function app:menu_action_bt_off(args)
 end
 
 function app:handle_event_bluetooth(event)
-	log("---BT event received:")
+--[[	log("---BT event received:")
 	for k,v in pairs(event) do
 		if k ~= "source" and k ~= "type" then
 			log(tostring(k).." = "..tostring(v))
 		end
-	end
+	end]]
 	self["handle_bt_event_"..event.subtype](self,event)
 end
 
@@ -242,12 +261,16 @@ end
 function app:handle_bt_event_link_key_not(event)
 	local bdaddr = assert(event.bdaddr)
 	local link_key = assert(event.link_key)
+	log("Link_key_not")
 	if not self.prefs.devices[bdaddr] then
 		local name = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
 		self.prefs.devices[bdaddr] = {name = name}
+		log("name:"..name)
 	end
 	if self.prefs.devices[bdaddr].link_key ~= link_key then
 		self.prefs.devices[bdaddr].link_key = link_key
+		log("link key")
+		self.events:generate_event{type="new_paired_device",device={link_key = link_key, name = name, bdaddr = bdaddr}}
 		self:save_data(self.prefs)
 	end
 end

@@ -4,7 +4,7 @@ app.id = "dynawa.dyno"
 function app:start()
 	self.events = Class.EventSource("openwatch")
 	self.activities = {}
-	for bdaddr,device in pairs(dynawa.bluetooth_manager.devices) do
+	for bdaddr,device in pairs(dynawa.bluetooth_manager.prefs.devices) do
 		--log("Connecting to "..device.name)
 		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
 		
@@ -47,13 +47,7 @@ end
 
 function app:handle_bt_event_turning_off()
 	for id, activity in pairs(self.activities) do
-		if activity.socket then
-			if not activity.socket.__deleted then
-				log("Trying to close "..activity.socket)
-				activity.socket:close()
-			end
-			activity.socket = nil
-		end
+		self:activity_disable(activity)
 		activity.status = "bt_off"
 	end
 end
@@ -68,6 +62,17 @@ function app:activity_start(act)
 	act.channel = false
 	act.status = "finding_service"
     dynawa.devices.bluetooth.cmd:find_service(socket._c, act.bdaddr)
+end
+
+function app:activity_disable(activity)
+	if activity.socket then
+		if not activity.socket.__deleted then
+			log("Trying to close "..activity.socket)
+			activity.socket:close()
+		end
+		activity.socket = nil
+		activity.status = "disabled"
+	end
 end
 
 function app:handle_event_socket_data(socket, data_in)
@@ -379,11 +384,52 @@ function app:activity_status_text(act)
 	return status,{255,0,0}
 end
 
+function app:activity_menuitem_selected(_self,args)
+	local item = assert(args.item)
+	local act_id = assert(item.value.act_id)
+	local activity = self.activities[act_id]
+	if not activity then
+		dynawa.popup:error("Unknown device")
+		return
+	end
+	local menudesc = {banner = activity.name, items = {}}
+	local text, color = self:activity_status_text(activity)
+	local act_id = assert(activity.id)
+	table.insert(menudesc.items,{text = "Dyno status: "..text, textcolor = color})
+	if activity.status == "disabled" then
+		--#todo enable disabled activity
+	else
+		table.insert(menudesc.items, {text = "Disable temporarily", selected = function(__self, args)
+			if self.activities[act_id] then
+				self:activity_disable(activity)
+				dynawa.popup:info("Disabled")
+				self:save_prefs()
+			else
+				dynawa.popup:error("Unknown device")
+			end			
+		end})
+	end
+	table.insert(menudesc.items,{text = "Remove this phone from Dyno", selected = function(__self, args)
+		if self.activities[act_id] then
+			self:activity_disable(activity)
+			self.activities[act_id] = nil
+			dynawa.popup:info("Removed")
+			self:save_prefs()
+		else
+			dynawa.popup:error("Unknown device")
+		end
+	end})
+	self:new_menuwindow(menudesc):push()
+end
+
 function app:activity_items()
 	local items = {}
 	for id, act in pairs(self.activities) do
 		local stat_txt, color = self:activity_status_text(act)
-		local item = {text = act.name.." ("..stat_txt..")"}
+		local item = {text = act.name.." ("..stat_txt..")", value = {act_id = id}}
+		item.selected = function(_self,args)
+			self:activity_menuitem_selected(_self,args)
+		end
 		item.textcolor = color
 		table.insert(items,item)
 	end
@@ -403,3 +449,18 @@ function app:status_text()
 	end
 	return (nconn.. " out of "..num.." phones connected")
 end
+
+function app:save_prefs()
+	local prefs = {devices = {}}
+	for act_id, activity in pairs(self.activities) do
+		local bdaddr = assert(activity.bdaddr)
+		assert(not(prefs.devices[bdaddr]))
+		local val = {status = "enabled"}
+		if activity.status == "disabled" then
+			val.status = "disabled"
+		end
+		prefs.devices[bdaddr] = val
+	end
+	self:save_data(prefs)
+end
+
