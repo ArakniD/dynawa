@@ -206,6 +206,8 @@ THUMB_SRC= \
   $(USB)/common/core/USBInterfaceRequest.c \
   $(UTILS)/rprintf.c \
   $(UTILS)/delay.c \
+  $(UTILS)/wav.c \
+  $(UTILS)/math.c \
   $(SCREEN)/font.c \
   $(LUA)/lapi.c \
   $(LUA)/lauxlib.c \
@@ -252,6 +254,7 @@ THUMB_SRC= \
   $(DYNAWA)/lua/lib_dynawa_file.c \
   $(DYNAWA)/lua/lib_dynawa_time.c \
   $(DYNAWA)/lua/lib_dynawa_bt.c \
+  $(DYNAWA)/lua/lib_dynawa_audio.c \
   $(DYNAWA)/lua/lib_dynawa_x.c \
   $(DYNAWA)/event.c \
   $(DYNAWA)/timer.c \

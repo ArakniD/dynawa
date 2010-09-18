@@ -134,7 +134,10 @@ int spi_set_clock(uint8_t channel, uint32_t clock) {
         div++;
     }
     TRACE_INFO("spi_set_clock(%d, %d) %d\r\n", channel, clock, div);
-    //pSPI->SPI_CSR[channel] = (pSPI->SPI_CSR[channel] & ~AT91C_SPI_SCBR) || ((div << 8) & AT91C_SPI_SCBR);
+
+    //div = 4;
+
+    pSPI->SPI_CSR[channel] = (pSPI->SPI_CSR[channel] & ~AT91C_SPI_SCBR) | ((div << 8) & AT91C_SPI_SCBR);
     return 0;
 }
 

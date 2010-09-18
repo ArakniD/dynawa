@@ -7,6 +7,8 @@
 #include <rtos.h>
 #include <usbserial.h>
 #include <serial.h>
+#include <audio.h>
+#include <ff.h>
 //#include <analogin.h>
 #include <task_param.h>
 
@@ -26,6 +28,10 @@
 #define LED_OFF (*AT91C_PIOA_CODR = PIN_LED)
 #define LED_TOGGLE (*AT91C_PIOA_PDSR & (1 << PIN_LED) ? LED_OFF : LED_ON)
 
+static void *audio_malloc(size_t size, void *arg) {
+    return malloc(size);
+}
+
 void blinkLoop( void* parameters );
 void console( void* parameters );
 void bc( void* parameters );
@@ -39,31 +45,33 @@ Timer sys_timer;
 bool in_panic_handler = false;
 
 void panic(const char* msg) {
+    if (!in_panic_handler) {
+        in_panic_handler = true;
+        AT91C_BASE_AIC->AIC_IDCR = 0xffffffff;
 /*
-    ledrgb_open();
-    ledrgb_set(0x7, 0xe0, 0, 0);
+        ledrgb_open();
+        ledrgb_set(0x7, 0xe0, 0, 0);
 */
-    oled_screen_state(true);
+        oled_screen_state(true);
 
-    scrWriteRect(0, 0, 159, 127, SCR_COLOR_RED);
+        scrWriteRect(0, 0, 159, 127, SCR_COLOR_RED);
 
-    fontSetColor(SCR_COLOR_WHITE, SCR_COLOR_RED);
-    fontSetCharPos(10, 10);
-    fontSetCarridgeReturnPosX(10);
+        fontSetColor(SCR_COLOR_WHITE, SCR_COLOR_RED);
+        fontSetCharPos(10, 10);
+        fontSetCarridgeReturnPosX(10);
 
-    in_panic_handler = true;
-    xTaskHandle current_task= xTaskGetCurrentTaskHandle();
-    TRACE_SCR("PANIC\r\n");
-    TRACE_ERROR("!!!PANIC!!!\r\n");
-    if (msg) {
-        TRACE_SCR("\r\n%s", msg);
-        TRACE_ERROR("%s\r\n", msg);
+        xTaskHandle current_task= xTaskGetCurrentTaskHandle();
+        TRACE_SCR("PANIC\r\n");
+        TRACE_ERROR("!!!PANIC!!!\r\n");
+        if (msg) {
+            TRACE_SCR("\r\n%s", msg);
+            TRACE_ERROR("%s\r\n", msg);
+        }
+        if (current_task) {
+            TRACE_SCR("\r\nthandle: %x\r\ntname: %s", current_task, xTaskGetName(current_task));
+            TRACE_ERROR("thandle: %x\r\ntname: %s\r\n", current_task, xTaskGetName(current_task));
+        }
     }
-    if (current_task) {
-        TRACE_SCR("\r\nthandle: %x\r\ntname: %s", current_task, xTaskGetName(current_task));
-        TRACE_ERROR("thandle: %x\r\ntname: %s\r\n", current_task, xTaskGetName(current_task));
-    }
-    AT91C_BASE_AIC->AIC_IDCR = 0xffffffff;
 
     uint32_t count;
     while(1) {
@@ -75,24 +83,27 @@ void panic(const char* msg) {
 }
 
 void panic_abort(unsigned int abort_type, unsigned int abort_mem) {
+    if (!in_panic_handler) {
+        in_panic_handler = true;
+        AT91C_BASE_AIC->AIC_IDCR = 0xffffffff;
 /*
-    ledrgb_open();
-    ledrgb_set(0x7, 0xe0, 0, 0);
+        ledrgb_open();
+        ledrgb_set(0x7, 0xe0, 0, 0);
 */
-    oled_screen_state(true);
+        oled_screen_state(true);
 
-    scrWriteRect(0, 0, 159, 127, SCR_COLOR_RED);
-    
-    fontSetColor(SCR_COLOR_WHITE, SCR_COLOR_RED);
-    fontSetCharPos(10, 10);
-    fontSetCarridgeReturnPosX(10);
+        scrWriteRect(0, 0, 159, 127, SCR_COLOR_RED);
+        
+        fontSetColor(SCR_COLOR_WHITE, SCR_COLOR_RED);
+        fontSetCharPos(10, 10);
+        fontSetCarridgeReturnPosX(10);
 
-    in_panic_handler = true;
-    xTaskHandle current_task= xTaskGetCurrentTaskHandle();
-    TRACE_ERROR("!!!ABORT!!! %x %x %x\r\n", abort_type, abort_mem, current_task);
-    TRACE_SCR("ABORT\r\n\r\ntype: %d\r\naddr: %x", abort_type, abort_mem);
-    if (current_task) {
-        TRACE_SCR("\r\nthandle: %x\r\ntname: %s", current_task, xTaskGetName(current_task));
+        xTaskHandle current_task= xTaskGetCurrentTaskHandle();
+        TRACE_ERROR("!!!ABORT!!! %x %x %x\r\n", abort_type, abort_mem, current_task);
+        TRACE_SCR("ABORT\r\n\r\ntype: %d\r\naddr: %x", abort_type, abort_mem);
+        if (current_task) {
+            TRACE_SCR("\r\nthandle: %x\r\ntname: %s", current_task, xTaskGetName(current_task));
+        }
     }
 
     uint32_t count;
@@ -212,10 +223,32 @@ void Run( ) // this task gets called as soon as we boot up.
     //Task_create( lua_event_loop, "lua", TASK_LUA_STACK, TASK_LUA_PRI, NULL );
 
 #if 0
-    audio_play();
-    while(1) {
-        Task_sleep(10000);
-    };
+    {
+        FATFS fatfs;
+        FRESULT f;
+        int err = 0;
+
+        if ((f = disk_initialize (0)) != FR_OK) {
+            f_printerror (f);
+            return 1;
+        }
+        if ((f = f_mount (0, &fatfs)) != FR_OK) {
+            f_printerror (f);
+            return 1;
+        }
+        audio_sample *sample = audio_sample_from_wav_file("/sample.wav", 0, 0, 0, audio_malloc, NULL);
+        
+        if ((f = f_mount (0, NULL)) != FR_OK) {
+            f_printerror (f);
+        }
+
+        if (sample == NULL)
+            panic("sample");
+
+        audio_play(sample, 0, 1);
+        while(1)
+            Task_sleep(10000);
+    }
 #endif
     xTaskCreate(lua_event_loop, (signed char*)"lua", TASK_STACK_SIZE(TASK_LUA_STACK), NULL, TASK_LUA_PRI, NULL);
 
