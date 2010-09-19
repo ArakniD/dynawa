@@ -12,6 +12,8 @@ extern audio_sample *audio_current_sample;
 extern uint32_t audio_current_sample_loop;
 extern uint32_t audio_current_sample_remaining;
 extern uint32_t audio_current_sample_transmitted;
+extern void* (*audio_current_sample_stop_callback)(void *arg);
+extern void* audio_current_sample_stop_callback_arg;
 
 //------------------------------------------------------------------------------
 /// Interrupt handler for the SSC. Loads the PDC with the audio data to stream.
@@ -26,16 +28,7 @@ static void audio_isr(void)
     // Last buffer sent
     if ((status & AT91C_SSC_TXBUFE) != 0) {
 
-        //isWavPlaying = 0;
-        SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_ENDTX | AT91C_SSC_TXBUFE);
-        BOARD_DAC7311_SSC->SSC_PTCR = AT91C_PDC_TXTDIS;
-        //DisplayMenu();
-        DAC7311_Disable();
-
-        event ev;
-        ev.type = EVENT_AUDIO;
-        ev.data.audio.data = Timer_tick_count_nonblock() - audio_start;
-        event_post_isr(&ev);
+        audio_stop();
     // One buffer sent & more buffers to send
     } else {
         if (audio_current_sample_remaining == 0 && audio_current_sample_loop) {

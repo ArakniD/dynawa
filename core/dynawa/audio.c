@@ -10,19 +10,21 @@
 
 static WavHeader wav_header;
 
-audio_sample *audio_current_sample;
+audio_sample *audio_current_sample = NULL;
+uint32_t audio_current_sample_start;
 uint32_t audio_current_sample_remaining;
 uint32_t audio_current_sample_transmitted;
 uint32_t audio_current_sample_loop;
-
+void* (*audio_current_sample_stop_callback)(void *arg);
+void* audio_current_sample_stop_callback_arg;
 
 void audioIsr_Wrapper( );
 
-uint32_t audio_start;
 
-void audio_play(audio_sample *sample, uint32_t sample_rate, uint32_t loop) {
+void audio_play(audio_sample *sample, uint32_t sample_rate, uint32_t loop, void* (f_stop_callback)(void *arg), void* stop_callback_arg) {
     TRACE_INFO("audio_play() %d\r\n", Timer_tick_count());
 
+    audio_stop();
     // Configure and enable the SSC interrupt
     AIC_ConfigureIT(BOARD_DAC7311_SSC_ID, 0, audioIsr_Wrapper);
     AIC_EnableIT(BOARD_DAC7311_SSC_ID);
@@ -30,10 +32,12 @@ void audio_play(audio_sample *sample, uint32_t sample_rate, uint32_t loop) {
     //DAC7311_Enable(48000, 2, MCK);
     DAC7311_Enable(sample_rate ? sample_rate : sample->sample_rate, 2, MCK);
 
-    audio_start = Timer_tick_count();
-
     audio_current_sample = sample;
     audio_current_sample_loop = loop ? loop : sample->loop;
+    audio_current_sample_stop_callback = f_stop_callback;
+    audio_current_sample_stop_callback_arg = stop_callback_arg;
+    audio_current_sample_start = Timer_tick_count();
+
     audio_current_sample_remaining = sample->length;
     audio_current_sample_transmitted = 0;
 
@@ -59,10 +63,20 @@ void audio_play(audio_sample *sample, uint32_t sample_rate, uint32_t loop) {
 
 void audio_stop(void)
 {
+    if (audio_current_sample == NULL) {
+        return;
+    }
     SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_TXBUFE | AT91C_SSC_ENDTX);
     BOARD_DAC7311_SSC->SSC_PTCR = AT91C_PDC_TXTDIS;
     BOARD_DAC7311_SSC->SSC_TNCR = 0;
     BOARD_DAC7311_SSC->SSC_TCR = 0;
+
+    DAC7311_Disable();
+
+    if (audio_current_sample_stop_callback != NULL) {
+        (*audio_current_sample_stop_callback)(audio_current_sample_stop_callback_arg);
+    }
+    audio_current_sample = NULL;
 }  
 
 #define WAV_BUF_SIZE 512
@@ -152,8 +166,7 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
             switch(wav_sample_size) {
             case 1:
                 // 8-bit unsigned (0 to 255)
-                s |= wav_buf[pos] << 6;
-                //s |= (wav_buf[pos] << 7) & 0x3ffc;
+                s += (wav_buf[pos] / wav_num_channels) << 6;
                 break;
             case 2:
                 // 16-bit signed (-32768 to 32767)
@@ -161,16 +174,10 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
                 //if (i) // right channel only
                 {
                     int16_t ss = ((int16_t*)wav_buf)[pos];
-/*
-                    int j = pos * 2;
-                    int16_t ss = (wav_buf[j + 0] << 8) | wav_buf[j + 1];
-*/
                     uint16_t us = ss + 32768;
-                    //uint16_t us = (ss >> 2) + (32768 >> 2);
                     
-                    s |= (us >> 2) & 0x3ffc;
+                    s += (us / wav_num_channels) >> 2;
                     //TRACE_AUDIO("%d %x %x\r\n", i, us, s);
-                    //s |= us;
                 }
                 break; 
             default:
@@ -197,17 +204,6 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
         }
         TRACE_AUDIO("\r\n");
     }
-#endif
-
-#if 0 // Little/Big endian test -=> little
-    //unsigned char b[2] = {0xff, 0xff};
-    //unsigned char b[2] = {0xff, 0x7f};
-    unsigned char b[2] = {0x00, 0x80};
-    //unsigned char b[2] = {0x00, 0x00};
-    signed short ss = ((signed short*)b)[0];
-    unsigned short us = ss + 32768;
-
-    TRACE_AUDIO("%d %d\r\n", ss, us);
 #endif
 
     TRACE_AUDIO("sample %x %x\r\n", (void*)sample + sizeof(audio_sample) + sample_len, p);
