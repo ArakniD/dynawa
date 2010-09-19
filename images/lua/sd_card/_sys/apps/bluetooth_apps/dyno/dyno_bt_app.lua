@@ -4,17 +4,31 @@ app.id = "dynawa.dyno"
 function app:start()
 	self.events = Class.EventSource("openwatch")
 	self.activities = {}
-	for bdaddr,device in pairs(dynawa.bluetooth_manager.prefs.devices) do
-		--log("Connecting to "..device.name)
-		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
-		
-		local act = {id = dynawa.unique_id()}
-		act.name = device.name
-		act.bdaddr = bdaddr
-		act.status = "bt_off"
-		self.activities[act.id] = act
-		--self:activity_start(act)
+	local mine = self:load_data()
+	if mine then
+		mine = assert(mine.devices)
+		for bdaddr, device in pairs(mine) do
+			self:new_activity(bdaddr,assert(device.status))
+		end
 	end
+	dynawa.bluetooth_manager.events:register_for_events(self)
+end
+
+--Creates 'activity' structure. The bdaddr device must already be paired with the watch.
+function app:new_activity(bdaddr, status)
+	local device = dynawa.bluetooth_manager.prefs.devices[bdaddr]
+	if not device then
+		return nil, "This device is not paired with the watch"
+	end
+	local act = {id = "act"..dynawa.unique_id()}
+	act.name = device.name
+	act.bdaddr = bdaddr
+	act.status = status or "bt_off"
+	self.activities[act.id] = act
+	if dynawa.bluetooth_manager.hw_status == "on" then
+		self:activity_start(act)
+	end
+	return act
 end
 
 local function to_word(num) --Convert integer to 2 byte word
@@ -38,22 +52,33 @@ local function safe_string(str)
 end
 
 function app:handle_bt_event_turned_on()
+	local mine = self:load_data()
+	if mine then
+		mine = assert(mine.devices)
+	else
+		mine = {}
+	end
 	for act_id,act in pairs(self.activities) do
-		log("Connecting to "..act.name)
-		--dynawa.devices.bluetooth.cmd:set_link_key(bdaddr, device.link_key)
+		if mine[act.bdaddr].status == "disabled" then
+			act.status = "disabled"
+		end
 		self:activity_start(act)
 	end
 end
 
 function app:handle_bt_event_turning_off()
 	for id, activity in pairs(self.activities) do
-		self:activity_disable(activity)
+		self:activity_stop(activity)
 		activity.status = "bt_off"
 	end
 end
 
 function app:activity_start(act)
 	assert(act)
+	--log("act.status = "..tostring(act.status))
+	if act.status == "disabled" then
+		return nil
+	end
 	local socket = assert(self:new_socket("sdp"))
 	act.socket = socket
 	socket.activity = act
@@ -61,17 +86,51 @@ function app:activity_start(act)
 	assert(act.bdaddr)
 	act.channel = false
 	act.status = "finding_service"
+	log("Connecting to "..act.name)
     dynawa.devices.bluetooth.cmd:find_service(socket._c, act.bdaddr)
+    return act
 end
 
-function app:activity_disable(activity)
+function app:activity_enable(activity)
+	assert(activity.status == "disabled", "Activity status is not 'disabled' but "..tostring(activity.status))
+	activity.status = "bt_off"
+	self:save_prefs()
+	if dynawa.bluetooth_manager.hw_status == "on" then
+		self:activity_start(activity)
+	end
+end
+
+function app:activity_stop(activity)
 	if activity.socket then
 		if not activity.socket.__deleted then
 			log("Trying to close "..activity.socket)
 			activity.socket:close()
 		end
 		activity.socket = nil
-		activity.status = "disabled"
+	end
+	activity.sender = nil
+	activity.reconnect_delay = nil
+	activity.status = nil
+end
+
+function app:activity_disable(activity)
+	self:activity_stop(activity)
+	activity.status = "disabled"
+	self:save_prefs()
+end
+
+function app:handle_event_removed_paired_device(event)
+	local device = assert(event.device)
+	assert(device.bdaddr)
+	--Does this device concern us?
+	for id,act in pairs(self.activities) do
+		if assert(act.bdaddr) == device.bdaddr then
+			self:activity_stop(act)
+			assert(self.activities[act.id],"Activity vanished too soon")
+			self.activities[act.id] = nil
+			self:save_prefs()
+			return
+		end
 	end
 end
 
@@ -313,7 +372,7 @@ end
 function app:should_reconnect(activity)
 	assert(not activity.__deleted)
 	activity.status = "waiting_for_reconnect"
-	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 8000)
+	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 600000)
 	log("Waiting "..activity.reconnect_delay.." ms before trying to reconnect "..activity.name)
 	dynawa.devices.timers:timed_event{delay = activity.reconnect_delay, receiver = self, what = "attempt_reconnect", activity = activity}
 end
@@ -366,6 +425,42 @@ function app:info(txt)
 	dynawa.devices.vibrator:alert()
 end
 
+function app:handle_event_do_menu()
+	local menudesc = {banner = "Dyno's phones:"}
+	local items = assert(self:activity_items())
+	table.insert(items,{text = "Add another (already paired) phone", selected = function(_self,args)
+		local menudesc = {banner = "Choose the phone to add to Dyno:"}
+		local mine = self:load_data()
+		if mine then
+			mine = assert(mine.devices)
+		else
+			mine = {}
+		end
+		local items = {}
+		for bdaddr,device in pairs(dynawa.bluetooth_manager.prefs.devices) do
+			if not mine[bdaddr] then -- This is not one of my devices, offer to add it.
+				table.insert(items,{text = device.name, selected = function(_self, args)
+					local act, err = self:new_activity(bdaddr)
+					if not act then
+						dynawa.popup:error(err)
+						return
+					else
+						dynawa.popup:info("Phone added to Dyno")
+						self:save_prefs()
+					end
+				end})
+			end
+		end
+		if not next(items) then
+			table.insert(items,{text = "No devices available. Make sure your phone is paired with the watch first."})
+		end
+		menudesc.items = items
+		self:new_menuwindow(menudesc):push()
+	end})
+	menudesc.items = items
+	self:new_menuwindow(menudesc):push()
+end
+
 function app:activity_status_text(act)
 	--Returns short text and (optionally) color
 	local status = assert(act.status)
@@ -395,15 +490,21 @@ function app:activity_menuitem_selected(_self,args)
 	local menudesc = {banner = activity.name, items = {}}
 	local text, color = self:activity_status_text(activity)
 	local act_id = assert(activity.id)
-	table.insert(menudesc.items,{text = "Dyno status: "..text, textcolor = color})
+	table.insert(menudesc.items,{text = "Status: "..text, textcolor = color})
 	if activity.status == "disabled" then
-		--#todo enable disabled activity
+		table.insert(menudesc.items, {text = "Enable this phone", selected = function(__self, args)
+			if self.activities[act_id] then
+				self:activity_enable(activity)
+				dynawa.popup:info("Enabled")
+			else
+				dynawa.popup:error("Unknown device")
+			end			
+		end})
 	else
 		table.insert(menudesc.items, {text = "Disable temporarily", selected = function(__self, args)
 			if self.activities[act_id] then
 				self:activity_disable(activity)
 				dynawa.popup:info("Disabled")
-				self:save_prefs()
 			else
 				dynawa.popup:error("Unknown device")
 			end			

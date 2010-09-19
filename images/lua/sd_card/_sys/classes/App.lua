@@ -78,6 +78,7 @@ function class:load_data()
 end
 
 function class:save_data(data)
+	assert(data)
 	return dynawa.file.save_data(data, self.dir.."my.data")
 end
 

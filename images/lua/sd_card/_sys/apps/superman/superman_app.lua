@@ -161,10 +161,23 @@ function app.menu_builders:file_browser(dir)
 				end
 				--log("Adding dirstat item: "..txt)
 				local location = "file:"..dir..k
+				local item = {text = txt, sort = sort}
 				if v == "dir" then
-					location = "file_browser:"..dir..k.."/"
+					item.value = {go_to_url = "file_browser:"..dir..k.."/"}
+				elseif k:match("%.wav$") then
+					item.selected = function()
+						local fname = dir..k
+						log("Attempting to play sample: "..fname)						
+						local sample = dynawa.audio.sample_from_wav_file(fname, nil, nil, nil)
+						if sample then
+						    log("sample ok")
+						    dynawa.audio.play(sample, nil, nil)
+						else
+						    log("sample nok")
+						end
+					end
 				end
-				table.insert(menu.items,{text = txt, sort = sort, value={go_to_url = location}})
+				table.insert(menu.items,item)
 			end
 			table.sort(menu.items,function(it1,it2)
 				return it1.sort < it2.sort
