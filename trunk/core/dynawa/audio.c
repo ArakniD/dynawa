@@ -149,6 +149,7 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
 
     int avail = 0;
     int pos;
+    uint16_t min = 0xffff, max = 0;
     while(wav_num_units--) {
         int i;
         uint16_t s = 0;
@@ -166,7 +167,8 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
             switch(wav_sample_size) {
             case 1:
                 // 8-bit unsigned (0 to 255)
-                s += (wav_buf[pos] / wav_num_channels) << 6;
+                //s += (wav_buf[pos] / wav_num_channels) << 6;
+                s += (wav_buf[pos] / wav_num_channels) << 8;
                 break;
             case 2:
                 // 16-bit signed (-32768 to 32767)
@@ -176,7 +178,8 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
                     int16_t ss = ((int16_t*)wav_buf)[pos];
                     uint16_t us = ss + 32768;
                     
-                    s += (us / wav_num_channels) >> 2;
+                    //s += (us / wav_num_channels) >> 2;
+                    s += (us / wav_num_channels);
                     //TRACE_AUDIO("%d %x %x\r\n", i, us, s);
                 }
                 break; 
@@ -190,7 +193,14 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
                 panic("sample avail");
         }
         //TRACE_AUDIO("[%x]=%x\r\n", p, s);
-        *p++ = s;
+        //*p++ = s;
+        if (s > max) {
+            max = s;
+        }
+        if (s < min) {
+            min = s;
+        }
+        *p++ = s >> 2;
     }
 #if 0
     p = (uint16_t*)((void*)sample + sizeof(audio_sample));
@@ -207,6 +217,7 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
 #endif
 
     TRACE_AUDIO("sample %x %x\r\n", (void*)sample + sizeof(audio_sample) + sample_len, p);
+    TRACE_AUDIO("sample min %d max %d\r\n", min, max);
     fclose(f);
 
     TRACE_AUDIO("ok\n");

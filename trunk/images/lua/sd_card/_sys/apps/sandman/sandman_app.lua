@@ -7,6 +7,7 @@ function app:start()
 	dynawa.devices.buttons:register_for_events(self, function(event)
 		return (event.action == "button_down")
 	end)
+	dynawa.devices.accelerometer:register_for_events(self)
 	self.sleeping = false
 	self.last_timestamp = -1
 	self.last_handle = false
@@ -44,12 +45,10 @@ function app:activity(force)
 	end
 end
 
-function app:handle_event_timed_event(event)
-	log("Sandman: Timed event "..event.timestamp.." x "..tostring(self.last_timestamp))
-	if event.timestamp ~= self.last_timestamp then
-		--New timed event was triggered by Sandman AFTER his previous event fired! Ignore previous event.
-		return
-	end
+function app:sleep()
+    if self.sleeping then
+        return
+    end
 	log("Going to sleep")
 	dynawa.window_manager:stack_cleanup()
 	self.sleeping = true
@@ -57,10 +56,29 @@ function app:handle_event_timed_event(event)
 	dynawa.devices.display.power(0)
 end
 
+function app:handle_event_timed_event(event)
+	log("Sandman: Timed event "..event.timestamp.." x "..tostring(self.last_timestamp))
+	if event.timestamp ~= self.last_timestamp then
+		--New timed event was triggered by Sandman AFTER his previous event fired! Ignore previous event.
+		return
+	end
+    self:sleep()
+end
+
+
 function app:handle_event_button(event)
 	--local t = dynawa.ticks()
 	--log("Button down at "..t)
 	self:activity()
+end
+
+function app:handle_event_accelerometer(event)
+    log("sandman accelometer " .. event.gesture)
+    if event.gesture == "wakeup" then
+        self:activity()
+    elseif event.gesture == "sleep" then
+        self:sleep()
+    end
 end
 
 local function time_to_text(num)

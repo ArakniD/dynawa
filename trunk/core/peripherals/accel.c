@@ -50,7 +50,9 @@ int accel_start() {
 
     accel_reg_read8(ACCEL_REG_HP_FILTER_RESET);
     //accel_reg_write8(ACCEL_REG_DD_CFG, 0xcf); // X & Y DD
-    accel_reg_write8(ACCEL_REG_DD_CFG, 0xfc); // Y & Z DD
+    //accel_reg_write8(ACCEL_REG_DD_CFG, 0xfc); // Y & Z DD
+    //accel_reg_write8(ACCEL_REG_DD_CFG, 0xcc); // Y (hi/low) only
+    accel_reg_write8(ACCEL_REG_DD_CFG, 0xc4); // Y (low) only
 
     spi_unlock();
 }
