@@ -4,7 +4,7 @@ function class:_init(...)
 	Class.App._init(self,...)
 end
 
---In the case of BT Apps, this is called whenever the App's name in BT Manager's App list is clicked
+--In the case of BT Apps, this is also called whenever the App's name in BT Manager's App list is clicked
 --Sensible default is to return the BT App's Activities list
 function class:handle_event_do_menu()
 	local menudesc = {banner = self.name.." activities:"}
@@ -59,6 +59,14 @@ end
 
 function class:handle_event_socket_find_service_result(socket,channel)
 	log ("Find_service_result channel = "..tostring(channel))
+end
+
+--For the following event to be received, BT App must subscribe to dynawa.bluetooth_manager.events
+function class:handle_event_new_paired_device(event)
+end
+
+--For the following event to be received, BT App must subscribe to dynawa.bluetooth_manager.events
+function class:handle_event_removed_paired_device(event)
 end
 
 function class:handle_bt_event_turned_on()

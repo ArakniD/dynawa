@@ -43,8 +43,13 @@ local socket_events = {connected = true, disconnected = true, accepted = true, d
 function class:handle_hw_event(event)
 	event.subtype = assert(events[event.subtype],"Unknown BT event: "..event.subtype)
 	if socket_events[event.subtype] then --Handled by BluetoothSocket instance
-		log("BT sending event '"..event.subtype.."' to "..event.socket)
-		event.socket["handle_bt_event_"..event.subtype](event.socket,event)
+		if not event.socket then
+			--#todo what's this???
+			log("Received BT HW event of subtype "..tostring(event.subtype).." but socket is nil")
+		else
+			log("BT sending event '"..event.subtype.."' to "..(event.socket or "nil"))
+			event.socket["handle_bt_event_"..event.subtype](event.socket,event)
+		end
 	else
 		self:generate_event(event) --Handled by BT manager
 	end
