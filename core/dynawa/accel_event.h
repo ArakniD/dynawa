@@ -5,6 +5,7 @@
 
 typedef struct {
     uint32_t gesture;
+    int16_t x, y, z;
 } event_data_accel;
 
 #endif // ACCEL_EVENT_H_

@@ -427,6 +427,18 @@ int lua_event_loop (void) {
             lua_pushstring(L, "gesture");
             lua_pushnumber(L, ev.data.accel.gesture);
             lua_settable(L, -3);
+
+            lua_pushstring(L, "x");
+            lua_pushnumber(L, ev.data.accel.x);
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "y");
+            lua_pushnumber(L, ev.data.accel.y);
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "z");
+            lua_pushnumber(L, ev.data.accel.z);
+            lua_settable(L, -3);
             break;
         case EVENT_AUDIO:
             TRACE_LUA("EVENT_AUDIO\r\n");

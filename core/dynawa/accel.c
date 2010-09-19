@@ -61,7 +61,11 @@ static void accel_task( void* p ) {
 
         event ev;
         ev.type = EVENT_ACCEL;
-        ev.data.accel.gesture = 1;
+        //ev.data.accel.gesture = src & 0x0c;
+        ev.data.accel.gesture = src & 0x04 ? 1 : 2;
+        ev.data.accel.x = x;
+        ev.data.accel.y = y;
+        ev.data.accel.z = z;
         event_post(&ev);
 
     }

@@ -48,7 +48,7 @@
 //#define TR_SER          
 //#define TR_SD           
 //#define TR_SPI
-//#define TR_ACCEL
+#define TR_ACCEL
 //#define TR_USB          
 //#define TR_BOT          
 //#define TR_SBC          
