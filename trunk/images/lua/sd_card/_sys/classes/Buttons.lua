@@ -23,12 +23,18 @@ function class:update_matrix(event)
 	else
 		assert(action == "button_hold")
 		self.matrix[button] = 0 - dynawa.ticks()
---[[
+--[
         if button == "bottom" then
-            log("dynawa.x.audio_play()")
-            dynawa.x.audio_play()
+            log("dynawa.audio test")
+            local sample = dynawa.audio.sample_from_wav_file("/sample.wav", nil, nil, nil)
+            if sample then
+                log("sample ok")
+                dynawa.audio.play(sample, nil, nil)
+            else
+                log("sample nok")
+            end
         end
-]]
+--]]
 	end
 --[[	for k,v in pairs(self.matrix) do
 		log(k..":"..v)

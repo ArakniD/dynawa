@@ -245,7 +245,7 @@ void Run( ) // this task gets called as soon as we boot up.
         if (sample == NULL)
             panic("sample");
 
-        audio_play(sample, 0, 1);
+        audio_play(sample, 0, 1, NULL, NULL);
         while(1)
             Task_sleep(10000);
     }

@@ -436,9 +436,18 @@ int lua_event_loop (void) {
             lua_pushstring(L, "audio");
             lua_settable(L, -3);
 
-            lua_pushstring(L, "data");
-            lua_pushnumber(L, ev.data.audio.data);
+            lua_pushstring(L, "subtype");
+            lua_pushnumber(L, ev.data.audio.type);
             lua_settable(L, -3);
+
+            if (ev.data.audio.type == EVENT_AUDIO_STOP) {
+                uint32_t sample_ref =  ev.data.audio.data;
+                lua_pushstring(L, "sample");
+                lua_rawgeti(L, LUA_REGISTRYINDEX, sample_ref);
+                lua_settable(L, -3);
+                luaL_unref(L, LUA_REGISTRYINDEX, sample_ref);
+                TRACE_INFO("EVENT_AUDIO_STOP %d\r\n", sample_ref);
+            }
             break;
         default:
             TRACE_ERROR("Uknown event %x\r\n", ev.type);
