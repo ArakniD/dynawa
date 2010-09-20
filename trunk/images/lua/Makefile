@@ -208,6 +208,7 @@ THUMB_SRC= \
   $(UTILS)/delay.c \
   $(UTILS)/wav.c \
   $(UTILS)/math.c \
+  $(UTILS)/fastfixmath.c \
   $(SCREEN)/font.c \
   $(LUA)/lapi.c \
   $(LUA)/lauxlib.c \
@@ -293,6 +294,7 @@ THUMB_SRC= \
   $(PERIPHERALS)/amblightsensor.c \
   $(PERIPHERALS)/ledrgb.c \
   $(PERIPHERALS)/vibrator.c \
+  $(SCREEN)/screen.c \
   $(LWBT_SRC) \
   $(ZLIB)/adler32.c \
   $(ZLIB)/compress.c \
@@ -346,7 +348,7 @@ ARM_SRC= \
   $(PERIPHERALS)/spi_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \
-  $(SCREEN)/screen.c \
+  $(SCREEN)/screen_fast.c \
   $(LUA)/ldo.c \
   $(DYNAWA)/io_isr.c
   

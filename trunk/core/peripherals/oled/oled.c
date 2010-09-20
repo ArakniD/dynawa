@@ -15,6 +15,20 @@
 #include "oled.h"
 #include "types.h"
 
+#if 0
+#include "rtos.h"
+
+static xSemaphoreHandle oled_mutex;
+
+void oledLock() {
+    xSemaphoreTake(oled_mutex, -1);
+}
+
+void oledUnLock() {
+    xSemaphoreGive(oled_mutex);
+}
+#endif
+
 void oledWriteCommand(uint16_t cmd, uint16_t param)
 {
     volatile uint16_t *pOLED;
@@ -159,6 +173,13 @@ int oled_power_state(bool on) {
 
 int oledInitHw(void)
 {
+#if 0
+    oled_mutex = xSemaphoreCreateMutex();
+    if (oled_mutex == NULL) {
+        panic("oledInitHw");
+    }
+#endif
+
     volatile AT91PS_PMC	pPMC = AT91C_BASE_PMC;
     volatile AT91PS_SMC2	pSMC = AT91C_BASE_SMC;
 
@@ -193,6 +214,10 @@ int oledInitHw(void)
     oled_power_state(true);
 
     return 0;
+}
+
+void oledClose() {
+    //vQueueDelete(oled_mutex);
 }
 
 void oledScreen(int16_t scrscrX1, int16_t scrscrY1, int16_t scrscrX2, int16_t scrscrY2)

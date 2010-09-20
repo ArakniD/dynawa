@@ -47,7 +47,7 @@ SECTIONS
 		__fast_start__ = .;
 		__fast_load_start__ = . + (LOADADDR(.fast) - ADDR(.fast));
 		*(.fast .fast.*)
-        */screen.o(.text)
+        */screen_fast.o(.text)
         */oled.o(.text)
         */bitmap.o(.text)
 		. = ALIGN(4);

@@ -61,11 +61,13 @@ int main( void )
 */
     prvSetupHardware();
 
+#if 0
     //screen
     scrInit();
     fontSetCharPos(0,110);
     fontColor = SCR_COLOR_WHITE;
     TRACE_SCR("FreeRTOS Image\n\r");
+#endif
 
     //button_init();
     xTaskCreate( StarterTask, "starter", TASK_STACK_SIZE(TASK_STARTER_STACK), NULL, TASK_STARTER_PRI, NULL );

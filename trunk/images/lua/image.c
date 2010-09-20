@@ -143,9 +143,9 @@ void Run( ) // this task gets called as soon as we boot up.
     Timer_start(&sys_timer, 24 * 3600, true, false);
     TRACE_INFO("sys timer ok\n\r");
 
-    //scrInit();
+    scrInit();
     //oledInitHw();
-    //TRACE_INFO("scrInit ok\n\r");
+    TRACE_INFO("scrInit ok\n\r");
 
     spi_init();
     TRACE_INFO("spi_init ok\n\r");
@@ -174,9 +174,11 @@ void Run( ) // this task gets called as soon as we boot up.
     display_power(1);
     TRACE_INFO("display_power ok\n\r");
 
+#if 0
     //test();
     scrWriteRect(0,126,40,127,0xffffff);
     scrWriteRect(80,126,120,127,0xffffff);
+#endif
 
     battery_init();
     TRACE_INFO("battery_init ok\n\r");
@@ -236,7 +238,7 @@ void Run( ) // this task gets called as soon as we boot up.
             f_printerror (f);
             return 1;
         }
-        audio_sample *sample = audio_sample_from_wav_file("/sample.wav", 0, 0, 0, audio_malloc, NULL);
+        audio_sample *sample = audio_sample_from_wav_file("/sample.wav", -1, 0, 0, audio_malloc, NULL);
         
         if ((f = f_mount (0, NULL)) != FR_OK) {
             f_printerror (f);

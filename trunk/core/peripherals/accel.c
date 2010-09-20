@@ -44,9 +44,10 @@ int accel_start() {
     accel_reg_write8(ACCEL_REG_CTRL_REG3, 0x4b);
 
     // DD threshold (0xffff / 2 = 0x7fff = FS (2g)
-    // => 1g = 0x7fff / 2 = 0x3fff
-    accel_reg_write16(ACCEL_REG_DD_THSE_L, 0x2800);
-    accel_reg_write16(ACCEL_REG_DD_THSI_L, 0x2600);
+    // => 1g = 0x7fff / 2 = 0x3fff (16383)
+    accel_reg_write16(ACCEL_REG_DD_THSE_L, 0x2800); // 0.6g
+    //accel_reg_write16(ACCEL_REG_DD_THSI_L, 0x2600);
+    accel_reg_write16(ACCEL_REG_DD_THSI_L, 0x1300); // 0.3g
 
     accel_reg_read8(ACCEL_REG_HP_FILTER_RESET);
     //accel_reg_write8(ACCEL_REG_DD_CFG, 0xcf); // X & Y DD

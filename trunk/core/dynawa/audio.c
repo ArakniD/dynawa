@@ -4,6 +4,7 @@
 #include "types.h"
 #include "audio.h"
 #include "utils/wav.h"
+#include "utils/fastfixmath.h"
 #include "debug/trace.h"
 
 #define SAMPLE_LEN 60000
@@ -86,6 +87,9 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
 
     TRACE_AUDIO("audio_sample_from_wav_file(%s)\r\n", filename);
     audio_sample *sample;
+
+// test
+    volume = 2457; // x1.2
 
     FILE *f = fopen(filename, "r");
 
@@ -176,6 +180,15 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
                 //if (i) // right channel only
                 {
                     int16_t ss = ((int16_t*)wav_buf)[pos];
+
+                    if (volume != -1) {
+                        int sss = ffm_mult(ss * FFM_UNIT, volume);
+                        if (sss < -32768 || sss > 32767) {
+                            TRACE_AUDIO("sample clipping\r\n");
+                        }
+                        ss = (int16_t)sss;
+                    }
+
                     uint16_t us = ss + 32768;
                     
                     //s += (us / wav_num_channels) >> 2;
@@ -194,6 +207,7 @@ audio_sample* audio_sample_from_wav_file(const char *filename, int8_t volume, ui
         }
         //TRACE_AUDIO("[%x]=%x\r\n", p, s);
         //*p++ = s;
+
         if (s > max) {
             max = s;
         }

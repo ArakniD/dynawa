@@ -208,9 +208,11 @@ static int l_show (lua_State *L) {
         luaL_checktype(L, 2, LUA_TBOOLEAN);
         rotate = lua_toboolean(L, 2);
     }
+    scrLock();
 // TODO rotate flag
     scrWriteBitmapRGBA(0, 0, OLED_RESOLUTION_X - 1, OLED_RESOLUTION_Y - 1, ((uint8_t*)bmp + sizeof(bitmap_header)));
     //scrWriteBitmapRGBA2(0, 0, 0, 0, OLED_RESOLUTION_X, OLED_RESOLUTION_Y, bmp);
+    scrUnLock();
     return 0;
 }
 
@@ -254,8 +256,10 @@ static int l_show_partial (lua_State *L) {
         luaL_checktype(L, 8, LUA_TBOOLEAN);
         rotate = lua_toboolean(L, 8);
     }
+    scrLock();
 // TODO rotate flag
     scrWriteBitmapRGBA2(scr_x, scr_y, x, y, width, height, bmp);
+    scrUnLock();
     return 0;
 }
 
