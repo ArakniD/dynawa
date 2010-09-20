@@ -46,9 +46,9 @@ function app:activity(force)
 end
 
 function app:sleep()
-    if self.sleeping then
-        return
-    end
+	if self.sleeping then
+		return
+	end
 	log("Going to sleep")
 	dynawa.window_manager:stack_cleanup()
 	self.sleeping = true
@@ -62,7 +62,7 @@ function app:handle_event_timed_event(event)
 		--New timed event was triggered by Sandman AFTER his previous event fired! Ignore previous event.
 		return
 	end
-    self:sleep()
+	self:sleep()
 end
 
 
