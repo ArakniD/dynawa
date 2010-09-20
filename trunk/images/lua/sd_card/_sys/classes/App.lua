@@ -60,6 +60,10 @@ function class:handle_event_do_menu()
 	dynawa.popup:error("No context menu defined for "..self)
 end
 
+function class:handle_event_gesture_sleep()
+	--log(self.." sleep gesture")
+end
+
 function class:menu_item_selected()
 	return false
 end
