@@ -13,7 +13,7 @@ const int sinelut[128+1]={0,25,50,75,100,126,151,176,201,226,251,276,301,325,350
 
 int ffm_mult(int a, int b)
 {
-  return (int)(((long long int)a)*((long long int)b))/(FFM_UNIT*FFM_UNIT);
+  return (int)((((long long int)a)*((long long int)b))/(FFM_UNIT*FFM_UNIT));
 };
 
 int ffm_sin(int x)

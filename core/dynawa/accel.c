@@ -11,6 +11,7 @@
 static xTaskHandle accel_task_handle;
 xQueueHandle accel_queue;
 
+static uint32_t last_gesture = 0;
 static Io accel_io;
 
 static bool accel_wakeup_pin_high = false;
@@ -59,15 +60,19 @@ static void accel_task( void* p ) {
 
         TRACE_ACCEL("accel %x %d %d %d\r\n", src, x, y, z);
 
-        event ev;
-        ev.type = EVENT_ACCEL;
-        //ev.data.accel.gesture = src & 0x0c;
-        ev.data.accel.gesture = src & 0x04 ? 1 : 2;
-        ev.data.accel.x = x;
-        ev.data.accel.y = y;
-        ev.data.accel.z = z;
-        event_post(&ev);
+        uint32_t gesture = src & 0x04 ? 1 : 2;
 
+        if (!last_gesture || last_gesture != gesture) {
+            last_gesture = gesture;
+
+            event ev;
+            ev.type = EVENT_ACCEL;
+            ev.data.accel.gesture = gesture;
+            ev.data.accel.x = x;
+            ev.data.accel.y = y;
+            ev.data.accel.z = z;
+            event_post(&ev);
+        }
     }
 }
 
