@@ -77,7 +77,11 @@ function app:handle_event_accelerometer(event)
     if event.gesture == "wakeup" then
         self:activity()
     elseif event.gesture == "sleep" then
-        self:sleep()
+    	local window = dynawa.window_manager:peek()
+    	if window then
+    		local app = assert(window.app)
+    		app:handle_event_gesture_sleep(event)
+    	end
     end
 end
 

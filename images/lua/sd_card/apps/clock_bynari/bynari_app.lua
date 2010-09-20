@@ -229,3 +229,11 @@ function app:start()
 	--dofile(my.dir.."bynari_prefs.lua")
 end
 
+function app:handle_event_gesture_sleep()
+	if self.window and dynawa.window_manager:peek() == self.window then
+		--Don't go to sleep while my settings menu is displayed.
+		dynawa.app_manager:app_by_id("dynawa.sandman"):sleep()
+	end
+end
+
+

@@ -227,3 +227,7 @@ function app:handle_event_inbox_updated(event)
 	end
 end
 
+function app:handle_event_gesture_sleep()
+	dynawa.app_manager:app_by_id("dynawa.sandman"):sleep()
+end
+
