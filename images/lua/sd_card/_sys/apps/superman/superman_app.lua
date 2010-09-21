@@ -84,6 +84,7 @@ function app.menu_builders:root()
 			{text = "File browser", value = {go_to_url = "file_browser"}},
 			{text = "Display settings", value = {go_to_url = "adjust_display"}},
 			{text = "Time and date settings", value = {go_to_url = "adjust_time_date"}},
+			{text = "Gestures (accelerometer)", value = {go_to_url = "adjust_gestures"}},
 		},
 	}
 	return menu_def
@@ -462,3 +463,28 @@ function app.menu_builders:apps_switchable_item(id)
 	table.insert(menudesc.items,{text="Show App details", value={go_to_url="app:"..id}})
 	return menudesc
 end
+
+function app.menu_builders:adjust_gestures(index)
+	local status = "OFF"
+	if dynawa.settings.gestures.enabled then
+		status = "ON"
+	end
+	local menudesc = {banner = "Gestures are "..status, items = {}}
+	if status == "ON" then
+		table.insert(menudesc.items,{text = "Turn gestures off", selected = function ()
+			dynawa.settings.gestures.enabled = false
+			dynawa.file.save_settings()
+			dynawa.window_manager:pop():_delete()
+			dynawa.popup:info("Gestures disabled")
+		end})
+	else
+		table.insert(menudesc.items,{text = "Turn gestures on", selected = function ()
+			dynawa.settings.gestures.enabled = true
+			dynawa.file.save_settings()
+			dynawa.window_manager:pop():_delete()
+			dynawa.popup:info("Gestures enabled")
+		end})
+	end
+	return menudesc
+end
+

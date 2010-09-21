@@ -12,6 +12,7 @@ function app:start()
 		end
 	end
 	dynawa.bluetooth_manager.events:register_for_events(self)
+	self:status_changed()
 end
 
 --Creates 'activity' structure. The bdaddr device must already be paired with the watch.
@@ -88,6 +89,7 @@ function app:activity_start(act)
 	act.status = "finding_service"
 	log("Connecting to "..act.name)
     dynawa.devices.bluetooth.cmd:find_service(socket._c, act.bdaddr)
+    self:status_changed()
     return act
 end
 
@@ -111,6 +113,7 @@ function app:activity_stop(activity)
 	activity.sender = nil
 	activity.reconnect_delay = nil
 	activity.status = nil
+	self:status_changed()
 end
 
 function app:activity_disable(activity)
@@ -206,8 +209,9 @@ function app:activity_got_binstring(activity, binstring)
 			local t0 = os.time()
 			log (string.format("Time sync: %+d seconds",time - t0))
 			dynawa.time.set(time)
+			self:status_changed()
 		else
-			self.events:generate_event{type = "from_phone", data = value}
+			self.events:generate_event{type = "dyno_data_from_phone", data = value}
 		end
 	end
 end
@@ -263,7 +267,8 @@ function app:handle_event_socket_connected(socket)
 	socket.activity.status = "connected"
 	socket.activity.reconnect_delay = nil
 	self:info("Succesfully connected to "..socket.activity.name)
-	self:activity_send_data(socket.activity,"HELLO")	
+	self:activity_send_data(socket.activity,"HELLO")
+	--self:status_changed()
 end
 
 function app:send_data_test(data)
@@ -375,6 +380,7 @@ function app:should_reconnect(activity)
 	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 600000)
 	log("Waiting "..activity.reconnect_delay.." ms before trying to reconnect "..activity.name)
 	dynawa.devices.timers:timed_event{delay = activity.reconnect_delay, receiver = self, what = "attempt_reconnect", activity = activity}
+	self:status_changed()
 end
 
 function app:handle_event_timed_event(message)
@@ -565,3 +571,6 @@ function app:save_prefs()
 	self:save_data(prefs)
 end
 
+function app:status_changed()
+	self.events:generate_event{type="dyno_status_changed", activities = self.activities}
+end

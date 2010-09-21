@@ -18,12 +18,12 @@ function app:activity(force)
 	--log("Sandman: Activity")
 	if self.sleeping then
 		--log("Waking up!")
-		assert(not dynawa.window_manager:peek(),"There should be no windows on stack during sleep")
-		--dynawa.window_manager:stack_cleanup()
 		dynawa.devices.display.power(1)
 		self.sleeping = false
+		if not dynawa.window_manager:peek() then
+			dynawa.window_manager:show_default()
+		end
 		self:activity()
-		dynawa.window_manager:show_default()
 	else
 		local delay = assert(dynawa.settings.display.autosleep) * 1000
 		--log("Auto sleep delay = "..delay)

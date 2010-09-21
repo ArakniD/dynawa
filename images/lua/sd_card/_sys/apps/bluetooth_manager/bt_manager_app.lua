@@ -243,7 +243,7 @@ function app:handle_bt_event_stopped(event)
 	self.hw_status = "off"
 	log("BT off")
 end
-	
+
 function app:handle_bt_event_link_key_req(event)
 	local bdaddr = assert(event.bdaddr)
 	local link_key

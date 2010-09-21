@@ -31,7 +31,7 @@ function app:start()
 	local my_events
 	dynawa.app_manager:after_app_start("dynawa.dyno",function (dyno)
 		dyno.events:register_for_events(self, function(ev)
-			if not ev.type == "from_phone" then
+			if ev.type ~= "dyno_data_from_phone" then
 				return false
 			end
 			local com = ev.data.command
