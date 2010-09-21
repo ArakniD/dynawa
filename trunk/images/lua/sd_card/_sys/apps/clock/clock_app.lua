@@ -12,6 +12,12 @@ function app:start()
 		inbox:broadcast_update()
 	end)
 	dynawa.devices.battery:register_for_events(self)
+	dynawa.devices.bluetooth:register_for_events(self)
+	local dyno = dynawa.app_manager:app_by_id("dynawa.dyno")
+	dynawa.app_manager:after_app_start("dynawa.dyno", function(dyno)
+		dyno.events:register_for_events(self,function(ev) return (ev.type == "dyno_status_changed") end)
+		dyno:status_changed()
+	end)
 end
 
 function app:display(bitmap, x, y)
@@ -164,6 +170,11 @@ function app:gfx_init()
 	for i, id in ipairs{"battery","battery_critical","battery_charging"} do
 		icons.bitmaps[id] = b_copy(bmap, i*21 - 21, 25, 21, 40)
 	end
+	for i, id in ipairs{"bt_red","bt_green","dyno_red", "dyno_orange", "dyno_white"} do
+		icons.bitmaps[id] = b_copy(bmap, i*21 - 21, 65, 21, 20)
+	end
+	icons.bitmaps.bt_black = dynawa.bitmap.new(21,20,0,0,0)
+	icons.bitmaps.dyno_black = icons.bitmaps.bt_black
 end
 
 function app:handle_event_battery_status(event)
@@ -212,7 +223,7 @@ function app:handle_event_inbox_updated(event)
 		return
 	end
 	icons.state = new_state
-	local blank = dynawa.bitmap.new(139,40)
+	local blank = dynawa.bitmap.new(100,40)
 	self.window:show_bitmap_at(blank,0,0)
 	local x_pos = 0
 	for i, id in ipairs {"sms","email","calendar","call"} do
@@ -229,5 +240,45 @@ end
 
 function app:handle_event_gesture_sleep()
 	dynawa.app_manager:app_by_id("dynawa.sandman"):sleep()
+end
+
+function app:handle_event_bluetooth(event)
+	if event.subtype == "started" then
+--		log("Clock: bt started")
+		self:display_bt_icon("red")
+	elseif event.subtype == "stopped" then
+--		log("Clock: bt stopped")
+		self:display_bt_icon("black")
+	end
+end
+
+function app:handle_event_dyno_status_changed(event)
+	local acts = assert(event.activities)
+	local connecting = false
+	for bdaddr, act in pairs(acts) do
+		if act.status == "connected" then
+			self:display_dyno_icon("red")
+			return
+		end
+		if act.status == "connecting" or act.status == "waiting_for_reconnect" or act_status == "finding_service" then
+			connecting = true
+		end
+	end
+	if connecting then
+		self:display_dyno_icon("orange")
+	else
+		self:display_dyno_icon("black")
+	end
+end
+
+function app:display_bt_icon(icon)
+	local bmp = assert(icons.bitmaps["bt_"..icon])
+	self.window:show_bitmap_at(bmp,118,0)
+end
+
+function app:display_dyno_icon(icon)
+	--log("******* Clock Dyno icon = "..icon)
+	local bmp = assert(icons.bitmaps["dyno_"..icon])
+	self.window:show_bitmap_at(bmp,118,20)
 end
 

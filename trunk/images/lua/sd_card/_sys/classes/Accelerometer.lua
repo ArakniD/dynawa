@@ -10,6 +10,9 @@ function class:_init()
 end
 
 function class:handle_hw_event(event)
+	if not dynawa.settings.gestures.enabled then
+		return
+	end
 	self:generate_event{type = "accelerometer", gesture = assert(gestures[event.gesture],"Unknown accelerometer gesture: "..event.type)}
 --[
 	event.type = nil
