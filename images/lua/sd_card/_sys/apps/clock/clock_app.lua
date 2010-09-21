@@ -260,7 +260,7 @@ function app:handle_event_dyno_status_changed(event)
 			self:display_dyno_icon("red")
 			return
 		end
-		if act.status == "connecting" or act.status == "waiting_for_reconnect" or act_status == "finding_service" then
+		if act.status == "connecting" or act.status == "waiting_for_reconnect" or act.status == "finding_service" then
 			connecting = true
 		end
 	end
