@@ -40,7 +40,7 @@ function app:start()
 	end)
 end
 
-function app:handle_event_from_phone(ev)
+function app:handle_event_dyno_data_from_phone(ev)
 	local data = assert(ev.data)
 	local icon
 	if data.contact_icon then
