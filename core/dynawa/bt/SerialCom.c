@@ -675,9 +675,9 @@ xSemaphoreTake(sleep_sem, -1);
                     //TRACE_INFO("WAITTING %d\r\n", xTickCount);
                     //TRACE_INFO("WAITTING %d\r\n", Timer_tick_count());
                 }
-                if (1 || waitCount < 40) {
+                //if (1 || waitCount < 40) {
                 //if (waitCount < 40) {
-                //if (Timer_tick_count() - last_activity_ticks < 500 - 10) {
+                if (Timer_tick_count() - last_activity_ticks < 500 - 10) {
                     //Task_sleep(10);
                     sleep2(sleep_sem, 10);
                     waitCount++;
