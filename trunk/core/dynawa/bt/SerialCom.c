@@ -94,6 +94,8 @@ static char comPortString[128];
 
 extern abcsp AbcspInstanceData;
 
+static unsigned int last_activity_ticks = 0; 
+
 void errorHandler(uint16_t	line, char *file, char *text)
 {
 #ifdef DEBUG_ENABLE
@@ -214,6 +216,7 @@ void txThreadFunc(void)
                         }
 
                         //if (!Serial_write(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
+                        last_activity_ticks = Timer_tick_count();
                         if (!Serial_writeDMA(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
                         {
                             //TRACE_BT("data written\r\n");
@@ -663,6 +666,7 @@ xSemaphoreTake(sleep_sem, -1);
                     TRACE_SER("AVAIL %d %d\r\n", bytesAvail, waitCount);
                     TRACE_BT("READING\r\n");
                     bytesRead = bytesAvail;
+                    last_activity_ticks = Timer_tick_count();
                     break;
                 }
                 // TODO: Wait for DMA data
@@ -673,6 +677,7 @@ xSemaphoreTake(sleep_sem, -1);
                 }
                 if (1 || waitCount < 40) {
                 //if (waitCount < 40) {
+                //if (Timer_tick_count() - last_activity_ticks < 500 - 10) {
                     //Task_sleep(10);
                     sleep2(sleep_sem, 10);
                     waitCount++;

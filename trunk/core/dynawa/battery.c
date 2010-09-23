@@ -12,9 +12,9 @@ static xTaskHandle battery_task_handle;
 static gasgauge_stats _stats;
 xQueueHandle battery_queue;
 
-#define WAKEUP_EVENT_TIMED_EVENT    100
-#define WAKEUP_EVENT_USB_HIGH       1000
-#define WAKEUP_EVENT_USB_LOW        1001
+#define WAKEUP_EVENT_TIMED_EVENT    1
+#define WAKEUP_EVENT_USB_HIGH       10
+#define WAKEUP_EVENT_USB_LOW        11
 
 static Io usb_io;
 
@@ -47,7 +47,8 @@ void battery_timer_handler(void* context) {
 static bool battery_usb_pin_high = false;
 
 void battery_io_isr_handler(void* context) {
-    battery_usb_pin_high = !battery_usb_pin_high;
+    //battery_usb_pin_high = !battery_usb_pin_high;
+    battery_usb_pin_high = Io_value(&usb_io);
 
     uint8_t ev;
     if (battery_usb_pin_high) {
@@ -68,13 +69,11 @@ void battery_io_isr_handler(void* context) {
 static void battery_task( void* p ) {
     TRACE_INFO("battery task %x\r\n", xTaskGetCurrentTaskHandle());
 
-/*
 #ifdef CFG_PM
     Timer timer;
     Timer_init(&timer, 0);
     Timer_setHandler(&timer, battery_timer_handler, NULL);
 #endif
-*/
 
     while (true) {
         gasgauge_get_stats(&_stats);
@@ -101,11 +100,10 @@ static void battery_task( void* p ) {
                 event_post(&ev);
             }
         }
-        Task_sleep(10000);
-/*
+        //Task_sleep(10000);
         uint8_t battery_event;
 #ifdef CFG_PM
-        Timer_start(&timer, 10000, false, true);
+        Timer_start(&timer, 10000, false, false);
         xQueueReceive(battery_queue, &battery_event, -1);
         Timer_stop(&timer);
 #else
@@ -117,21 +115,27 @@ static void battery_task( void* p ) {
             ev.data.battery.state = BATTERY_STATE_DICHARGING;
             event_post(&ev);
         }
-*/
     }
+#ifdef CFG_PM
+    Timer_close(&timer);
+#endif
+    vQueueDelete(battery_queue);
+    vTaskDelete(NULL);
 }
 
 int battery_init () {
     battery_queue = xQueueCreate(1, sizeof(uint8_t));
+    if (battery_queue == NULL) {
+        panic("battery_init");
+        return -1;
+    }
 
-/*
     Io_init(&usb_io, PIO_USB_DETECT, IO_GPIO, INPUT);
     battery_usb_pin_high = Io_value(&usb_io);
 
     TRACE_INFO("battery_init() usb %d\r\n", battery_usb_pin_high);
 
     Io_addInterruptHandler(&usb_io, battery_io_isr_handler, NULL);
-*/
 
     // TODO: don't start the task if no batter (_stats.voltage == 0)
     if (xTaskCreate( battery_task, "battery", TASK_STACK_SIZE(TASK_BATTERY_STACK), NULL, TASK_BATTERY_PRI, &battery_task_handle ) != 1 ) {
@@ -141,3 +145,7 @@ int battery_init () {
     return 0;
 }
 
+int battery_close() {
+    vQueueDelete(battery_queue);
+    return 0;
+}

@@ -2,6 +2,8 @@
 #include "lauxlib.h"
 #include "debug/trace.h"
 
+#define CFG_PM
+
 static int l_set (lua_State *L) {
 
     uint32_t now = luaL_checkint(L, 1);

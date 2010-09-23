@@ -26,7 +26,9 @@ static int l_display_power (lua_State *L) {
 
     TRACE_LUA("dynawa.x.display_power(%d)\r\n", state);
 
+    scrLock();
     int result = display_power(state);
+    scrUnLock();
 
     lua_pushnumber(L, result);
     return 1;
@@ -38,7 +40,9 @@ static int l_display_brightness (lua_State *L) {
 
     TRACE_LUA("dynawa.x.display_brightness(%d)\r\n", level);
 
+    scrLock();
     int result = display_brightness(level);
+    scrUnLock();
 
     lua_pushnumber(L, result);
     return 1;

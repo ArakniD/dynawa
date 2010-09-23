@@ -125,7 +125,7 @@ void DAC7311_Enable(unsigned int  Fs,
     SSC_Configure(BOARD_DAC7311_SSC,
             BOARD_DAC7311_SSC_ID,
             //Fs * sampleSize * 8,
-            Fs * sampleSize * 8 + 2,
+            Fs * (sampleSize * 8 + 2),
             masterClock);
     SSC_ConfigureTransmitter(BOARD_DAC7311_SSC,
             DAC7311_TCMR(sampleSize),

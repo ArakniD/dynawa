@@ -48,6 +48,8 @@ static xSemaphoreHandle tick_count_mutex;
   */
 void Timer_init(Timer *timer, int timerindex)
 {
+    timer->magic = TIMER_MAGIC;
+
     if(!timer_manager.timer_count++)
         Timer_managerInit(timerindex);
 }
@@ -94,6 +96,11 @@ void Timer_setHandler(Timer *timer, TimerHandler handler, void *context )
 int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
 {
 // debug
+    if (millis < 0) {
+        panic("Timer_start");
+        return CONTROLLER_ERROR_ILLEGAL_PARAMETER_VALUE;
+    }
+
     //timer->started = timeval;
     timer->started = Timer_tick_count();
     timer->value = millis;
@@ -258,6 +265,11 @@ int Timer_stop( Timer *timer )
             if (timer->freeOnStop) {
                 TRACE_TMR("timer %x freed (2)\r\n", timer);
                 Timer_closeStopped(timer);
+
+                if (timer->magic != TIMER_MAGIC) {
+                    panic("Timer_stop 3");
+                }
+                timer->magic = 0;
                 free(timer);
             }
         }

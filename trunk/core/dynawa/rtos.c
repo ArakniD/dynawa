@@ -18,7 +18,7 @@ the specific language governing permissions and limitations under the License.
 #include "rtos.h"
 #include "string.h"
 
-#define _CFG_PM
+#define CFG_PM
 
 /**********************************************************************************
 
