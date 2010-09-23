@@ -143,9 +143,11 @@ void Run( ) // this task gets called as soon as we boot up.
     Timer_start(&sys_timer, 24 * 3600, true, false);
     TRACE_INFO("sys timer ok\n\r");
 
+#if 0
     scrInit();
     //oledInitHw();
     TRACE_INFO("scrInit ok\n\r");
+#endif
 
     spi_init();
     TRACE_INFO("spi_init ok\n\r");
@@ -171,6 +173,8 @@ void Run( ) // this task gets called as soon as we boot up.
     ledrgb_close();
     TRACE_INFO("ledrgb ok\n\r");
 
+    display_init();
+    TRACE_INFO("display_init ok\n\r");
     display_power(1);
     TRACE_INFO("display_power ok\n\r");
 

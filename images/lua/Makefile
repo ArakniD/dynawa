@@ -11,14 +11,17 @@ DEBUG_OPTS =
 OPTIMIZATION = -Os -ffast-math
 # -S (asm listing)
 
+BUILDID=$(shell date +%Y%m%d)
+
 CONFIG_OPTS = \
+	-DBUILDID=$(BUILDID) \
 	-Dusb_CDCMSD \
 	-D_USB_COMPOSITE \
 	-DCFG_FATFS \
 	-DCFG_USB \
 	-DCFG_USB_SER \
 	-DCFG_RTC \
-	-D_CFG_PM \
+	-DCFG_PM \
 	-DBUTTON_TASK \
 	-DCFG_CONSOLE_USB
 

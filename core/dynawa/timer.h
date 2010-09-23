@@ -26,6 +26,8 @@
 #define TIMER_COUNT 8
 #define TIMER_MARGIN 2
 
+#define TIMER_MAGIC 0x11223344
+
 #define TIMER_CYCLES_PER_MS 47
 
 typedef void (*TimerHandler)( void *context ); /**< A handler for timers. */
@@ -86,6 +88,7 @@ typedef struct
 // debug
     uint32_t started;
     uint32_t value;
+    uint32_t magic;
 } Timer;
 
 typedef Timer* TimerHandle;

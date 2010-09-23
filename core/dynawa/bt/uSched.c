@@ -24,7 +24,7 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "bt.h"
 #include "timer.h"
 
-#define _CFG_PM
+#define CFG_PM
 
 //static HANDLE WakeUpEvent = NULL;
 static xQueueHandle WakeUpEvent;

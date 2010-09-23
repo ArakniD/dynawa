@@ -61,7 +61,7 @@ int main( void )
 */
     prvSetupHardware();
 
-#if 0
+#if 1
     //screen
     scrInit();
     fontSetCharPos(0,110);

@@ -38,6 +38,8 @@ int accel_start() {
     //switch on:
     spi_lock();
 
+    accel_reg_read8(ACCEL_REG_DD_ACK);
+
     accel_reg_write8(ACCEL_REG_CTRL_REG1, 0xC7);
     accel_reg_write8(ACCEL_REG_CTRL_REG2, 0x08); // INT
     //accel_reg_write8(ACCEL_REG_CTRL_REG2, 0x04);   // DRDY

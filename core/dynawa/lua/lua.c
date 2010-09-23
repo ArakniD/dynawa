@@ -142,6 +142,11 @@ int lua_event_loop (void) {
                     Timer *timer = (Timer*)ev.data.timer.handle;
                     if (!timer->repeat && timer->freeOnStop) {
                         TRACE_LUA("timer freed\r\n");
+                        
+                        if (timer->magic != TIMER_MAGIC) {
+                            panic("EVENT_TIMER_FIRED");
+                        }
+                        timer->magic = 0;
                         free(timer);
                     }
                 }
