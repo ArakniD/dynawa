@@ -168,7 +168,8 @@ function app.menu_builders:file_browser(dir)
 				elseif k:match("%.wav$") then
 					item.selected = function()
 						local fname = dir..k
-						log("Attempting to play sample: "..fname)						
+						log("Attempting to play sample: "..fname)
+						dynawa.busy()
 						local sample = dynawa.audio.sample_from_wav_file(fname, nil, nil, nil)
 						if sample then
 						    log("sample ok")

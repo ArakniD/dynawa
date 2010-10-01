@@ -31,6 +31,13 @@ function class:show_bitmap(bitmap)
 	self:force_full_update()
 end
 
+function class:fill(color)
+	if not color then
+		color = {0,0,0}
+	end
+	self:show_bitmap(dynawa.bitmap.new(self.size.w, self.size.h, color[1], color[2], color[3]))
+end
+
 function class:show_bitmap_at(bitmap,x,y)
 	assert(x and y)
 	assert(self.bitmap, "show_bitmap_at() called on empty bitmap") --#todo Default background??
