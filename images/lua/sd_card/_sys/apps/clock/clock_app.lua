@@ -6,7 +6,7 @@ local fonts, icons
 function app:start()
 	self:gfx_init()
 	self.window = self:new_window()
-	self.window:show_bitmap(dynawa.bitmap.new(160,128))
+	self.window:fill()
 	dynawa.app_manager:after_app_start("dynawa.inbox", function(inbox)
 		inbox.events:register_for_events(self)
 		inbox:broadcast_update()

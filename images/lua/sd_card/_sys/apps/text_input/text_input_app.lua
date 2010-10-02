@@ -2,8 +2,8 @@ app.name = "Text input"
 app.id = "dynawa.text_input"
 
 function app:switching_to_front()
-	self:text_input{text = "Ahoj", callback = function(args)
-		log("Text entry: '"..args.string.."' ("..#args.string.." chars)")
+	self:text_input{text = "Debug", callback = function(args)
+		log("Text entry: '"..args.text.."' ("..#args.text.." chars)")
 	end
 	}
 end
@@ -12,10 +12,13 @@ function app:switching_to_back()
 	self.window:pop():_delete()
 	self.window = nil
 	self.state = nil
+	self.menus = nil
 end
 
 function app:text_input(args)
 	assert(not self.state, "Already has state when called")
+	--#todo charset (email, phone#)
+	self:create_menus()
 	self.state = {callback = assert(args.callback)}
 	self.state.before = args.text or ""
 	self.state.after = ""
@@ -77,11 +80,14 @@ function app:start()
 	self.horizontal = 100
 	self.vertical = 50
 	self.width = 12
+end
+
+function app:create_menus()
 	local menus = {
 --		{"Accept text","Delete char","Move <<","Move >>","DELETE ALL"},
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-		"abcdefghijklmnopqrstuvwxyz",
-		"0123456789",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ ",
+		"abcdefghijklmnopqrstuvwxyz ",
+		"0123456789 ",
 		" .,@?!+-*/:;()[]{}<=>#$%^&_|\\'~",
 	}
 	self.menus = {}
@@ -100,7 +106,7 @@ function app:start()
 end
 
 function app:handle_event_button(msg) --top bottom confirm / button_hold button_up button_down
-	log(msg.button.." "..msg.action..", mem="..collectgarbage("count") * 1024)
+	--log(msg.button.." "..msg.action..", mem="..collectgarbage("count") * 1024)
 	if msg.button == "cancel" and msg.action == "button_up" then --Switch to next wheel
 		self.menus.active = self:normalize(self.menus.active + 1,self.menus)
 		self:update_wheel()
@@ -117,7 +123,7 @@ function app:handle_event_button(msg) --top bottom confirm / button_hold button_
 			self:update_wheel()
 			return
 		elseif msg.action == "button_hold" then
-			if self.state.scrolling then --Already scrolling in the opposite direction
+			if self.state.scrolling then --Already scrolling
 				self.state.scrolling = direction
 			else
 				self.state.scrolling = direction
@@ -154,6 +160,92 @@ end
 function app:handle_event_timed_event(msg)
 	assert(msg.subtype == "scrolling")
 	self:scroll_step()
+end
+
+function app:handle_event_do_menu (message)
+	local menudef = {
+		banner = "Text entry ("..(#self.state.before + #self.state.after).." characters):",
+		items = {
+			{
+				text = "Move left <", value = "move_left"
+			},
+			{
+				text = "Move right >", value = "move_right"
+			},
+			{
+				text = "Delete character", value = "delete"
+			},
+			{
+				text = "Accept entered text and return", value = "accept"
+			},
+			{
+				text = "Move to the beginning <<", value = "jump_left"
+			},
+			{
+				text = "Move to the end >>", value = "jump_right"
+			},
+			{
+				text = "Clear all text", value = "delete_all"
+			},
+		},
+	}
+	local menuwin = self:new_menuwindow(menudef)
+	menuwin:push()
+end
+
+function app:close_menu()
+	local win = dynawa.window_manager:pop()
+	assert(win.app == self)
+	assert(win.menu)
+	win:_delete()
+end
+
+function app:menu_item_selected(args)
+	local command = assert(args.item.value)
+	local state = self.state
+	log("menu command="..command)
+	if command == "move_left" then
+		if state.before ~= "" then
+			state.after = state.before:sub(-1) .. state.after
+			state.before = state.before:sub(1,-2)
+			self:update_text()
+		end
+		self:close_menu()
+	elseif command == "move_right" then
+		if state.after ~= "" then
+			state.before = state.before .. state.after:sub(1,1)
+			state.after = state.after:sub(2)
+			self:update_text()
+		end
+		self:close_menu()
+	elseif command == "delete" then
+		if state.before ~= "" then
+			state.before = state.before:sub(1,-2)
+			self:update_text()
+		end
+		self:close_menu()
+	elseif command == "accept" then
+		local callback = assert(self.state.callback)
+		local args = {text = self.state.before .. self.state.after}
+		args.before, args.after = self.state.before, self.state.after
+		self:close_menu()
+		self:switching_to_back()
+		callback(args)
+	elseif command == "jump_left" then
+		state.after = state.before .. state.after
+		state.before = ""
+		self:update_text()
+		self:close_menu()
+	elseif command == "jump_right" then
+		state.before = state.before .. state.after
+		state.after = ""
+		self:update_text()
+		self:close_menu()
+	elseif command == "delete_all" then
+		state.before, state.after = "", ""
+		self:update_text()
+		self:close_menu()
+	end
 end
 
 return app
