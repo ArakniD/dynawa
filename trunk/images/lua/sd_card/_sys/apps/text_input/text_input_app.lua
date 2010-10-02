@@ -63,9 +63,13 @@ function app:update_text()
 	local c1,c2,c3 = 150,0,0
 	self.window:show_bitmap_at(dynawa.bitmap.new(self.horizontal,font_size,c1,c2,c3),0,self.vertical)
 	self.window:show_bitmap_at(dynawa.bitmap.new(self.window.size.w - self.horizontal - self.width,font_size,c1,c2,c3),self.horizontal + self.width,self.vertical)
-	if self.state.before then
+	if self.state.before ~= "" then
+		local text_bmp,w,h = dynawa.bitmap.text_line(self.state.before, font)
+		self.window:show_bitmap_at(text_bmp, self.horizontal - w, self.vertical)
 	end
-	if self.state.after then
+	if self.state.after ~= "" then
+		local text_bmp,w,h = dynawa.bitmap.text_line(self.state.after, font)
+		self.window:show_bitmap_at(text_bmp, self.horizontal + self.width, self.vertical)
 	end
 end
 
@@ -96,7 +100,7 @@ function app:start()
 end
 
 function app:handle_event_button(msg) --top bottom confirm / button_hold button_up button_down
-	log(msg.button.." "..msg.action)
+	log(msg.button.." "..msg.action..", mem="..collectgarbage("count") * 1024)
 	if msg.button == "cancel" and msg.action == "button_up" then --Switch to next wheel
 		self.menus.active = self:normalize(self.menus.active + 1,self.menus)
 		self:update_wheel()
@@ -125,6 +129,12 @@ function app:handle_event_button(msg) --top bottom confirm / button_hold button_
 			return
 		end
 	end
+	if msg.button == "confirm" and msg.action == "button_down" then
+		local menu = self.menus[self.menus.active]
+		self.state.before = self.state.before .. menu[menu.index]
+		self:update_text()
+		return
+	end
 end
 
 function app:scroll_step(msg)
@@ -145,4 +155,5 @@ function app:handle_event_timed_event(msg)
 	assert(msg.subtype == "scrolling")
 	self:scroll_step()
 end
+
 return app

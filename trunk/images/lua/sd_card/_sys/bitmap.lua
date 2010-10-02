@@ -89,6 +89,7 @@ end
 
 dynawa.bitmap.text_line = function(line,font,color,size_only)
 	assert(type(line)=="string","First parameter is not string")
+	assert(line ~= "", "String is empty")
 	if not font then
 		font = assert(dynawa.settings.default_font)
 	end
