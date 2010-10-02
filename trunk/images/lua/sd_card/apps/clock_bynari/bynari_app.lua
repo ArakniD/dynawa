@@ -135,7 +135,7 @@ end
 function app:switching_to_front()
 	if not self.window then
 		self.window = self:new_window()
-		self.window:show_bitmap(dynawa.bitmap.new(160,128))
+		self.window:fill{0,0,0}
 	end
 	self.window:push()
 	self.run_id = dynawa.unique_id()
@@ -215,7 +215,6 @@ function app:handle_event_do_menu (message)
 		},
 	}
 	local menuwin = self:new_menuwindow(menudef)
-	menuwin.menu:render()
 	menuwin:push()
 end
 
