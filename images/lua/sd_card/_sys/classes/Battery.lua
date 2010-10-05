@@ -80,7 +80,7 @@ function class:handle_event_timed_event(event)
 		--Only 1 alert in 10 minutes to handle voltage fluctuations around critical level
 		if ts - self.last_critical_status > 60 * 1000 * 10 then
 			dynawa.popup:error("Only "..status.percentage.."% of battery charge remaining. Please recharge your TCH1.")
-			dynawa.devices.vibrator:alert(1,1000)	
+			dynawa.devices.vibrator:alert{cycles = 1, tbuzz = 1000}
 		else
 			--The voltage is critical but it's been less than 10 minutes since the last critical popup.
 			--Don't display alert but reset "last_critical_status" counter (below),
