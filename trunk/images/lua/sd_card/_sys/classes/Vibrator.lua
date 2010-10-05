@@ -20,17 +20,20 @@ end
 
 function class:alert_stop()
 	self.alert_status = false
+	self.alert_id = nil
 	self:off()
 end
 
-function class:alert(cycles,tbuzz,tsilence,dbuzz,dsilence)
-	dbuzz = dbuzz or 0
-	dsilence = dsilence or 0
-	tbuzz = tbuzz or 100
-	tsilence = tsilence or 900
-	cycles = cycles or 3
+function class:alert(args) --cycles,tbuzz,tsilence,dbuzz,dsilence,id
+	args = args or {}
+	local dbuzz = args.dbuzz or 0
+	local dsilence = args.dsilence or 0
+	local tbuzz = args.tbuzz or 100
+	local tsilence = args.tsilence or 900
+	local cycles = args.cycles or 3
 	self:alert_stop()
 	self.alert_status = true
+	self.alert_id = args.id or ("vibration"..dynawa.unique_id())
 	self:on()
 	dynawa.devices.timers:timed_event{delay = tbuzz, receiver = self, buzzing = true, cycles = cycles, tbuzz = tbuzz, tsilence = tsilence, dbuzz = dbuzz, dsilence = dsilence}
 end
@@ -46,7 +49,7 @@ function class:handle_event_timed_event(event)
 		end
 	else
 		assert(event.buzzing == false)
-		self:alert(event.cycles - 1, event.tbuzz, math.max(event.tsilence + event.dsilence, 50), event.dbuzz, event.dsilence)
+		self:alert{cycles = event.cycles - 1, tbuzz = event.tbuzz, tsilence = math.max(event.tsilence + event.dsilence, 50), dbuzz = event.dbuzz, dsilence = event.dsilence}
 	end
 end
 

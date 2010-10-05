@@ -132,7 +132,12 @@ function app:handle_event_dyno_data_from_phone(ev)
 	end
 	local bmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 3, bgcolor={80,0,80}})
 	dynawa.bitmap.border(bmap,1,{255,255,255})
-	dynawa.popup:open{bitmap = bmap, autoclose = 20000, on_confirm = function()
+	local prev_popup
+	local win = dynawa.window_manager:peek()
+	if win.app == dynawa.popup then
+		prev_popup = win.id
+	end
+	local new_popup = dynawa.popup:open{bitmap = bmap, autoclose = 20000, on_confirm = function()
 		log("Showing message")
 		self:show_message{folder_id = typ, message = item}
 	end}
@@ -150,7 +155,11 @@ function app:handle_event_dyno_data_from_phone(ev)
 	
 	self:save_data(self.prefs)
 	self:broadcast_update()
-	dynawa.devices.vibrator:alert()
+	if not prev_popup or (self.popup_window_id ~= prev_popup) then
+		--Don't vibrate if my popup is already displayed.
+		dynawa.devices.vibrator:alert()
+	end
+	self.popup_window_id = new_popup
 end
 
 function app:get_snippet(lines)

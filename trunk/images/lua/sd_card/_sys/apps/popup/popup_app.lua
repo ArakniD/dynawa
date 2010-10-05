@@ -3,12 +3,12 @@ app.id = "dynawa.popup"
 
 function app:error(text)
 	assert(type(text)=="string")
-	self:open{style="error", text=text}
+	return self:open{style="error", text=text}
 end
 
 function app:info(text)
 	assert(type(text)=="string")
-	self:open{text=text}
+	return self:open{text=text}
 end
 
 function app:open(args)
@@ -59,6 +59,7 @@ function app:open(args)
 	if autoclose then 
 		dynawa.devices.timers:timed_event{delay = autoclose, receiver = self, window_id = assert(self.window.id)}
 	end
+	return self.window.id
 end
 
 function app:handle_event_timed_event(event) --Autoclose still valid?
