@@ -43,6 +43,11 @@ void SPIIsr_Handler( )
 void SPIIsr_Wrapper( void )
 {
     portSAVE_CONTEXT(); // Save the context of the interrupted task.
+    
+#ifdef CFG_DEEP_SLEEP
+    check_power_mode();
+#endif
+
     /* Call the handler to do the work.  This must be a separate
        function to ensure the stack frame is set up correctly. */
     SPIIsr_Handler();

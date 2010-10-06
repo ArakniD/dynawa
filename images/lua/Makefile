@@ -21,8 +21,10 @@ CONFIG_OPTS = \
 	-DCFG_USB \
 	-DCFG_USB_SER \
 	-DCFG_RTC \
-	-DCFG_PM \
 	-DBUTTON_TASK \
+	-DCFG_PM \
+	-DCFG_SCHEDULER_RTT \
+	-DCFG_DEEP_SLEEP \
 	-DCFG_CONSOLE_USB
 
 ROOT = ../..
@@ -173,13 +175,16 @@ _FAT_SRC= \
 _FAT_INC= \
   -I$(CORE)/fatfs-0.04
 
+#FATFS_VER = 0.07
+FATFS_VER = 0.08a
+
 FAT_SRC= \
-  $(CORE)/fatfs-0.07/src/option/ccsbcs.c \
-  $(CORE)/fatfs-0.07/src/diskio.c \
-  $(CORE)/fatfs-0.07/src/ff.c
+  $(CORE)/fatfs-$(FATFS_VER)/src/option/ccsbcs.c \
+  $(CORE)/fatfs-$(FATFS_VER)/src/diskio.c \
+  $(CORE)/fatfs-$(FATFS_VER)/src/ff.c
 
 FAT_INC= \
-  -I$(CORE)/fatfs-0.07/src
+  -I$(CORE)/fatfs-$(FATFS_VER)/src
 
 MONITOR_SRC = \
   $(MONITOR)/args.c \
@@ -247,6 +252,7 @@ THUMB_SRC= \
   $(DYNAWA)/usbserial.c \
   $(DYNAWA)/serial.c \
   $(DYNAWA)/main.c \
+  $(DYNAWA)/pm.c \
   $(DYNAWA)/sleep.c \
   $(DYNAWA)/io.c \
   $(DYNAWA)/led.c \
@@ -337,13 +343,15 @@ CPP_THUMB_SRC =
 # Source files that must be built in ARM mode.
 #$(DYNAWA)/SAM7_EMAC_ISR.c \
 
+#  $(USB)/device/core/USBD_OTGHS.c 
+#  $(USB)/device/core/USBD_UDPHS.c
+
 ARM_SRC= \
   ../../core/startup/abort.c \
   $(DYNAWA)/isr.c \
+  $(DYNAWA)/sys_isr.c \
   $(FREERTOS)/portable/GCC/ARM7_AT91SAM7S/portISR.c \
   $(USB)/device/core/USBD_UDP.c \
-  $(USB)/device/core/USBD_OTGHS.c \
-  $(USB)/device/core/USBD_UDPHS.c \
   $(DYNAWA)/serial_isr.c \
   $(DYNAWA)/timer_isr.c \
   $(DYNAWA)/analogin_isr.c \

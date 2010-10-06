@@ -61,6 +61,23 @@ int rtc_write(struct tm *new_time) {
 int rtc_read(struct tm *curr_time, unsigned int *milliseconds) {
     TRACE_RTC("rtc_read()\r\n");
 
+#if 0
+curr_time->tm_sec = 0;
+curr_time->tm_min = 0;
+curr_time->tm_hour = 18;
+curr_time->tm_mday = 0;
+curr_time->tm_mon = 1;
+curr_time->tm_year = 110;
+curr_time->tm_wday = 0;
+curr_time->tm_yday = 0;
+curr_time->tm_isdst = 0;
+if (milliseconds) {
+    *milliseconds = 0;
+}
+    
+return 0;
+#endif
+
     // rtc_wake();
     //portENTER_CRITICAL ();
     xSemaphoreTake(rtc_mutex, -1);

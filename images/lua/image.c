@@ -138,10 +138,13 @@ void Run( ) // this task gets called as soon as we boot up.
 {
     TRACE_INFO("Run\n\r");
 
+//#ifndef CFG_SCHEDULER_RTT
+#if 0
     Timer_init(&sys_timer, 0);
     Timer_setHandler(&sys_timer, NULL, NULL);
     Timer_start(&sys_timer, 24 * 3600, true, false);
     TRACE_INFO("sys timer ok\n\r");
+#endif
 
 #if 0
     scrInit();
@@ -149,29 +152,39 @@ void Run( ) // this task gets called as soon as we boot up.
     TRACE_INFO("scrInit ok\n\r");
 #endif
 
+#if 1
     spi_init();
     TRACE_INFO("spi_init ok\n\r");
     if ( sd_init() != SD_OK ) {
         TRACE_ERROR("SD card init failed!\r\n");
     }
     TRACE_INFO("sd_init ok\n\r");
+#endif
+
+#if 1
     i2c_init();
     TRACE_INFO("i2c_init ok\n\r");
+#endif
+#if 1
     rtc_init();
     TRACE_INFO("rtc_init ok\n\r");
+#endif
+#if 1
     gasgauge_init();
     TRACE_INFO("gasgauge_init ok\n\r");
+#endif
 
     event_init(100);
     TRACE_INFO("event_init ok\n\r");
 
     //System* sys = System::get();
     //int free_mem = sys->freeMemory();
-
+#if 1
     ledrgb_open();
     ledrgb_set(0x7, 0, 0, 0);
     ledrgb_close();
     TRACE_INFO("ledrgb ok\n\r");
+#endif
 
     display_init();
     TRACE_INFO("display_init ok\n\r");
@@ -184,10 +197,14 @@ void Run( ) // this task gets called as soon as we boot up.
     scrWriteRect(80,126,120,127,0xffffff);
 #endif
 
+#if 1
     battery_init();
     TRACE_INFO("battery_init ok\n\r");
+#endif
+#if 1
     accel_init();
     TRACE_INFO("accel_init ok\n\r");
+#endif
 
     button_init();
     TRACE_INFO("button_init ok\n\r");
@@ -195,14 +212,16 @@ void Run( ) // this task gets called as soon as we boot up.
     TRACE_INFO("bt_init ok\n\r");
     //bt_open();
 
-/*
+#if 0
     rtc_open();
     rtc_set_epoch_seconds(1265399017); // 10/02/05 19:43
     TRACE_INFO("time: %d\r\n", rtc_get_epoch_seconds(NULL));
     rtc_close();
-*/
+#endif
     
+#if 0
     UsbSerial_open();
+#endif
 /*
     while( !UsbSerial_isActive() )
         Task_sleep(10);
@@ -256,6 +275,7 @@ void Run( ) // this task gets called as soon as we boot up.
             Task_sleep(10000);
     }
 #endif
+    //while(1) Task_sleep(10000);
     xTaskCreate(lua_event_loop, (signed char*)"lua", TASK_STACK_SIZE(TASK_LUA_STACK), NULL, TASK_LUA_PRI, NULL);
 
 #if 0

@@ -3,6 +3,7 @@
 #include "board/hardware_conf.h"
 #include "types.h"
 #include "audio.h"
+#include "irq_param.h"
 #include "utils/wav.h"
 #include "utils/fastfixmath.h"
 #include "debug/trace.h"
@@ -26,8 +27,10 @@ void audio_play(audio_sample *sample, uint32_t sample_rate, uint32_t loop, void*
     TRACE_INFO("audio_play() %d\r\n", Timer_tick_count());
 
     audio_stop();
+
+    pm_lock();
     // Configure and enable the SSC interrupt
-    AIC_ConfigureIT(BOARD_DAC7311_SSC_ID, 0, audioIsr_Wrapper);
+    AIC_ConfigureIT(BOARD_DAC7311_SSC_ID, IRQ_AUDIO_PRI, audioIsr_Wrapper);
     AIC_EnableIT(BOARD_DAC7311_SSC_ID);
 
     //DAC7311_Enable(48000, 2, MCK);
@@ -67,6 +70,7 @@ void audio_stop(void)
     if (audio_current_sample == NULL) {
         return;
     }
+    pm_unlock();
     SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_TXBUFE | AT91C_SSC_ENDTX);
     BOARD_DAC7311_SSC->SSC_PTCR = AT91C_PDC_TXTDIS;
     BOARD_DAC7311_SSC->SSC_TNCR = 0;

@@ -33,6 +33,8 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 
 extern void BgIntPump(void);
 
+#define BT_DATA_POLL_INTERVAL    10
+
 #define	TX_BUF_MAX_SIZE				((uint16_t) 4096)	/* the buffer size for incoming and outgoing characters */
 #define RX_BUF_MAX_SIZE				((uint16_t) 4096)
 //#define RX_BUF_MAX_SIZE				((uint16_t) 1024)
@@ -220,6 +222,7 @@ void txThreadFunc(void)
                         if (!Serial_writeDMA(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
                         {
                             //TRACE_BT("data written\r\n");
+                            TRACE_INFO("data written\r\n");
                             bytesWritten = no2Send;
                             if (bytesWritten > 0)
                             {
@@ -577,14 +580,16 @@ void rxThreadFunc(void)
     int         ringBuffCycle = 0;
 
 // TEST
-xSemaphoreHandle sleep_sem;
-vSemaphoreCreateBinary(sleep_sem);
-xSemaphoreTake(sleep_sem, -1);
+    xSemaphoreHandle sleep_sem;
+    vSemaphoreCreateBinary(sleep_sem);
+    xSemaphoreTake(sleep_sem, -1);
 
 	rxData = rxBuf;
 	rxSize = 0;
 
     TRACE_INFO("rxThreadFunc %x\r\n", xTaskGetCurrentTaskHandle());
+
+    pm_lock();
 
     Serial_setDMARxBuff(SERIAL_CHANNEL, rxBuf, RX_BUF_MAX_SIZE, rxBuf, RX_BUF_MAX_SIZE);
     Serial_DMARxStart(SERIAL_CHANNEL);
@@ -675,15 +680,16 @@ xSemaphoreTake(sleep_sem, -1);
                     //TRACE_INFO("WAITTING %d\r\n", xTickCount);
                     //TRACE_INFO("WAITTING %d\r\n", Timer_tick_count());
                 }
-                //if (1 || waitCount < 40) {
+                //if (1) {
                 //if (waitCount < 40) {
-                if (Timer_tick_count() - last_activity_ticks < 500 - 10) {
+                if (Timer_tick_count() - last_activity_ticks < BT_HOST_WAKE_SLEEP_TIMEOUT - BT_DATA_POLL_INTERVAL) {
                     //Task_sleep(10);
-                    sleep2(sleep_sem, 10);
+                    sleep2(sleep_sem, BT_DATA_POLL_INTERVAL);
                     waitCount++;
                 } else {
                     //Serial_waitForData(SERIAL_CHANNEL, -1);
                     bt_wait_for_data();
+                    last_activity_ticks = Timer_tick_count();
                     waitCount = 0;
                 }
             }
@@ -737,7 +743,9 @@ xSemaphoreTake(sleep_sem, -1);
 		}
 	}	/*	end while	*/
 
-vQueueDelete(sleep_sem);
+    pm_unlock();
+
+    vQueueDelete(sleep_sem);
     vTaskDelete(NULL);
 }
 

@@ -79,8 +79,9 @@ struct Timer;
 typedef struct
 {
     void *context;
-    int timeCurrent;
     int timeInitial;
+    //int timeCurrent;
+    unsigned int target;
     bool repeat;
     bool freeOnStop;
     TimerHandler callback;
@@ -102,7 +103,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop );
 int Timer_stop( Timer *timer );
 int Timer_getTimeTarget( );
 int Timer_getTime( );
-void Timer_setTimeTarget( int target );
+void Timer_setTimeTarget( unsigned int target );
 int Timer_managerInit( int timerindex);
 void Timer_managerDeinit( );
 void Timer_enable( );
@@ -120,14 +121,15 @@ typedef struct
     char running;
     char servicing;
   
-    int nextTime;
+    unsigned int nextTime;
+    bool nextTimeSet;
     int temp;
     
     Timer* first;
     Timer* next;
     Timer* previous;
     Timer* lastAdded;
-    AT91S_TC* tc;
+    AT91S_RTTC* tc;
 } Timer_Manager;
 
 #endif

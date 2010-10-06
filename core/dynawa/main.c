@@ -26,7 +26,11 @@ the specific language governing permissions and limitations under the License.
 #include <screen/font.h>
 #include "main.h"
 #include "task_param.h"
+#include "irq_param.h"
 #include <monitor/monitor.h>
+//#include <led.h>
+
+//static Io led;
 
 scr_buf_t * scrbuf=NULL;
 xTaskHandle taskHandles [TASKHANDLE_LAST];
@@ -61,6 +65,22 @@ int main( void )
 */
     prvSetupHardware();
 
+#ifdef CFG_SCHEDULER_RTT
+// MV RTT setup
+// boot loader enables PIT we have to turn it off
+    AT91C_BASE_PITC->PITC_PIMR = 0;
+    /* Configure the RTT period. */
+    AT91C_BASE_RTTC->RTTC_RTMR = 32 | AT91C_RTTC_RTTRST;
+    AT91C_BASE_RTTC->RTTC_RTSR;
+    void sys_isr_wrapper( void );
+    AT91F_AIC_ConfigureIt( AT91C_ID_SYS, IRQ_SYS_PRI, AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL, ( void (*)(void) )sys_isr_wrapper );
+
+
+    /* Enable the interrupt.  Global interrupts are disables at this point so
+    this is safe. */
+    AT91C_BASE_AIC->AIC_IECR = 0x1 << AT91C_ID_SYS;
+#endif
+
 #if 1
     //screen
     scrInit();
@@ -78,6 +98,13 @@ int main( void )
       called.  The demo applications included in the FreeRTOS.org download switch
       to supervisor mode prior to main being called.  If you are not using one of
       these demo application projects then ensure Supervisor mode is used here. */
+    TRACE_INFO("Starting scheduler\r\n");
+    uint32_t mkcr = AT91C_BASE_PMC->PMC_MCKR;
+    uint32_t sr = AT91C_BASE_PMC->PMC_SR;
+    TRACE_INFO("pmc %x %x\r\n", mkcr, sr);
+
+    //Led_init(&led);
+    //Led_setState(&led, 0);
     vTaskStartScheduler();
 
     return 0; // Should never get here!
@@ -223,54 +250,6 @@ static void prvSetupHardware( void )
 #endif
 }
 
-#ifdef CFG_PM
-//static int toggle;
-static uint32_t total_time_slept = 0;
-
-void vApplicationIdleHook( void )
-{
-    //TRACE_INFO("vApplicationIdleHook\r\n");
-    //toggle = !toggle; // prevent the function from being optimized away?
-
-    vTaskSuspendAll();
-    // disable PIT (FreeRTOS ticks)
-    //AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITEN;
-    AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITIEN;
-
-    /* disable CPU clock
-        Task_sleep() can't be used
-        Semaphore/Queue get funcs with timeout can't be used
-    */
-    //uint32_t sleep_time = Timer_tick_count_nonblock();
-    //uint32_t sleep_time = Timer_tick_count_nonblock2();
-    uint32_t sleep_time = Timer_tick_count_nonblock3();
-    //OK uint32_t sleep_time = Timer_tick_count();
-
-    //TRACE_INFO("going to sleep %d\r\n", sleep_time);
-    //OK Timer_tick_count_sleep();
-    AT91C_BASE_PMC->PMC_SCDR = AT91C_PMC_PCK;
-    // CPU in idle mode now, waiting for IRQ
-
-    //OK Timer_tick_count_wakeup();
-
-    //uint32_t wakeup_time = Timer_tick_count_nonblock();
-    uint32_t wakeup_time = Timer_tick_count_nonblock3();
-    //uint32_t wakeup_time = Timer_tick_count_nonblock2();
-    //OK uint32_t wakeup_time = Timer_tick_count();
-
-    uint32_t time_slept = wakeup_time - sleep_time;
-    total_time_slept += time_slept;
-    Timer_tick_count_wakeup(time_slept);
-    //TRACE_INFO("waking up %d %d %d %d%%\r\n", wakeup_time, time_slept, total_time_slept, total_time_slept * 100 / wakeup_time);
-    // enable PIT (FreeRTOS ticks)
-    AT91C_BASE_PITC->PITC_PIMR |= AT91C_PITC_PITIEN;
-    xTaskResumeAll();
-}
-#endif
-
 void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTaskName ) {
     panic("stack overflow");
 }
-
-
-

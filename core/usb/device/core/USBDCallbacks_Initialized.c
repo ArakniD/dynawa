@@ -34,6 +34,7 @@
 #include "USBDCallbacks.h"
 #include "USBD.h"
 #include <board.h>
+#include <irq_param.h>
 #include <debug/trace.h>
 // #include <aic/aic.h>
 
@@ -55,7 +56,7 @@ void USBDCallbacks_Initialized(void)
 //    AIC_ConfigureIT(AT91C_ID_UDP, 0, UsbIsr_Wrapper);
     AT91C_BASE_AIC->AIC_IDCR = 1 << AT91C_ID_UDP;
     // Configure mode and handler
-    AT91C_BASE_AIC->AIC_SMR[AT91C_ID_UDP] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 3;
+    AT91C_BASE_AIC->AIC_SMR[AT91C_ID_UDP] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_USB_PRI;
     AT91C_BASE_AIC->AIC_SVR[AT91C_ID_UDP] = (unsigned int) UsbIsr_Wrapper;
   
     // Clear interrupt

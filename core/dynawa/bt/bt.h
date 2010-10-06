@@ -7,6 +7,20 @@
 
 #include "bt/bt_socket.h"
 
+#define BT_HOST_WAKE_SLEEP_TIMEOUT  500
+
+#ifdef CFG_DEEP_SLEEP
+
+#define BT_HOST_WAKE_BREAK_LEN      1   // !!!deep sleep -> normal > 5ms
+#define BT_HOST_WAKE_PAUSE_LEN      32
+
+#else
+
+#define BT_HOST_WAKE_BREAK_LEN      5   // !!!deep sleep -> normal > 5ms
+#define BT_HOST_WAKE_PAUSE_LEN      10
+
+#endif
+
 #define BCBOOT0_MASK (1 << 23)  // BC4 PIO0
 #define BCBOOT1_MASK (1 << 25)  // BC4 PIO1
 #define BCBOOT2_MASK (1 << 29)  // BC4 PIO4

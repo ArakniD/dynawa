@@ -21,6 +21,7 @@ the specific language governing permissions and limitations under the License.
 #include "AT91SAM7SE512.h"
 #include "io.h"
 #include "core.h"
+#include "irq_param.h"
 #include "debug/trace.h"
 
 #define IO_PIN_COUNT 96
@@ -469,9 +470,9 @@ bool Io_addInterruptHandler(Io *io, handler h, void* context)
 #define     AT91C_AIC_SRCTYPE_HIGH_LEVEL           (0x2 <<  5) // (AIC) Internal Or External Sources Code Label High-level Sensitive
 #define     AT91C_AIC_SRCTYPE_POSITIVE_EDGE        (0x3 <<  5) // (AIC) Internal Or External Sources Code Label Positive Edge triggered
 */
-        Io_initInterrupts(io->basePort, (AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 3) );
+        Io_initInterrupts(io->basePort, (AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_IO_PRI) );
         // MV
-        //Io_initInterrupts(io->basePort, (AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 3) );
+        //Io_initInterrupts(io->basePort, (AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | IRQ_IO_PRI) );
     }
 
     io->basePort->PIO_ISR;                                   // clear the status register

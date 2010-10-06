@@ -25,6 +25,7 @@
 #include "hardware_conf.h"
 #include "firmware_conf.h"
 #include <utils/interrupt_utils.h>
+#include <irq_param.h>
 #include <debug/trace.h>
 #include <peripherals/pmc/pmc.h>
 #include "rtos.h"
@@ -97,7 +98,7 @@ void spi_init(void)
     // Disable the interrupt controller & register our interrupt handler
     AT91C_BASE_AIC->AIC_IDCR = mask ;
     AT91C_BASE_AIC->AIC_SVR[ AT91C_ID_SPI ] = (unsigned int)SPIIsr_Wrapper;
-    AT91C_BASE_AIC->AIC_SMR[ AT91C_ID_SPI ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;
+    AT91C_BASE_AIC->AIC_SMR[ AT91C_ID_SPI ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_SPI_PRI;
     AT91C_BASE_AIC->AIC_ICCR = mask ;
     AT91C_BASE_AIC->AIC_IECR = mask;
 
@@ -253,12 +254,15 @@ uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint
     pSPI->SPI_PTCR = AT91C_PDC_RXTEN | AT91C_PDC_TXTEN;
 
     //TRACE_SPI("spi wait\r\n");
+    pm_lock();
 #if 1
     if ( xSemaphoreTake(spi_semaphore, -1) != pdTRUE) {
         TRACE_ERROR("xSemaphoreTake err\r\n");
+        pm_unlock();
         //spi_unlock();
         return 0;
     }
+    pm_unlock();
 #else
     while ( pSPI->SPI_RCR ) {  // wait for incoming data
         //Task_sleep(500);

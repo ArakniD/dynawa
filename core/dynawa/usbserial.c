@@ -175,11 +175,13 @@ int UsbSerial_write( const char *buffer, int length, int timeout )
         unsigned char result = USBD_Write(CDCDSerialDriverDescriptors_DATAIN, buffer, length, usbserial_onTxData, NULL);
         if(result == USBD_STATUS_SUCCESS)
         {
+            pm_lock();
             if( Semaphore_take(usbserial.writeSemaphore, timeout ) )
             {
                 rv = usbserial.justWrote;
                 usbserial.justWrote = 0;
             }
+            pm_unlock();
         }
     }
     return rv;
