@@ -134,7 +134,7 @@ function app:handle_event_dyno_data_from_phone(ev)
 	dynawa.bitmap.border(bmap,1,{255,255,255})
 	local prev_popup
 	local win = dynawa.window_manager:peek()
-	if win.app == dynawa.popup then
+	if win and win.app == dynawa.popup then
 		prev_popup = win.id
 	end
 	local new_popup = dynawa.popup:open{bitmap = bmap, autoclose = 20000, on_confirm = function()
