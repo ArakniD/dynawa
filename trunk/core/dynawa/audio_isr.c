@@ -15,6 +15,8 @@ extern uint32_t audio_current_sample_transmitted;
 extern void* (*audio_current_sample_stop_callback)(void *arg);
 extern void* audio_current_sample_stop_callback_arg;
 
+void audioIsr_Wrapper( void ) __attribute__ ((naked));
+
 //------------------------------------------------------------------------------
 /// Interrupt handler for the SSC. Loads the PDC with the audio data to stream.
 //------------------------------------------------------------------------------
@@ -52,6 +54,10 @@ void audioIsr_Wrapper( void )
 {
     /* Save the context of the interrupted task. */
     portSAVE_CONTEXT();
+
+#ifdef CFG_DEEP_SLEEP
+    check_power_mode();
+#endif
 
     /* Call the handler to do the work.  This must be a separate
        function to ensure the stack frame is set up correctly. */

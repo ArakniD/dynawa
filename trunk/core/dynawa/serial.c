@@ -18,6 +18,7 @@ the specific language governing permissions and limitations under the License.
 #include "serial.h"
 #include "io.h"
 #include "board.h"
+#include "irq_param.h"
 #include "error.h"
 #include "debug/trace.h"
 
@@ -97,17 +98,17 @@ void Serial_open( int channel, int q_size )
     else
         AT91C_BASE_AIC->AIC_SVR[ id ] = (unsigned int)Serial1Isr_Wrapper;
     // Store the Source Mode Register
-    AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4;
+    AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_SERIAL_PRI;
 
 #else
 // test FIQ
-    //AT91C_BASE_AIC->AIC_SMR[ 0 ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4;
-    AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 4;
+    //AT91C_BASE_AIC->AIC_SMR[ 0 ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_SERIAL_PRI;
+    AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | IRQ_SERIAL_PRI;
     AT91C_BASE_AIC->AIC_SVR[ 0 ] = (unsigned int)Serial0Isr_Wrapper;
     AT91C_BASE_AIC->AIC_FFER = mask;
 #endif
 
-    //AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | 4;
+    //AT91C_BASE_AIC->AIC_SMR[ id ] = AT91C_AIC_SRCTYPE_INT_POSITIVE_EDGE | IRQ_SERIAL_PRI;
     // Clear the interrupt on the interrupt controller
     AT91C_BASE_AIC->AIC_ICCR = mask;
     AT91C_BASE_AIC->AIC_IECR = mask;

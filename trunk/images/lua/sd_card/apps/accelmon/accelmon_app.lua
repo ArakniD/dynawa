@@ -12,7 +12,7 @@ function app:update(message)
     end
     local xyz = dynawa.devices.accelerometer:status()
 
-    local txtbmp = dynawa.bitmap.text_line(string.format("%d %d %s", xyz.x, xyz.y, xyz.z),"/_sys/fonts/default15.png") 
+    local txtbmp = dynawa.bitmap.text_line(string.format("%d %d %d", xyz.x, xyz.y, xyz.z),"/_sys/fonts/default15.png") 
      local x = 10
      local y = 10
      self:display(self.bmp_blank,x,y) 
@@ -47,7 +47,7 @@ function app:handle_event_accelerometer_status(event)
 end
 
 function app:gfx_init()
-     self.bmp_blank = dynawa.bitmap.new(118, 15) 
+     self.bmp_blank = dynawa.bitmap.new(150, 15) 
 end
 
 function app:start()

@@ -110,6 +110,39 @@ static int l_accel_stats (lua_State *L) {
     return 1;
 }
 
+extern uint32_t total_time_in_sleep;
+extern uint32_t total_time_in_deep_sleep;
+extern bool usb_connected;
+
+static int l_sys_stats (lua_State *L) {
+
+    TRACE_LUA("dynawa.x.sys_stats()\r\n");
+
+    lua_newtable(L);
+
+    lua_pushstring(L, "up_time");
+    lua_pushnumber(L, Timer_tick_count());
+    lua_settable(L, -3);
+
+#ifdef CFG_PM
+    lua_pushstring(L, "time_sleep");
+    lua_pushnumber(L, total_time_in_sleep);
+    lua_settable(L, -3);
+
+#ifdef CFG_DEEP_SLEEP
+    lua_pushstring(L, "time_deep_sleep");
+    lua_pushnumber(L, total_time_in_deep_sleep);
+    lua_settable(L, -3);
+#endif
+#endif
+
+    lua_pushstring(L, "usb_connected");
+    lua_pushnumber(L, usb_connected);
+    lua_settable(L, -3);
+
+    return 1;
+}
+
 static const struct luaL_reg x [] = {
     {"adc", l_adc},
     {"display_power", l_display_power},
@@ -117,6 +150,7 @@ static const struct luaL_reg x [] = {
     {"vibrator_set", l_vibrator_set},
     {"battery_stats", l_battery_stats},
     {"accel_stats", l_accel_stats},
+    {"sys_stats", l_sys_stats},
     {NULL, NULL}  /* sentinel */
 };
 

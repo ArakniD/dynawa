@@ -213,6 +213,10 @@ void vPortEndScheduler( void )
  */
 static void prvSetupTimerInterrupt( void )
 {
+// dynawa
+#if CFG_SCHEDULER_RTT
+    AT91C_BASE_RTTC->RTTC_RTMR |= AT91C_RTTC_RTTINCIEN;
+#else
 AT91PS_PITC pxPIT = AT91C_BASE_PITC;
 
 	/* Setup the AIC for PIT interrupts.  The interrupt routine chosen depends
@@ -235,6 +239,7 @@ AT91PS_PITC pxPIT = AT91C_BASE_PITC;
 	/* Enable the interrupt.  Global interrupts are disables at this point so 
 	this is safe. */
     AT91C_BASE_AIC->AIC_IECR = 0x1 << AT91C_ID_SYS;
+#endif
 }
 /*-----------------------------------------------------------*/
 

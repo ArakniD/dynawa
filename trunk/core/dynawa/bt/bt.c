@@ -52,7 +52,7 @@ xQueueHandle bt_wakeup_queue;
 uint32_t bc_hci_event_count;
 static Task bt_task_handle;
 static xQueueHandle command_queue;
-static Io bt_gpio;
+static Io bt_io;
 
 static unsigned int bt_open_count = 0;
 
@@ -166,9 +166,11 @@ to the host. (Range 0 -> 1000.)
     {6, NULL, 4},
     {8, NULL, 0x0001},    // 1 enable, 4 - disable
     //{9, NULL, 0x01f4},    // sleep timeout = 500ms
-    {9, NULL, 0x01f4},    // sleep timeout = 500ms
-    {10, NULL, 0x0005},   // break len = 5ms
-    {11, NULL, 0x0020},   // pause length = 32ms
+    {9, NULL, BT_HOST_WAKE_SLEEP_TIMEOUT},    // sleep timeout = 500ms
+    //{10, NULL, 0x0005},   // break len = 5ms
+    {10, NULL, BT_HOST_WAKE_BREAK_LEN},   // break len = 5ms
+    //{11, NULL, 0x0020},   // pause length = 32ms
+    {11, NULL, BT_HOST_WAKE_PAUSE_LEN},   // pause length = 32ms
 #endif
 
 #if SET_TX_POWER
@@ -535,7 +537,7 @@ static void u_bt_task(bt_command *cmd)
                 //bccmd[3] = BCCMDVARID_CHIPVER;
                 bccmd[3] = BCCMDVARID_WARM_RESET;
                 bccmd[4] = BCCMDPDU_STAT_OK;
-                bccmd[5] = 0;         // emty
+                bccmd[5] = 0;         // empty
                 // bccmd[6-8]         // ignored, zero padding
                 bc_state = BC_STATE_RESTARTING;
                 TRACE_INFO("RESTARTING BC\r\n");
@@ -621,11 +623,14 @@ static bool bt_wakeup_pin_high = false;
 
 void bt_io_isr_handler(void *context) {
 
-    bt_wakeup_pin_high = !bt_wakeup_pin_high;
+    //bt_wakeup_pin_high = !bt_wakeup_pin_high;
+#ifndef CFG_DEEP_SLEEP
+    bt_wakeup_pin_high = Io_value(&bt_io);
 
     if (!bt_wakeup_pin_high) {
         return;
     }
+#endif
 
     //TRACE_INFO("bt_io_isr_handler %d\r\n", xTickCount);
     TRACE_INFO("bt_io_isr_handler %d\r\n", Timer_tick_count_nonblock());
@@ -804,9 +809,9 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     Task_sleep(10);
 
     pPIOB->PIO_PDR = BCBOOT0_MASK | BCBOOT1_MASK | BCBOOT2_MASK;
-    Io_init(&bt_gpio, IO_PB23, IO_GPIO, INPUT);
+    Io_init(&bt_io, IO_PB23, IO_GPIO, INPUT);
 // TODO: Io_addInterruptHandler() max 8 handlers!!! To be moved to bt_init() probably
-    Io_addInterruptHandler(&bt_gpio, bt_io_isr_handler, NULL);
+    Io_addInterruptHandler(&bt_io, bt_io_isr_handler, NULL);
     //AT91C_BASE_PIOB->PIO_IDR = BC_WAKEUP_MASK;
 
     ps_setrq_count = 0;
@@ -829,7 +834,7 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     }
 
 #if 1
-    Io_removeInterruptHandler(&bt_gpio);
+    Io_removeInterruptHandler(&bt_io);
 #else
     pPIOB->PIO_PDR = BC_WAKEUP_MASK;
 #endif
@@ -883,11 +888,14 @@ bool bt_is_ps_set(void) {
 }
 
 int bt_wait_for_data(void) {
-    //TRACE_INFO("bt_wait_for_data\r\n");
+    TRACE_INFO("bt_wait_for_data\r\n");
 
     uint16_t event;
     if (bc_state == BC_STATE_READY) {
+        pm_unlock();
         xQueueReceive(bt_wakeup_queue, &event, portMAX_DELAY);
+        pm_lock();
+        TRACE_INFO("data ready\r\n");
     }
 /*
     if (bc_state == BC_STATE_READY) {

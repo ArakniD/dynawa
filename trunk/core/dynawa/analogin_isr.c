@@ -76,10 +76,14 @@ void AnalogIn_Isr( void )
     }
 }
 
-void  AnalogInIsr_Wrapper( void )
+void AnalogInIsr_Wrapper( void )
 {
     /* Save the context of the interrupted task. */
     portSAVE_CONTEXT();
+
+#ifdef CFG_DEEP_SLEEP
+    check_power_mode();
+#endif
 
     /* Call the handler to do the work.  This must be a separate
        function to ensure the stack frame is set up correctly. */

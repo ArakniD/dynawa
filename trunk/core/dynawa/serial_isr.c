@@ -38,6 +38,10 @@ void SerialIsr_Handler( int index )
     long xTaskWokenByPostThis = false;
     Serial_Internal* sp = &Serial_internals[index];
 
+#ifdef CFG_DEEP_SLEEP
+    check_power_mode();
+#endif
+
     //TRACE_INFO("SER ISR %d %x %x\r\n", index, sp->uart->US_CSR, sp->uart->US_IMR);
     TRACE_SER("SER ISR %d %x %x\r\n", index, sp->uart->US_CSR, sp->uart->US_IMR);
     unsigned int status = ( sp->uart->US_CSR ) & ( sp->uart->US_IMR ); // What caused the interrupt?

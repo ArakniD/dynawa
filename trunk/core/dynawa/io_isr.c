@@ -17,6 +17,7 @@ the specific language governing permissions and limitations under the License.
 
 #include "io.h"
 #include "rtos.h"
+#include "debug/trace.h"
 
 //extern Io_InterruptSource Io_isrSources[MAX_INTERRUPT_SOURCES];
 extern Io_InterruptSource Io_isrSources[];
@@ -30,6 +31,11 @@ unsigned int status;
 
 void Io_Isr( AT91S_PIO* basePio )
 {
+#ifdef CFG_DEEP_SLEEP
+    check_power_mode();
+#endif
+
+    TRACE_INFO("Io_Isr\r\n");
     status = basePio->PIO_ISR;
     status &= basePio->PIO_IMR;
 

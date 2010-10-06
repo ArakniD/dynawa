@@ -8,14 +8,15 @@
 
 #define PIO_USB_DETECT IO_PB22
 
+#define WAKEUP_EVENT_TIMED_EVENT        1
+#define WAKEUP_EVENT_USB_CONNECTED      10
+#define WAKEUP_EVENT_USB_DISCONNECTED    11
+
+bool usb_connected = false;
+
 static xTaskHandle battery_task_handle;
 static gasgauge_stats _stats;
 xQueueHandle battery_queue;
-
-#define WAKEUP_EVENT_TIMED_EVENT    1
-#define WAKEUP_EVENT_USB_HIGH       10
-#define WAKEUP_EVENT_USB_LOW        11
-
 static Io usb_io;
 
 int battery_get_stats (gasgauge_stats *stats) {
@@ -52,9 +53,9 @@ void battery_io_isr_handler(void* context) {
 
     uint8_t ev;
     if (battery_usb_pin_high) {
-        ev = WAKEUP_EVENT_USB_LOW;
+        ev = WAKEUP_EVENT_USB_DISCONNECTED;
     } else {
-        ev = WAKEUP_EVENT_USB_HIGH;
+        ev = WAKEUP_EVENT_USB_CONNECTED;
     }
     TRACE_INFO("battery_io_isr_handler usb %d\r\n", battery_usb_pin_high);
 
@@ -109,11 +110,19 @@ static void battery_task( void* p ) {
 #else
         xQueueReceive(battery_queue, &battery_event, 10000);
 #endif
-        if (battery_event == WAKEUP_EVENT_USB_LOW) {
+        if (battery_event == WAKEUP_EVENT_USB_DISCONNECTED) {
+            usb_connected = false;
+            UsbSerial_close();
+            pm_unlock();
+
             event ev;
             ev.type = EVENT_BATTERY;
             ev.data.battery.state = BATTERY_STATE_DICHARGING;
             event_post(&ev);
+        } else if (battery_event == WAKEUP_EVENT_USB_CONNECTED) {
+            usb_connected = true;
+            pm_lock();
+            UsbSerial_open();
         }
     }
 #ifdef CFG_PM
@@ -130,10 +139,18 @@ int battery_init () {
         return -1;
     }
 
+// TODO: should be moved to usb.c or so
     Io_init(&usb_io, PIO_USB_DETECT, IO_GPIO, INPUT);
     battery_usb_pin_high = Io_value(&usb_io);
 
+    if (!battery_usb_pin_high) {
+        usb_connected = true;
+        pm_lock();
+        UsbSerial_open();
+    }
+
     TRACE_INFO("battery_init() usb %d\r\n", battery_usb_pin_high);
+
 
     Io_addInterruptHandler(&usb_io, battery_io_isr_handler, NULL);
 

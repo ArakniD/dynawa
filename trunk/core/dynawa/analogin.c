@@ -23,6 +23,7 @@ the specific language governing permissions and limitations under the License.
 #include "analogin.h"
 //#include "AT91SAM7X256.h"
 #include "AT91SAM7SE512.h"
+#include "irq_param.h"
 #include "debug/trace.h"
 
 //#define ANALOGIN_0_IO IO_PB27
@@ -123,9 +124,13 @@ int AnalogIn_value(AnalogIn *analogin)
     AT91C_BASE_ADC->ADC_CHER = mask;
     AT91C_BASE_ADC->ADC_CR = AT91C_ADC_START; // Start the conversion
 
+    pm_lock();
     //if ( !Semaphore_take(analogin_manager.doneSemaphore, 1000 ) ) // wait for the ISR
-    if ( xSemaphoreTake(analogin_manager.doneSemaphore, 1000 / portTICK_RATE_MS) != pdTRUE)
+    if ( xSemaphoreTake(analogin_manager.doneSemaphore, 1000 / portTICK_RATE_MS) != pdTRUE) {
+        pm_unlock();
         return -1;
+    }
+    pm_unlock();
 
     value = AT91C_BASE_ADC->ADC_LCDR & 0xFFFF; // grab the last converted value
 
@@ -311,7 +316,7 @@ int AnalogIn_managerInit()
     // Disable the interrupt controller & register our interrupt handler
     AT91C_BASE_AIC->AIC_IDCR = mask ;                   
     AT91C_BASE_AIC->AIC_SVR[ AT91C_ID_ADC ] = (unsigned int)AnalogInIsr_Wrapper;      
-    AT91C_BASE_AIC->AIC_SMR[ AT91C_ID_ADC ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | 4  ;       
+    AT91C_BASE_AIC->AIC_SMR[ AT91C_ID_ADC ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_ADC_PRI  ;       
     AT91C_BASE_AIC->AIC_ICCR = mask ;         
     AT91C_BASE_ADC->ADC_IER = AT91C_ADC_DRDY; 
     AT91C_BASE_AIC->AIC_IECR = mask;
