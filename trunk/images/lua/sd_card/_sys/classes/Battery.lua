@@ -58,7 +58,6 @@ function class:status()
 	if status.voltage <= self.critical_voltage and not status.charging then
 		status.critical = true
 	end
-	self.last_status = {timestamp = status.timestamp, voltage = status.voltage, percentage = status.percentage, charging = status.charging}
 	local logtxt = "Voltage = "..status.voltage .. " ("..status.percentage.."%) "..status.current.." mA"
 	log(logtxt)
 	log_file(logtxt)
@@ -72,8 +71,9 @@ end
 
 function class:handle_event_timed_event(event)
 	local status = self:status()
-	if self.last_status and self.last_status.voltage ~= status.voltage then
+	if not self.last_status or (self.last_status.voltage ~= status.voltage or self.last_status.charging ~= status.charging) then
 		self:broadcast_update(status)
+		self.last_status = {timestamp = status.timestamp, voltage = status.voltage, percentage = status.percentage, charging = status.charging}
 	end
 	if status.critical then
 		local ts = dynawa.ticks()
