@@ -68,7 +68,11 @@ err_t hci_pin_code_request_reply(struct bd_addr *bdaddr, u8_t pinlen, u8_t *pinc
 err_t hci_pin_code_request_neg_reply(struct bd_addr *bdaddr);
 err_t hci_write_stored_link_key(struct bd_addr *bdaddr, u8_t *key);
 err_t hci_change_local_name(u8_t *name, u8_t len);
+err_t hci_hold_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_interval);
 err_t hci_sniff_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_interval, u16_t attempt, u16_t timeout);
+err_t hci_exit_sniff_mode(struct bd_addr *bdaddr);
+err_t hci_park_state(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_interval);
+err_t hci_exit_park_state(struct bd_addr *bdaddr);
 err_t hci_write_link_policy_settings(struct bd_addr *bdaddr, u16_t link_policy);
 err_t hci_reset(void);
 err_t hci_set_event_filter(u8_t filter_type, u8_t filter_cond_type, u8_t* cond);
@@ -129,8 +133,8 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_HOLD_MODE 0x01
 #define HCI_SNIFF_MODE 0x03
 #define HCI_EXIT_SNIFF_MODE 0x04
-#define HCI_PARK_MODE 0x05
-#define HCI_EXIT_PARK_MODE 0x06
+#define HCI_PARK_STATE 0x05
+#define HCI_EXIT_PARK_STATE 0x06
 #define HCI_W_LINK_POLICY 0x0D
 
 /* Host-Controller and Baseband Commands */
@@ -271,7 +275,11 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_WRITE_STORED_LINK_KEY_PLEN 27
 #define HCI_CHANGE_LOCAL_NAME_PLEN 4
 #define HCI_SET_EV_MASK_PLEN 12
+#define HCI_HOLD_PLEN 10
 #define HCI_SNIFF_PLEN 14
+#define HCI_EXIT_SNIFF_PLEN 6
+#define HCI_PARK_PLEN 10
+#define HCI_EXIT_PARK_PLEN 6
 #define HCI_W_LINK_POLICY_PLEN 8
 #define HCI_RESET_PLEN 4
 #define HCI_SET_EV_FILTER_PLEN 6
@@ -309,6 +317,12 @@ u16_t lp_pdu_maxsize(void);
 /* Write Scan Enable params */
 #define HCI_SCAN_EN_INQUIRY 1
 #define HCI_SCAN_EN_PAGE 2
+
+/* Link Policy Settings params */
+#define HCI_LP_ENABLE_ROLE_SWITCH   0x0001
+#define HCI_LP_ENABLE_HOLD_MODE     0x0002
+#define HCI_LP_ENABLE_SNIFF_MODE    0x0004
+#define HCI_LP_ENABLE_PARK_STATE    0x0008
 
 struct hci_event_hdr {
 	u8_t code; /* Event code */

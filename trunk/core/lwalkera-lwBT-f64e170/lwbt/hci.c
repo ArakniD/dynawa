@@ -1009,6 +1009,42 @@ err_t hci_pin_code_request_neg_reply(struct bd_addr *bdaddr)
     return hci_cmd_main_send(p);
 }
 
+/* hci_hold_mode():
+ *
+ * Sets an ACL connection to low power Hold mode.
+ */
+err_t hci_hold_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_interval)
+{
+	struct pbuf *p;
+	struct hci_link *link;
+
+	/* Check if an ACL connection exists */ 
+	link = hci_get_link(bdaddr);
+
+	if(link == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_hold_mode: ACL connection does not exist\n"));
+		return ERR_CONN;
+	}
+
+    // HCI_HOLD_PLEN = 10 OK
+	if((p = pbuf_alloc(PBUF_TRANSPORT, HCI_HOLD_PLEN, PBUF_RAM)) == NULL) { /* Alloc len of packet */
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_hold_mode: Could not allocate memory for pbuf\n"));
+		return ERR_MEM;
+	}
+
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_HOLD_MODE, HCI_LINK_POLICY, HCI_HOLD_PLEN);
+	/* Assembling cmd prameters */
+	//((u16_t *)p->payload)[2] = link->conhdl;
+    CPU2U16LE((u8_t*)p->payload + 4, link->conhdl);
+	//((u16_t *)p->payload)[3] = max_interval;
+    CPU2U16LE((u8_t*)p->payload + 6, max_interval);
+	//((u16_t *)p->payload)[4] = min_interval;
+    CPU2U16LE((u8_t*)p->payload + 8, min_interval);
+
+    return hci_cmd_main_send(p);
+}
+
 /* hci_sniff_mode():
  *
  * Sets an ACL connection to low power Sniff mode.
@@ -1045,6 +1081,106 @@ err_t hci_sniff_mode(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_inter
     CPU2U16LE((u8_t*)p->payload + 10, attempt);
 	//((u16_t *)p->payload)[6] = timeout;
     CPU2U16LE((u8_t*)p->payload + 12, timeout);
+
+    return hci_cmd_main_send(p);
+}
+
+/* hci_exit_sniff_mode():
+ *
+ * Sets an ACL connection back to active mode from low power Sniff mode.
+ */
+err_t hci_exit_sniff_mode(struct bd_addr *bdaddr)
+{
+	struct pbuf *p;
+	struct hci_link *link;
+
+	/* Check if an ACL connection exists */ 
+	link = hci_get_link(bdaddr);
+
+	if(link == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_exit_sniff_mode: ACL connection does not exist\n"));
+		return ERR_CONN;
+	}
+
+    // HCI_EXIT_SNIFF_PLEN = 6 OK
+	if((p = pbuf_alloc(PBUF_TRANSPORT, HCI_EXIT_SNIFF_PLEN, PBUF_RAM)) == NULL) { /* Alloc len of packet */
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_exit_sniff_mode: Could not allocate memory for pbuf\n"));
+		return ERR_MEM;
+	}
+
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_EXIT_SNIFF_MODE, HCI_LINK_POLICY, HCI_EXIT_SNIFF_PLEN);
+	/* Assembling cmd prameters */
+	//((u16_t *)p->payload)[2] = link->conhdl;
+    CPU2U16LE((u8_t*)p->payload + 4, link->conhdl);
+
+    return hci_cmd_main_send(p);
+}
+
+/* hci_park_state():
+ *
+ * Sets an ACL connection to low power park state.
+ */
+err_t hci_park_state(struct bd_addr *bdaddr, u16_t max_interval, u16_t min_interval)
+{
+	struct pbuf *p;
+	struct hci_link *link;
+
+	/* Check if an ACL connection exists */ 
+	link = hci_get_link(bdaddr);
+
+	if(link == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_park_state: ACL connection does not exist\n"));
+		return ERR_CONN;
+	}
+
+    // HCI_SNIFF_PLEN = 10 OK
+	if((p = pbuf_alloc(PBUF_TRANSPORT, HCI_PARK_PLEN, PBUF_RAM)) == NULL) { /* Alloc len of packet */
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_park_state: Could not allocate memory for pbuf\n"));
+		return ERR_MEM;
+	}
+
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_PARK_STATE, HCI_LINK_POLICY, HCI_PARK_PLEN);
+	/* Assembling cmd prameters */
+	//((u16_t *)p->payload)[2] = link->conhdl;
+    CPU2U16LE((u8_t*)p->payload + 4, link->conhdl);
+	//((u16_t *)p->payload)[3] = max_interval;
+    CPU2U16LE((u8_t*)p->payload + 6, max_interval);
+	//((u16_t *)p->payload)[4] = min_interval;
+    CPU2U16LE((u8_t*)p->payload + 8, min_interval);
+
+    return hci_cmd_main_send(p);
+}
+
+/* hci_exit_park_state():
+ *
+ * Sets an ACL connection back to active mode from low power Park state.
+ */
+err_t hci_exit_park_state(struct bd_addr *bdaddr)
+{
+	struct pbuf *p;
+	struct hci_link *link;
+
+	/* Check if an ACL connection exists */ 
+	link = hci_get_link(bdaddr);
+
+	if(link == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_exit_park_state: ACL connection does not exist\n"));
+		return ERR_CONN;
+	}
+
+    // HCI_EXIT_PARK_STATE = 6 OK
+	if((p = pbuf_alloc(PBUF_TRANSPORT, HCI_EXIT_PARK_STATE, PBUF_RAM)) == NULL) { /* Alloc len of packet */
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_exit_park_state: Could not allocate memory for pbuf\n"));
+		return ERR_MEM;
+	}
+
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_EXIT_PARK_STATE, HCI_LINK_POLICY, HCI_EXIT_PARK_PLEN);
+	/* Assembling cmd prameters */
+	//((u16_t *)p->payload)[2] = link->conhdl;
+    CPU2U16LE((u8_t*)p->payload + 4, link->conhdl);
 
     return hci_cmd_main_send(p);
 }
