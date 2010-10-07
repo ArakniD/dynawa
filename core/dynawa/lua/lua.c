@@ -241,17 +241,39 @@ int lua_event_loop (void) {
                     */
 
                     lua_pushstring(L, "data");
-                    uint16_t len = bt_buf_len(btev->param.ptr);
+                    struct pbuf *p = (struct pbuf *)btev->param.ptr;
+                    uint16_t len = p->tot_len;
 
                     TRACE_INFO("EVENT_BT_DATA %d\r\n", len);
                     if (len) {
-                        lua_pushlstring(L, bt_buf_payload(btev->param.ptr), len); 
+                        luaL_Buffer b;
+                        luaL_buffinit(L, &b);  
+
+                        // TODO: pbuf2buf()
+                        int remain = len;
+                        struct pbuf *q = p;
+                        int count = 0;
+                        while (remain) {
+                            if (q == NULL) {
+                                TRACE_ERROR("PBUF=NULL\r\n");
+                                panic("EVENT_BT_DATA");
+                                return;
+                            }
+                            int chunk_len = q->len;
+                            TRACE_LUA("pbuf len %d\r\n", chunk_len);
+                            int n = remain > chunk_len ? chunk_len : remain;
+                            luaL_addlstring(&b, q->payload, n); 
+                            remain -= n;
+                            q = q->next;
+                            count++;
+                        }
+                        luaL_pushresult(&b);
                     } else {
                         lua_pushnil(L);
                     }
                     lua_settable(L, -3);
 
-                    bt_buf_free(btev->param.ptr);
+                    pbuf_free(p);
                 }
                 break;
             case EVENT_BT_RFCOMM_CONNECTED:

@@ -536,7 +536,7 @@ err_t spp_recv(void *arg, struct rfcomm_pcb *pcb, struct pbuf *p, err_t err)
         }
         
     // MV
-        TRACE_INFO("spp_recv %d\r\n", p->len);
+        TRACE_INFO("spp_recv %d\r\n", p->tot_len);
         event ev;
         ev.type = EVENT_BT;
         ev.data.bt.type = EVENT_BT_DATA;
@@ -1196,8 +1196,8 @@ err_t acl_wpl_complete(void *arg, struct bd_addr *bdaddr)
  */
 err_t acl_conn_complete(void *arg, struct bd_addr *bdaddr)
 {
-	//hci_wlp_complete(acl_wpl_complete);
-	//hci_write_link_policy_settings(bdaddr, 0x000F);
+	hci_wlp_complete(acl_wpl_complete);
+	hci_write_link_policy_settings(bdaddr, HCI_LP_ENABLE_ROLE_SWITCH | HCI_LP_ENABLE_HOLD_MODE | HCI_LP_ENABLE_SNIFF_MODE | HCI_LP_ENABLE_PARK_STATE);
 	return ERR_OK;
 }
 

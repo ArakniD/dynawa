@@ -863,18 +863,6 @@ void bt_stop_callback() {
     vQueueDelete(command_queue);
 }
 
-uint16_t bt_buf_len(struct pbuf *p) {
-    return p->len;
-}
-
-void *bt_buf_payload(struct pbuf *p) {
-    return p->payload;
-}
-
-void bt_buf_free(struct pbuf *p) {
-    pbuf_free(p);
-}
-
 void trace_bytes(char *text, uint8_t *bytes, int len) {
     int i;
     for (i = 0; i < len; i++) {
