@@ -17,7 +17,7 @@ function app:open_menu_by_url(url)
 	if not menu.is_menu then
 		menu = self:new_menuwindow(menu).menu
 	end
-	menu.outer_color = {255,99,99}
+	menu.outer_color = {255,0,0}
 	menu.url = url
 	self:open_menu(menu)
 	return menu

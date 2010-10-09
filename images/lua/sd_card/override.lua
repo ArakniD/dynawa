@@ -125,51 +125,61 @@ local errfunc=function(errtxt)
 	return tback
 end
 	
-function dynawa.debug.update_files() --Asks for updated files and installs them to SD card
-	dynawa.debug.send_raw("WHATS_NEW?")
-	local reply=dynawa.debug.receive_raw()
-	if reply=="BYE" then
-		return
-	end
+function dynawa.debug.update_file() --Receive one file and store it to SD card
 	local data = dynawa.debug.receive(reply)
-	dynawa.debug.send_raw("UPDATING_FILES")
-	local files=data.files_to_update
-	assert(files,"'files_to_update' not present in received data")
-	for fname,file in pairs(files) do
-		--create directory
-		local parts = {}
-		fname:gsub("(.-/)", function(part)
-			table.insert(parts,part)
-		end)
-		assert (parts[1]=="/")
-		if #parts > 1 then
-			parts[2] = parts[1]..parts[2]
-			table.remove(parts,1)
-			local dirname = ""
-			for i = 1, #parts do
-				dirname = dirname .. parts[i]
-				local dirname2 = dirname:match("(.*)/$")
-				--log("Creating dir: "..dirname)
-				dynawa.file.mkdir(dirname2)
-			end 
-		end
-		
-		dynawa.debug.send_raw("WRITING_FILE "..fname)
-		local fd = assert(io.open(fname,"w"),"Cannot open file "..fname.." for writing")
-		fd:write(file)
-		fd:close()
+	--dynawa.debug.send_raw("UPDATING_FILE")
+	local fname = assert(data.filename)
+	local file = assert(data.file)
+	--create directory
+	local parts = {}
+	fname:gsub("(.-/)", function(part)
+		table.insert(parts,part)
+	end)
+	assert (parts[1]=="/")
+	if #parts > 1 then
+		parts[2] = parts[1]..parts[2]
+		table.remove(parts,1)
+		local dirname = ""
+		for i = 1, #parts do
+			dirname = dirname .. parts[i]
+			local dirname2 = dirname:match("(.*)/$")
+			--log("Creating dir: "..dirname)
+			dynawa.file.mkdir(dirname2)
+		end 
 	end
-	dynawa.debug.send_raw("FILES_UPDATED")
+	
+	--dynawa.debug.send_raw("WRITING_FILE "..fname)
+	local fd = assert(io.open(fname,"w"),"Cannot open file "..fname.." for writing")
+	fd:write(file)
+	fd:close()
+	--dynawa.debug.send_raw("FILE_UPDATED")
+end
+
+function dynawa.debug.whats_new()
+	dynawa.debug.send_raw("WHATS_NEW?")
+	while true do
+		local msg=dynawa.debug.receive_raw()
+		if msg == "RESTART" then
+			dynawa.debug.send_raw("RESTARTING")
+			if dynawa.bt then
+				dynawa.bt.cmd(2) --BT off
+			end
+			boot_init()
+			return
+		elseif msg == "FILE" then
+			dynawa.debug.update_file()
+		else
+			assert(msg == "BYE","Unknown msg from PC: "..msg)
+			return
+		end
+	end
 end
 
 function dynawa.debug.main_handler(msg)
 	--dynawa.debug.send_raw("DEBUG.MAIN_HANDLER")
 	--log(msg.button..":"..msg.type)
 	if msg.type == "button_hold" and msg.button == 1 then --update files and restart WristOS]
-		dynawa.debug.update_files()
-		dynawa.debug.send_raw("RESTARTING")
-		dynawa.bt.cmd(2) --BT off
-		boot_init()
+		dynawa.debug.whats_new()
 		return
 	end
 	
