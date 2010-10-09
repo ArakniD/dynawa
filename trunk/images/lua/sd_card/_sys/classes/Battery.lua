@@ -70,6 +70,7 @@ function class:broadcast_update(event) --Broadcast the change
 end
 
 function class:handle_event_timed_event(event)
+	--if true then return end
 	local status = self:status()
 	if not self.last_status or (self.last_status.voltage ~= status.voltage or self.last_status.charging ~= status.charging) then
 		self:broadcast_update(status)

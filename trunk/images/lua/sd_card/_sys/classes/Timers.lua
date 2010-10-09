@@ -42,6 +42,7 @@ function class:dispatch_timed_event(handle)
 			self.timer_vectors[handle] = nil
 		end
 		if not receiver.__deleted then
+			--log("Timed event for "..receiver)
 			receiver:handle_event(event)
 		end
 	end

@@ -8,7 +8,7 @@ local local_dir = "../"
 if arg[1] then
 	from_watch=tostring(arg[1])
 end
-local file_types = {".+%.lua$",".+%.pnnng$"}
+local file_types = {".+%.lua$",".+%.png$"}
 to_watch=from_watch
 
 local fd=io.open(local_dir.."_sys")
@@ -187,11 +187,13 @@ local function main_loop(fd_from)
 					local fd=assert(io.open(local_dir..k))
 					local file=assert(fd:read("*a"))
 					fd:close()
-					local chunk,err = loadfile(local_dir..k)
-					if not chunk then
-						print("*************** SYNTAX ERROR IN WristOS SCRIPT:")
-						print(err)
-						is_error = true
+					if k:match("%.lua$") then
+						local chunk,err = loadfile(local_dir..k)
+						if not chunk then
+							print("*************** SYNTAX ERROR IN WristOS SCRIPT:")
+							print(err)
+							is_error = true
+						end
 					end
 					to_send["/"..k]=file
 					msg=msg..";"..k
@@ -200,10 +202,17 @@ local function main_loop(fd_from)
 			end
 			if is_error then
 				print("************* DEVICE NOT UPDATED!!! ***********")
-				send{message=msg,files_to_update={}}
+				send_raw("BYE")
 			else
 				print("Updating "..num.." files on device.")
-				send{message=msg,files_to_update=to_send}
+				if next(to_send) then
+					for k,v in pairs(to_send) do
+						print("Sending "..k)
+						send_raw("FILE")
+						send{file = v, filename = k}
+					end
+				end
+				send_raw("RESTART")
 				old_stats=new_stats
 			end
 		else

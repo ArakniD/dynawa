@@ -112,6 +112,10 @@ function app:update_display()
 		log("Re-rendering menu")
 		window.menu:render()
 	end
+	if dynawa.is_busy then
+		dynawa.is_busy = nil
+		window.updates.full = true
+	end
 	if window.updates.full or self._last_displayed_window ~= window then
 		--log("showing window "..window)
 		if not window.bitmap then
