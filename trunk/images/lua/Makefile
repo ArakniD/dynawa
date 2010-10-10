@@ -136,7 +136,7 @@ _USB_COMMON_MSD_SRC= \
   $(USB)/device/massstorage/SBCMethods.c \
   $(USB)/device/massstorage/MSDDStateMachine.c
 
-# composite USb driver (CDC+MSD)
+# composite USB driver (CDC+MSD)
 _USB_SRC= \
   $(USB_COMMON_CDC_SRC) \
   $(USB_COMMON_MSD_SRC) \
@@ -145,7 +145,7 @@ _USB_SRC= \
   $(USB)/device/composite/COMPOSITEDDriverDescriptors.c \
   $(USB)/device/composite/CDCDFunctionDriver.c
 
-# separate USb drivers (CDC+MSD)
+# separate USB drivers (CDC+MSD)
 USB_CDC_SRC= \
   $(USB)/device/cdc-serial/CDCDSerialDriver.c \
   $(USB)/device/cdc-serial/CDCDSerialDriverDescriptors.c
@@ -274,8 +274,9 @@ THUMB_SRC= \
   $(DYNAWA)/battery.c \
   $(DYNAWA)/accel.c \
   $(DYNAWA)/audio.c \
-  $(CORE)/sdcard/sdcard.c \
   $(DYNAWA)/fat.c \
+  $(DYNAWA)/usb.c \
+  $(CORE)/sdcard/sdcard.c \
   $(FAT_SRC) \
   $(YABCSP)/crc.c \
   $(YABCSP)/init.c \

@@ -1220,6 +1220,7 @@ void USBD_Disconnect(void)
     #error Unsupported pull-up type.
 #endif
     
+#if 0
     // Turn the USB line into an input, kill the pull up
 /*
     AT91C_BASE_PIOA->PIO_PER = USB_DETECT;	
@@ -1234,6 +1235,7 @@ void USBD_Disconnect(void)
     AT91C_BASE_PIOA->PIO_PER = USB_PULLUP;
     AT91C_BASE_PIOA->PIO_OER = USB_PULLUP;
     AT91C_BASE_PIOA->PIO_CODR = USB_PULLUP;
+#endif
 
     // Device returns to the Powered state
     if (deviceState > USBD_STATE_POWERED) {
@@ -1266,7 +1268,7 @@ void USBD_Init(void)
     #error Missing pull-up definition.
 #endif
     
-if (0) {
+#if 0
 /*
     AT91C_BASE_PIOA->PIO_PER = USB_DETECT;
     AT91C_BASE_PIOA->PIO_ODR = USB_DETECT;
@@ -1277,8 +1279,7 @@ if (0) {
     AT91C_BASE_PIOA->PIO_PER = USB_PULLUP;
     AT91C_BASE_PIOA->PIO_OER = USB_PULLUP;
     AT91C_BASE_PIOA->PIO_CODR = USB_PULLUP;
-}
-
+#endif
     // Device is in the Attached state
     deviceState = USBD_STATE_SUSPENDED;
     previousDeviceState = USBD_STATE_POWERED;
