@@ -25,6 +25,8 @@ extern unsigned int Io_isrSourceCount;
 
 void IoAIsr_Wrapper( ) __attribute__ ((naked));
 void IoBIsr_Wrapper( ) __attribute__ ((naked));
+void IoCIsr_Wrapper( ) __attribute__ ((naked));
+
 void Io_Isr( AT91S_PIO* basePio );
 
 unsigned int status;
