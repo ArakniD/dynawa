@@ -10,6 +10,7 @@
 #include <battery_event.h>
 #include <accel_event.h>
 #include <audio_event.h>
+#include <usb_event.h>
 
 #define EVENT_WAIT_FOREVER  portMAX_DELAY
 
@@ -19,6 +20,7 @@
 #define EVENT_BATTERY       4   
 #define EVENT_ACCEL         5   
 #define EVENT_AUDIO         6   
+#define EVENT_USB           7   
 
 typedef struct {
     uint32_t type;
@@ -29,6 +31,7 @@ typedef struct {
         event_data_battery battery;
         event_data_accel accel;
         event_data_audio audio;
+        event_data_usb usb;
     } data;
 } event;
 

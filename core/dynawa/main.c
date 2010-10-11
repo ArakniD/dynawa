@@ -101,7 +101,7 @@ int main( void )
     TRACE_INFO("Starting scheduler\r\n");
     uint32_t mkcr = AT91C_BASE_PMC->PMC_MCKR;
     uint32_t sr = AT91C_BASE_PMC->PMC_SR;
-    TRACE_INFO("pmc %x %x\r\n", mkcr, sr);
+    TRACE_INFO("pmc pcsr %x mckr %x sr %x\r\n", AT91C_BASE_PMC->PMC_PCSR, mkcr, sr);
 
     //Led_init(&led);
     //Led_setState(&led, 0);

@@ -17,6 +17,7 @@ CONFIG_OPTS = \
 	-DBUILDID=$(BUILDID) \
 	-Dusb_CDCMSD \
 	-D_USB_COMPOSITE \
+	-DCFG_USB_CDC_MSD_SWITCH \
 	-DCFG_FATFS \
 	-DCFG_USB \
 	-DCFG_USB_SER \
@@ -129,7 +130,7 @@ USB_COMMON_CDC_SRC= \
   $(USB)/common/cdc/CDCLineCoding.c
 
 #MV
-_USB_COMMON_MSD_SRC= \
+USB_COMMON_MSD_SRC= \
   $(CORE)/memories/Media.c \
   $(CORE)/memories/MEDSD.c \
   $(USB)/device/massstorage/MSDLun.c \
@@ -151,10 +152,11 @@ USB_CDC_SRC= \
   $(USB)/device/cdc-serial/CDCDSerialDriverDescriptors.c
 
 #MV
-_USB_MSD_SRC= \
+USB_MSD_SRC= \
   $(USB)/device/massstorage/MSDDriver.c \
   $(USB)/device/massstorage/MSDDriverDescriptors.c
 
+#  $(USB)/device/core/USBDDriverCb_CfgChanged.c
 USB_SRC= \
   $(USB_COMMON_CDC_SRC) \
   $(USB_COMMON_MSD_SRC) \
@@ -162,7 +164,6 @@ USB_SRC= \
   $(USB_MSD_SRC) \
   $(USB)/device/core/USBDCallbacks_Resumed.c \
   $(USB)/device/core/USBDCallbacks_Suspended.c \
-  $(USB)/device/core/USBDDriverCb_CfgChanged.c \
   $(USB)/device/core/USBDDriverCb_IfSettingChanged.c
 	
 _FAT_SRC= \

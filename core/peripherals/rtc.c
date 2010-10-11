@@ -84,19 +84,21 @@ return 0;
 
 // TODO: sequential read from RTC
     if (milliseconds) {
-        uint8_t b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC10100);
+        uint8_t b;
+        i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC10100, &b);
         *milliseconds = BCD2BIN(b) * 10;
     }
 
-    uint8_t b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC);
+    uint8_t b;
+    i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGSEC, &b);
     curr_time->tm_sec = BCD2BIN(b & 0x7f);
-    b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGMIN);
+    i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGMIN, &b);
     curr_time->tm_min = BCD2BIN(b & 0x7f);
-    b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGHR);
+    i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGHR, &b);
     curr_time->tm_hour = BCD2BIN(b & 0x3f);
-    b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGDATE);
+    i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGDATE, &b);
     curr_time->tm_mday = BCD2BIN(b & 0x3f);
-    b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGCENMON);
+    i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGCENMON, &b);
     uint8_t century = (b & 0xc0) >> 6;
     /*
 century:
@@ -107,7 +109,7 @@ century:
 */
 
     curr_time->tm_mon = BCD2BIN(b & 0x1f) - 1;
-    b = i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGYEAR);
+    i2cMasterRead(I2CRTC_PHY_ADDR, 1, I2CRTC_REGYEAR, &b);
     curr_time->tm_year = 2000 + century * 100 + BCD2BIN(b) - 1900;
 
     //portEXIT_CRITICAL ();

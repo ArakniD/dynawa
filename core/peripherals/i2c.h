@@ -8,9 +8,9 @@
 
 void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t read);
 
-void i2cWriteByte(uint8_t data);
+int i2cWriteByte(uint8_t data);
 
-uint8_t i2cReadByte(void);
+int i2cReadByte(uint8_t *data);
 
 void i2cMultipleReadByteStart(void);
 uint8_t i2cMultipleReadByteRead(void);
@@ -19,5 +19,8 @@ uint8_t i2cMultipleReadByteEnd(void);
 void i2cMultipleWriteByteInit(void);
 void i2cMultipleWriteByte(uint8_t data);
 void i2cMultipleWriteEnd(void);
+
+int i2cMasterWrite(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t data);
+int i2cMasterRead(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t *data);
 
 #endif // I2C_H_

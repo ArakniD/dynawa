@@ -66,16 +66,19 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
     TRACE_INFO("gasgauge_stats\r\n");
     i2c_open();
 
-    b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres));
+    if(i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres), &b)) {
+        return -1;
+    }
+  
     t = (uint16_t)b;
-    b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres+1));
+    i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres+1), &b);
     t |= (((uint16_t)b)<<8);
 
     stats->voltage = ((t>>6)*199)/10;
 
-    b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires));
+    i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires), &b);
     t = (uint16_t)b;
-    b = i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires+1));
+    i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires+1), &b);
     i2c_close();
 
     t |= (((uint16_t)b)<<8);

@@ -183,6 +183,8 @@ void Run( ) // this task gets called as soon as we boot up.
     scrWriteRect(80,126,120,127,0xffffff);
 #endif
 
+    usb_init();
+    TRACE_INFO("usb_init ok\n\r");
 #if 1
     battery_init();
     TRACE_INFO("battery_init ok\n\r");
@@ -197,8 +199,6 @@ void Run( ) // this task gets called as soon as we boot up.
     bt_init();
     TRACE_INFO("bt_init ok\n\r");
     //bt_open();
-    usb_init();
-    TRACE_INFO("usb_init ok\n\r");
 
 #if 0
     rtc_open();
