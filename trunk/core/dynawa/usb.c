@@ -1,3 +1,58 @@
+#include "io.h"
+#include "usb.h"
+#include "debug/trace.h"
+#include "event.h"
+#include "task.h"
+#include "queue.h"
+#include "task_param.h"
+//#include "../usb/common/core/.h"
+#include "USBGenericRequest.h"
+
+#define PIO_USB_DETECT IO_PB22
+
+extern xQueueHandle battery_queue;
+
+bool usb_connected = false;
+
+static xTaskHandle usb_task_handle;
+xQueueHandle usb_queue;
+static Io usb_io;
+int usb_mode = 2;
+
+//------------------------------------------------------------------------------
+/// Re-implemented callback, invoked when a new USB Request is received.
+//------------------------------------------------------------------------------
+void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
+{
+    switch(usb_mode) {
+    case 1:
+//-----------------------------------------------------------------------------
+//         Callback re-implementation
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/// Invoked when a new SETUP request is received from the host. Forwards the
+/// request to the Mass Storage device driver handler function.
+/// \param request  Pointer to a USBGenericRequest instance.
+//-----------------------------------------------------------------------------
+        USBDCallbacks_RequestReceived_MSD(request);
+    case 2:
+        USBDCallbacks_RequestReceived_CDC(request);
+    }
+}
+
+//-----------------------------------------------------------------------------
+/// Invoked when the configuration of the device changes. Resets the mass
+/// storage driver.
+/// \param cfgnum New configuration number.
+//-----------------------------------------------------------------------------
+void USBDDriverCallbacks_ConfigurationChanged(unsigned char cfgnum)
+{
+    switch(usb_mode) {
+    case 1:
+        USBDDriverCallbacks_ConfigurationChanged_MSD(cfgnum);
+    }
+}
+
 #if defined(USB_COMPOSITE)
 #include <usb/device/massstorage/MSDDriver.h>
 #include <usb/device/massstorage/MSDLun.h>
@@ -161,8 +216,94 @@ void usb_msd( void* p )
 }
 #endif
 
+static bool usb_pin_high = false;
+
+void usb_io_isr_handler(void* context) {
+    //usb_pin_high = !usb_pin_high;
+    usb_pin_high = Io_value(&usb_io);
+
+    uint8_t ev;
+    if (usb_pin_high) {
+        ev = WAKEUP_EVENT_USB_DISCONNECTED;
+    } else {
+        ev = WAKEUP_EVENT_USB_CONNECTED;
+    }
+    TRACE_INFO("usb_io_isr_handler usb %d\r\n", usb_pin_high);
+
+    portBASE_TYPE xHigherPriorityTaskWoken;
+    xQueueSendFromISR(usb_queue, &ev, &xHigherPriorityTaskWoken);
+
+    if(xHigherPriorityTaskWoken) {
+        portYIELD_FROM_ISR();
+    }
+}
+
+static void usb_task( void* p ) {
+    TRACE_INFO("usb task %x\r\n", xTaskGetCurrentTaskHandle());
+
+    while (true) {
+        uint8_t usb_event;
+
+        xQueueReceive(usb_queue, &usb_event, -1);
+
+        if (usb_event == WAKEUP_EVENT_USB_CONNECTED) {
+            usb_connected = true;
+            pm_lock();
+            UsbSerial_open();
+
+            // notify battery manager
+            xQueueSend(battery_queue, &usb_event, 0);
+
+            event ev;
+            ev.type = EVENT_USB;
+            ev.data.usb.state = EVENT_USB_CONNECTED;
+            event_post(&ev);
+        } else if (usb_event == WAKEUP_EVENT_USB_DISCONNECTED) {
+            usb_connected = false;
+            UsbSerial_close();
+            pm_unlock();
+
+            // notify battery manager
+            xQueueSend(battery_queue, &usb_event, 0);
+
+            event ev;
+            ev.type = EVENT_USB;
+            ev.data.usb.state = EVENT_USB_DISCONNECTED;
+            event_post(&ev);
+        }
+    }
+    vQueueDelete(usb_queue);
+    vTaskDelete(NULL);
+}
+
 int usb_init(void) {
+    usb_queue = xQueueCreate(1, sizeof(uint8_t));
+    if (usb_queue == NULL) {
+        panic("usb_init");
+        return -1;
+    }
+ 
+    Io_init(&usb_io, PIO_USB_DETECT, IO_GPIO, INPUT);
+    usb_pin_high = Io_value(&usb_io);
+
+    if (!usb_pin_high) {
+        usb_connected = true;
+        pm_lock();
+        UsbSerial_open();
+    }
+
+    TRACE_INFO("usb_init() usb %d\r\n", usb_pin_high);
+
+    Io_addInterruptHandler(&usb_io, usb_io_isr_handler, NULL);    
+
+    if (xTaskCreate( usb_task, "usb", TASK_STACK_SIZE(TASK_USB_STACK), NULL, TASK_USB_PRI, &usb_task_handle ) != 1 ) {
+        return -1;
+    }
+
+    return 0;
 }
 
 int usb_close(void) {
+    vQueueDelete(usb_queue);
+    return 0;
 }

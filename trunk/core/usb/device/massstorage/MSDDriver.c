@@ -68,6 +68,14 @@ static void MSDDriver_Reset(void)
     msdDriver.commandState.state = 0;
 }
 
+#ifdef CFG_USB_CDC_MSD_SWITCH
+#define CB_REQUEST_RECEIVED         USBDCallbacks_RequestReceived_MSD
+#define CB_CONFIGURATION_CHANGED    USBDDriverCallbacks_ConfigurationChanged_MSD
+#else
+#define CB_REQUEST_RECEIVED         USBDCallbacks_RequestReceived
+#define CB_CONFIGURATION_CHANGED    USBDDriverCallbacks_ConfigurationChanged
+#endif
+
 //-----------------------------------------------------------------------------
 //         Callback re-implementation
 //-----------------------------------------------------------------------------
@@ -76,7 +84,7 @@ static void MSDDriver_Reset(void)
 /// request to the Mass Storage device driver handler function.
 /// \param request  Pointer to a USBGenericRequest instance.
 //-----------------------------------------------------------------------------
-void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
+void CB_REQUEST_RECEIVED(const USBGenericRequest *request)
 {
     MSDDriver_RequestHandler(request);
 }
@@ -86,7 +94,7 @@ void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
 /// storage driver.
 /// \param cfgnum New configuration number.
 //-----------------------------------------------------------------------------
-void USBDDriverCallbacks_ConfigurationChanged(unsigned char cfgnum)
+void CB_CONFIGURATION_CHANGED(unsigned char cfgnum)
 {
     if (cfgnum > 0) {
 

@@ -139,6 +139,11 @@ static void CDCDSerialDriver_SetControlLineState(unsigned char activateCarrier,
     USBD_Write(0, 0, 0, 0, 0);
 }
 
+#ifdef CFG_USB_CDC_MSD_SWITCH
+#define CB_REQUEST_RECEIVED         USBDCallbacks_RequestReceived_CDC
+#else
+#define CB_REQUEST_RECEIVED         USBDCallbacks_RequestReceived
+#endif
 //------------------------------------------------------------------------------
 //         Optional RequestReceived() callback re-implementation
 //------------------------------------------------------------------------------
@@ -147,7 +152,7 @@ static void CDCDSerialDriver_SetControlLineState(unsigned char activateCarrier,
 //------------------------------------------------------------------------------
 /// Re-implemented callback, invoked when a new USB Request is received.
 //------------------------------------------------------------------------------
-void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
+void CB_REQUEST_RECEIVED(const USBGenericRequest *request)
 {
     CDCDSerialDriver_RequestHandler(request);
 }

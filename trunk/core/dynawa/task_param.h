@@ -31,4 +31,7 @@
 #define TASK_DISPLAY_BRIGHTNESS_PRI     2
 #define TASK_DISPLAY_BRIGHTNESS_STACK   512
 
+#define TASK_USB_PRI     2
+#define TASK_USB_STACK   512
+
 #endif // TASK_PARAM_H

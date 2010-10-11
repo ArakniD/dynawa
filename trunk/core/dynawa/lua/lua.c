@@ -443,6 +443,18 @@ int lua_event_loop (void) {
             lua_pushnumber(L, ev.data.battery.state);
             lua_settable(L, -3);
             break;
+        case EVENT_USB:
+            TRACE_LUA("EVENT_USB state %d\r\n", ev.data.usb.state);
+            lua_newtable(L);
+
+            lua_pushstring(L, "type");
+            lua_pushstring(L, "usb");
+            lua_settable(L, -3);
+
+            lua_pushstring(L, "state");
+            lua_pushnumber(L, ev.data.usb.state);
+            lua_settable(L, -3);
+            break;
         case EVENT_ACCEL:
             TRACE_LUA("EVENT_ACCEL gesture %d\r\n", ev.data.accel.gesture);
             lua_newtable(L);

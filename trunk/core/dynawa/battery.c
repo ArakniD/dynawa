@@ -1,23 +1,16 @@
 #include "battery.h"
-#include "io.h"
+#include "usb.h"
 #include "debug/trace.h"
 #include "event.h"
 #include "task.h"
 #include "queue.h"
 #include "task_param.h"
 
-#define PIO_USB_DETECT IO_PB22
-
 #define WAKEUP_EVENT_TIMED_EVENT        1
-#define WAKEUP_EVENT_USB_CONNECTED      10
-#define WAKEUP_EVENT_USB_DISCONNECTED    11
-
-bool usb_connected = false;
 
 static xTaskHandle battery_task_handle;
 static gasgauge_stats _stats;
 xQueueHandle battery_queue;
-static Io usb_io;
 
 int battery_get_stats (gasgauge_stats *stats) {
     TRACE_INFO("battery_get_stats %x\r\n", stats);
@@ -44,28 +37,6 @@ void battery_timer_handler(void* context) {
     }
 }
 #endif
-
-static bool battery_usb_pin_high = false;
-
-void battery_io_isr_handler(void* context) {
-    //battery_usb_pin_high = !battery_usb_pin_high;
-    battery_usb_pin_high = Io_value(&usb_io);
-
-    uint8_t ev;
-    if (battery_usb_pin_high) {
-        ev = WAKEUP_EVENT_USB_DISCONNECTED;
-    } else {
-        ev = WAKEUP_EVENT_USB_CONNECTED;
-    }
-    TRACE_INFO("battery_io_isr_handler usb %d\r\n", battery_usb_pin_high);
-
-    portBASE_TYPE xHigherPriorityTaskWoken;
-    xQueueSendFromISR(battery_queue, &ev, &xHigherPriorityTaskWoken);
-
-    if(xHigherPriorityTaskWoken) {
-        portYIELD_FROM_ISR();
-    }
-}
 
 static void battery_task( void* p ) {
     TRACE_INFO("battery task %x\r\n", xTaskGetCurrentTaskHandle());
@@ -111,18 +82,11 @@ static void battery_task( void* p ) {
         xQueueReceive(battery_queue, &battery_event, 10000);
 #endif
         if (battery_event == WAKEUP_EVENT_USB_DISCONNECTED) {
-            usb_connected = false;
-            UsbSerial_close();
-            pm_unlock();
-
             event ev;
             ev.type = EVENT_BATTERY;
             ev.data.battery.state = BATTERY_STATE_DICHARGING;
             event_post(&ev);
         } else if (battery_event == WAKEUP_EVENT_USB_CONNECTED) {
-            usb_connected = true;
-            pm_lock();
-            UsbSerial_open();
         }
     }
 #ifdef CFG_PM
@@ -133,28 +97,21 @@ static void battery_task( void* p ) {
 }
 
 int battery_init () {
+    if (gasgauge_get_stats(&_stats)) {
+        // no battery (probably)
+        memset(&_stats, sizeof(_stats), 0);
+        return -1;
+    }
+
     battery_queue = xQueueCreate(1, sizeof(uint8_t));
     if (battery_queue == NULL) {
         panic("battery_init");
         return -1;
     }
 
-// TODO: should be moved to usb.c or so
-    Io_init(&usb_io, PIO_USB_DETECT, IO_GPIO, INPUT);
-    battery_usb_pin_high = Io_value(&usb_io);
+    TRACE_INFO("battery_init()\r\n");
 
-    if (!battery_usb_pin_high) {
-        usb_connected = true;
-        pm_lock();
-        UsbSerial_open();
-    }
-
-    TRACE_INFO("battery_init() usb %d\r\n", battery_usb_pin_high);
-
-
-    Io_addInterruptHandler(&usb_io, battery_io_isr_handler, NULL);
-
-    // TODO: don't start the task if no batter (_stats.voltage == 0)
+    // TODO: don't start the task if no battery (_stats.voltage == 0)
     if (xTaskCreate( battery_task, "battery", TASK_STACK_SIZE(TASK_BATTERY_STACK), NULL, TASK_BATTERY_PRI, &battery_task_handle ) != 1 ) {
         return -1;
     }
