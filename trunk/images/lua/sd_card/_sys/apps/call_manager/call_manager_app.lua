@@ -54,7 +54,7 @@ function app:incoming_call_popup(data)
 	local bdaddr = assert(data.bdaddr)
 	local actions = {}
 	
-	local popup_def = {autoclose = 20000}
+	local popup_def = {}
 	
 	if data.possible_actions.pick_up then
 		table.insert(actions,"CONFIRM = Pick up")
