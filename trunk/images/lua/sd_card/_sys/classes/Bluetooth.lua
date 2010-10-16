@@ -47,7 +47,7 @@ function class:handle_hw_event(event)
 			--#todo what's this???
 			log("Received BT HW event of subtype "..tostring(event.subtype).." but socket is nil")
 		else
-			log("BT sending event '"..event.subtype.."' to "..(event.socket or "nil"))
+			--log("BT sending event '"..event.subtype.."' to "..(event.socket or "nil"))
 			event.socket["handle_bt_event_"..event.subtype](event.socket,event)
 		end
 	else

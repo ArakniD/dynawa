@@ -27,7 +27,7 @@ function class:listen(channel)
 end
 
 function class:send(data)
-	log(self.." sending "..#data.." bytes of raw data")
+	--log(self.." sending "..#data.." bytes of raw data")
 	dynawa.devices.bluetooth.cmd:send(self._c, data)
 end
 
