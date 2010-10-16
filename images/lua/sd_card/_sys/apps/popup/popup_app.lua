@@ -54,7 +54,12 @@ function app:open(args)
 	dynawa.bitmap.combine(screen, bmp, start_w, start_h)
 	self.window:show_bitmap(screen)
 	self.window:push()
-	self.window.on_confirm = args.on_confirm
+	for i,key in ipairs{"confirm","cancel","top","bottom"} do
+		--[[if args["on_"..key] then
+			log("Popup has callback for "..key)
+		end]]
+		self.window["popup_on_"..key] = args["on_"..key]
+	end
 	self.timestamp = dynawa.ticks()
 	if autoclose then 
 		dynawa.devices.timers:timed_event{delay = autoclose, receiver = self, window_id = assert(self.window.id)}
@@ -77,12 +82,11 @@ end
 
 function app:handle_event_button(event)
 	if assert(event.action) == "button_down" and dynawa.ticks() - self.timestamp > 250 then
-		if event.button == "confirm" or event.button == "cancel" then
-			local on_confirm = self.window.on_confirm
-			self:switching_to_back()
-			if on_confirm and event.button == "confirm" then
-				on_confirm()
-			end
+		local callback = self.window["popup_on_"..event.button]
+		self:switching_to_back()
+		if callback then
+--			log("Doing popup callback for "..event.button)
+			callback()
 		end
 	end
 end

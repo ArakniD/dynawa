@@ -140,7 +140,7 @@ end
 function app:handle_event_socket_data(socket, data_in)
 	assert(data_in)
 	local activity = assert(socket.activity)
-	log(socket.." got "..#data_in.." bytes of data")
+	--log(socket.." got "..#data_in.." bytes of data")
 	--log("Got "..#data_in.." bytes of data: "..safe_string(data_in))
 	
 	while #data_in > 2 and (string.byte(data_in) < 180 or string.byte(data_in) > 183) do
@@ -160,7 +160,7 @@ end
 
 function app:activity_chunk_received(activity, chunk)
 	local socket = assert(activity.socket)
-	log("Chunk is "..#chunk.." bytes")
+	--log("Chunk is "..#chunk.." bytes")
 	local file_id, piece_n_str, of_str, piece = chunk:match("^P(...)(..)(..)(.*)$")
 	if piece then --It's P chunk
 		local piece_n = from_word(piece_n_str)
@@ -172,7 +172,7 @@ function app:activity_chunk_received(activity, chunk)
 			table.insert(activity.receiver.pieces, piece)
 			assert(#activity.receiver.pieces == piece_n, "Wrong piece_n: "..piece_n)
 		end
-		log("Acknowledging piece "..piece_n.." of "..of)
+		--log("Acknowledging piece "..piece_n.." of "..of)
 		local ack = table.concat({"A",file_id,piece_n_str})
 		self:activity_send_chunk(activity, ack)
 		if piece_n == of then --binstring is complete
@@ -198,7 +198,7 @@ function app:activity_got_binstring(activity, binstring)
 	--log("Parsing binstring: "..safe_string(binstring))
 	local value, rest = self:binstring_to_value(binstring)
 	assert (rest == "", #rest.." unconsumed bytes after binstring parsing")
-	log("Parsed result: OK")
+	--log("Parsed result: OK")
 	--log("PARSED RESULT VALUE: "..dynawa.file.serialize(value))
 	if type(value) == "table" and value.command then
 		if value.command == "echo" then
@@ -211,6 +211,8 @@ function app:activity_got_binstring(activity, binstring)
 			dynawa.time.set(time)
 			self:status_changed()
 		else
+			value.bdaddr = assert(activity.bdaddr)
+			--log("-----Dyno incoming event: "..dynawa.file.serialize(value))
 			self.events:generate_event{type = "dyno_data_from_phone", data = value}
 		end
 	end
@@ -284,8 +286,13 @@ function app:send_data_test(data)
 	self:activity_send_data(activity, data)
 end
 
+-- Sends data to given activity
 function app:activity_send_data(activity, data)
+	log("---Sending data from watch")
 	data = table.concat(self:encode_data(data, {}))
+	if activity.status ~= "connected" then
+		return false, "Not connected - Activity status is '"..tostring(activity.status).."'"
+	end
 	if not activity.sender then
 		activity.sender = {pieces={}}
 	end
@@ -293,8 +300,19 @@ function app:activity_send_data(activity, data)
 	if not activity.sender.waiting_for_ack then
 		self:activity_send_piece(activity)
 	else
-		log("Cannot send piece - still waiting for Ack chunk for previous sent piece")
+		return false, "Cannot send piece - still waiting for Ack chunk for previously sent piece"
 	end
+	return true
+end
+
+-- Sends data to given phone
+function app:bdaddr_send_data(bdaddr, data)
+	for id,act in pairs(self.activities) do
+		if act.bdaddr == bdaddr then
+			return self:activity_send_data(act,data)
+		end
+	end
+	return false, "Unknown phone"
 end
 
 function app:encode_data(data, parts)
@@ -359,7 +377,7 @@ function app:activity_send_chunk(activity, chunk)
 	assert (#chunk <= 1023 and #chunk > 0)
 	local header = to_word((180*256) + #chunk)
 	local data = header..chunk
-	log("Sending chunk with header: "..safe_string(data))
+	--log("Sending chunk with header: "..safe_string(data))
 	assert(activity.socket):send(data)
 end
 

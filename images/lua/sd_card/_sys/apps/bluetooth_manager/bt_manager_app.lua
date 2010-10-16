@@ -79,7 +79,7 @@ end
 
 function app:switching_to_front()
 	local menu = {
-		banner = "Bluetooth debug menu",
+		banner = "Bluetooth manager",
 		items = {
 			{
 				text = "BT on", value = {jump = "bt_on"},

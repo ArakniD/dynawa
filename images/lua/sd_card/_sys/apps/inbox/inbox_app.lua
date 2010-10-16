@@ -35,7 +35,7 @@ function app:start()
 				return false
 			end
 			local com = ev.data.command
-			return (com == "incoming_sms" or com == "incoming_email" or com == "incoming_call" or com == "calendar_event")
+			return (com == "incoming_sms" or com == "incoming_email" or com == "calendar_event") --incoming_call is handled by dynawa.call_monitor
 		end)
 	end)
 end
