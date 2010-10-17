@@ -38,10 +38,23 @@ function app:start()
 			return (com == "incoming_sms" or com == "incoming_email" or com == "calendar_event") --incoming_call is handled by dynawa.call_monitor
 		end)
 	end)
+	dynawa.app_manager:after_app_start("dynawa.call_manager", function(callman)
+		callman.events:register_for_events(self)
+	end)
 end
 
+--This is normally sent directly from dyno
 function app:handle_event_dyno_data_from_phone(ev)
-	local data = assert(ev.data)
+	self:handle_incoming_item(assert(ev.data))
+end
+
+--This is normally sent from call_manager
+function app:handle_event_incoming_call(ev)
+	assert(ev.data.command == "incoming_call")
+	self:handle_incoming_item(ev.data)
+end
+
+function app:handle_incoming_item(data)
 	local icon
 	if data.contact_icon then
 		icon = assert(data.contact_icon["45"], "No size 45 icon found")
@@ -53,18 +66,30 @@ function app:handle_event_dyno_data_from_phone(ev)
 	local popup
 	if command == "incoming_call" then
 		typ = "call"
-		table.insert(rows,"INCOMING CALL")
-		table.insert(rows,assert(data.contact_phone))
-		if data.contact_name then
-			table.insert(rows, data.contact_name)
+		if data.duration then
+			table.insert(rows,"ACCEPTED CALL")
+		else
+			table.insert(rows,"MISSED CALL")
+		end
+		table.insert(rows,data.contact_name or data.contact_phone)
+		if data.duration then
+			table.insert(rows, "Duration: "..data.duration)
 		end
 		local caller = data.contact_name
 		if not caller then
 			caller = assert(data.contact_phone)
 		end
 		item.header = {"From "..caller.." (%s)",os.time()-5}
+		if not data.duration then
+			item.header[1] = "MISSED: "..item.header[1]
+		end
 		if data.contact_name then
 			table.insert(item.body,"Number: "..data.contact_phone)
+		end
+		if data.duration then
+			table.insert(item.body,"Call duration: "..data.duration)
+			--Accepted call items are automatically marked as "read"
+			item.read = true
 		end
 	elseif command == "incoming_sms" then
 		typ = "sms"
