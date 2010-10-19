@@ -122,6 +122,8 @@ function app:incoming_call_popup(data)
 		table.insert(actions,"BOTTOM = Silence")
 		popup_def.on_bottom = function()
 			self:phone_action("silence",bdaddr)
+			data.possible_actions.silence = nil
+			self:incoming_call_popup(data)
 		end
 	end
 	table.insert(rows, table.concat(actions,"; "))

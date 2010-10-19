@@ -168,9 +168,10 @@ function dynawa.debug.whats_new()
 			return
 		elseif msg == "FILE" then
 			dynawa.debug.update_file()
-		else
-			assert(msg == "BYE","Unknown msg from PC: "..msg)
+		elseif msg == "BYE" then
 			return
+		else
+			--log ("Ignoring unknown msg from PC: "..msg)
 		end
 	end
 end

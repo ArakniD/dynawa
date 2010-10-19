@@ -9,7 +9,18 @@ end
 function app:switching_to_front()
 	self.window:push()
 	self.run_id = dynawa.unique_id()
+	self:re_color()
 	self:animate(0)
+end
+
+function app:re_color()
+	local color = {math.random(200)+55, math.random(200)+55, math.random(200)+55}
+	local full = dynawa.bitmap.new(160,128,color[1],color[2],color[3])
+	for id, sprite in pairs(self.sprites) do
+		if id:match("^blob.*") then
+			sprite.bitmap = dynawa.bitmap.mask(full, sprite.bitmap,0,0)
+		end
+	end
 end
 
 function app:animate(count)
