@@ -30,7 +30,6 @@ dynawa.file.serialize = function (neco)
 	end
 end
 
-
 dynawa.file.load_data = function(fname)
 	local fd, err = io.open(fname,"r")
 	if not fd then
