@@ -7,17 +7,27 @@
 #include "task_param.h"
 //#include "../usb/common/core/.h"
 #include "USBGenericRequest.h"
+#include <usb/device/massstorage/MSDDriver.h>
+#include <usb/device/massstorage/MSDLun.h>
+#include <memories/Media.h>
+#include <memories/MEDSD.h>
 
 #define PIO_USB_DETECT IO_PB22
 
 extern xQueueHandle battery_queue;
 
-bool usb_connected = false;
+bool usb_state_connected = false;
+static bool usb_msd_state = false;
+static bool usb_task_msd_running;
 
 static xTaskHandle usb_task_handle;
+static xTaskHandle usb_msd_task_handle;
+
 xQueueHandle usb_queue;
 static Io usb_io;
-int usb_mode = 2;
+
+bool usb_mode_cdc_enabled = true;
+int usb_mode = USB_MODE_NONE;   // USB_MODE_CDC, USB_MODE_MSD
 
 //------------------------------------------------------------------------------
 /// Re-implemented callback, invoked when a new USB Request is received.
@@ -25,7 +35,7 @@ int usb_mode = 2;
 void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
 {
     switch(usb_mode) {
-    case 1:
+    case USB_MODE_MSD:
 //-----------------------------------------------------------------------------
 //         Callback re-implementation
 //-----------------------------------------------------------------------------
@@ -35,8 +45,10 @@ void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
 /// \param request  Pointer to a USBGenericRequest instance.
 //-----------------------------------------------------------------------------
         USBDCallbacks_RequestReceived_MSD(request);
-    case 2:
+        break;
+    case USB_MODE_CDC:
         USBDCallbacks_RequestReceived_CDC(request);
+        break;
     }
 }
 
@@ -48,22 +60,17 @@ void USBDCallbacks_RequestReceived(const USBGenericRequest *request)
 void USBDDriverCallbacks_ConfigurationChanged(unsigned char cfgnum)
 {
     switch(usb_mode) {
-    case 1:
+    case USB_MODE_MSD:
         USBDDriverCallbacks_ConfigurationChanged_MSD(cfgnum);
+        break;
+    case USB_MODE_CDC:
+        break;
     }
 }
 
-#if defined(USB_COMPOSITE)
-#include <usb/device/massstorage/MSDDriver.h>
-#include <usb/device/massstorage/MSDLun.h>
-#include <memories/Media.h>
-#include <memories/MEDSD.h>
-#endif
+void usb_task_msd_cdc( void* parameters );
+void usb_task_msd( void* parameters );
 
-void usb( void* parameters );
-void usb_msd( void* parameters );
-
-#if defined(USB_COMPOSITE)
 /// Use for power management
 #define STATE_IDLE    0
 /// The USB device is in suspend state
@@ -74,6 +81,7 @@ void usb_msd( void* parameters );
 /// Size of one block in bytes.
 #define BLOCK_SIZE          512
 
+#if 0
 //-----------------------------------------------------------------------------
 //      Internal variables
 //-----------------------------------------------------------------------------
@@ -107,6 +115,7 @@ void USBDCallbacks_Suspended(void)
     //LED_Clear(USBD_LEDUSB);
     USBState = STATE_SUSPEND;
 }
+#endif
 
 //-----------------------------------------------------------------------------
 /// Initialize MSD Media & LUNs
@@ -130,7 +139,10 @@ void MSDDInitialize()
     // Memory initialization
     TRACE_INFO("LUN SD\n\r");
 
+    spi_lock();
     uint32_t sd_size = sd_info();
+    spi_unlock();
+
     SD_Initialize(&(medias[numMedias]), sd_size);
     LUN_Init(&(luns[numMedias]), &(medias[numMedias]),
             msdBuffer, 0, sd_size, BLOCK_SIZE);
@@ -140,15 +152,19 @@ void MSDDInitialize()
     TRACE_INFO("%u medias defined\n\r", numMedias);
 
     // BOT driver initialization
+#if defined(USB_COMPOSITE)
     MSDDFunctionDriver_Initialize(luns, numMedias);
-    //MSDDriver_Initialize(luns, numMedias);
+#else
+    MSDDriver_Initialize(luns, numMedias);
+#endif
 }
 
-void usb( void* p )
+#if defined(USB_COMPOSITE)
+void usb_task_msd_cdc( void* p )
 {
     (void)p;
 
-    TRACE_INFO("usb\r\n");
+    TRACE_INFO("usb_msd_cdc\r\n");
 
     /*
        spi_init();
@@ -203,18 +219,101 @@ void usb( void* p )
 
     led_loop();
 }
+#endif
 
-void usb_msd( void* p )
+void usb_task_msd( void* p )
 {
     (void)p;
 
-    TRACE_INFO("usb_msd\r\n");
+    TRACE_INFO("usb_task_msd\r\n");
 
-    while(1) {
+    MSDDInitialize();
+    USBD_Connect();
+
+    while (USBD_GetState() < USBD_STATE_CONFIGURED) {
+        Task_sleep(10);
+    }
+
+    while(usb_task_msd_running) {
         MSDDriver_StateMachine();
     }
+    USBD_Disconnect();
+    vTaskDelete(NULL);
 }
-#endif
+
+int usb_msd (bool on) {
+    if (on == usb_msd_state) {
+        return 0;
+    }
+    if (on) {
+        if (!usb_state_connected) {
+            return -1;
+        }
+        if (usb_mode == USB_MODE_CDC) {
+            UsbSerial_close();
+            usb_mode = USB_MODE_NONE;
+        }
+        usb_task_msd_running = true;
+
+        if (xTaskCreate( usb_task_msd, "usb_msd", TASK_STACK_SIZE(TASK_USB_MSD_STACK), NULL, TASK_USB_MSD_PRI, &usb_msd_task_handle ) != 1 ) {
+            return -1;
+        }
+        usb_mode = USB_MODE_MSD;
+    } else {
+        if (usb_mode_cdc_enabled) {
+            UsbSerial_open();
+            usb_mode = USB_MODE_CDC;
+        } else {
+            usb_mode = USB_MODE_NONE;
+        }
+    }
+    usb_msd_state = on;
+    return 0;
+}
+
+int usb_connected() {
+    usb_state_connected = true;
+    pm_lock();
+
+    // notify battery manager
+    uint8_t usb_event = WAKEUP_EVENT_USB_CONNECTED;
+    xQueueSend(battery_queue, &usb_event, 0);
+
+    event ev;
+    ev.type = EVENT_USB;
+    ev.data.usb.state = EVENT_USB_CONNECTED;
+    event_post(&ev);
+
+    if (usb_mode_cdc_enabled) {
+        UsbSerial_open();
+        usb_mode = USB_MODE_CDC;
+    }
+    return 0;
+}
+
+int usb_disconnected() {
+
+    switch(usb_mode) {
+    case USB_MODE_MSD:
+        usb_task_msd_running = false;
+        break;
+    case USB_MODE_CDC:
+        UsbSerial_close();
+        break;
+    }
+    pm_unlock();
+    usb_state_connected = false;
+    usb_mode = USB_MODE_NONE;
+
+    // notify battery manager
+    uint8_t usb_event = WAKEUP_EVENT_USB_DISCONNECTED;
+    xQueueSend(battery_queue, &usb_event, 0);
+
+    event ev;
+    ev.type = EVENT_USB;
+    ev.data.usb.state = EVENT_USB_DISCONNECTED;
+    event_post(&ev);
+}
 
 static bool usb_pin_high = false;
 
@@ -247,29 +346,11 @@ static void usb_task( void* p ) {
         xQueueReceive(usb_queue, &usb_event, -1);
 
         if (usb_event == WAKEUP_EVENT_USB_CONNECTED) {
-            usb_connected = true;
-            pm_lock();
-            UsbSerial_open();
+            usb_connected();
 
-            // notify battery manager
-            xQueueSend(battery_queue, &usb_event, 0);
-
-            event ev;
-            ev.type = EVENT_USB;
-            ev.data.usb.state = EVENT_USB_CONNECTED;
-            event_post(&ev);
         } else if (usb_event == WAKEUP_EVENT_USB_DISCONNECTED) {
-            usb_connected = false;
-            UsbSerial_close();
-            pm_unlock();
+            usb_disconnected();
 
-            // notify battery manager
-            xQueueSend(battery_queue, &usb_event, 0);
-
-            event ev;
-            ev.type = EVENT_USB;
-            ev.data.usb.state = EVENT_USB_DISCONNECTED;
-            event_post(&ev);
         }
     }
     vQueueDelete(usb_queue);
@@ -287,9 +368,7 @@ int usb_init(void) {
     usb_pin_high = Io_value(&usb_io);
 
     if (!usb_pin_high) {
-        usb_connected = true;
-        pm_lock();
-        UsbSerial_open();
+        usb_connected();
     }
 
     TRACE_INFO("usb_init() usb %d\r\n", usb_pin_high);

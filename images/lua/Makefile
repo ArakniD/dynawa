@@ -359,6 +359,7 @@ ARM_SRC= \
   $(DYNAWA)/analogin_isr.c \
   $(DYNAWA)/audio_isr.c \
   $(PERIPHERALS)/spi_isr.c \
+  $(PERIPHERALS)/i2c_isr.c \
   $(PERIPHERALS)/oled/oled.c \
   $(DYNAWA)/bitmap.c \
   $(SCREEN)/screen_fast.c \

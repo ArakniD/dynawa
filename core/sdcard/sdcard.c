@@ -526,7 +526,8 @@ uint32_t sd_info(void)
         TRACE_SD("mult = %0d\n",mult);
         TRACE_SD("blockno = %ld\n",blockno);
         TRACE_SD("block len = %ld\n",block_len);
-        TRACE_SD("card size = %lu / (%lu MByte)\n\n", blockno * (uint32_t)block_len,blockno / 2048L);
+        //TRACE_SD("card size = %lu / (%lu MByte)\n\n", blockno * (uint32_t)block_len,blockno / 2048L);
+        TRACE_SD("card size = %lu / (%lu MByte)\n\n", blockno * (uint32_t)block_len,blockno / 1024L);
 
         sd_send_dummys();
         sd_numsectors = blockno;

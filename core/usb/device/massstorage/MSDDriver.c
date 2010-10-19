@@ -86,6 +86,7 @@ static void MSDDriver_Reset(void)
 //-----------------------------------------------------------------------------
 void CB_REQUEST_RECEIVED(const USBGenericRequest *request)
 {
+    TRACE_USB("USBDCallbacks_RequestReceived_MSD\r\n");
     MSDDriver_RequestHandler(request);
 }
 
@@ -183,6 +184,7 @@ void MSDDriver_Initialize(MSDLun *luns, unsigned char numLuns)
     msdDriver.commandState.postprocess = 0;
     msdDriver.commandState.length = 0;
     //msdDriver.commandState.transfer.semaphore = 0;
+    msdDriver.commandState.transfer.semaphore = Semaphore_create();
     Semaphore_take(msdDriver.commandState.transfer.semaphore, -1);
 
     // LUNs

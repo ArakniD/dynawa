@@ -474,7 +474,7 @@ void USBDDriver_Initialize(
     const USBDDriverDescriptors *pDescriptors,
     unsigned char *pInterfaces)
 {
-
+    TRACE_USB("USBDDriver_Initialize %x %x %x\r\n", pDriver, pDescriptors, pInterfaces); 
     pDriver->cfgnum = 0;
 #if (BOARD_USB_BMATTRIBUTES == USBConfigurationDescriptor_SELFPOWERED_RWAKEUP) \
     || (BOARD_USB_BMATTRIBUTES == USBConfigurationDescriptor_BUSPOWERED_RWAKEUP)

@@ -48,6 +48,7 @@
 //#define TR_SER          
 //#define TR_SD           
 //#define TR_SPI
+//#define TR_I2C
 #define TR_ACCEL
 //#define TR_USB          
 //#define TR_BOT          
@@ -157,6 +158,12 @@
 #else
     #define TRACE_SPI(...)       
 #endif // TR_SPI
+
+#if defined(TR_I2C)
+    #define TRACE_I2C(...)       rprintf(DBG,__VA_ARGS__)     
+#else
+    #define TRACE_I2C(...)       
+#endif // TR_I2C
 
 #if defined(TR_ACCEL)
     #define TRACE_ACCEL(...)       rprintf(DBG,__VA_ARGS__)     

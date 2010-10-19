@@ -65,20 +65,33 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
 
     TRACE_INFO("gasgauge_stats\r\n");
     i2c_open();
+    //i2c_lock();
 
     if(i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres), &b)) {
+        //i2c_unlock();
+        i2c_close();
         return -1;
     }
   
     t = (uint16_t)b;
-    i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres+1), &b);
+    if(i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_VPres<<10)|(I2CGG_REG_VPres+1), &b)) {
+        panic("gasgauge_get_stats1");
+        goto exit_error;
+    }
     t |= (((uint16_t)b)<<8);
 
     stats->voltage = ((t>>6)*199)/10;
 
-    i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires), &b);
+    if(i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires), &b)) {
+        panic("gasgauge_get_stats2");
+        goto exit_error;
+    }
     t = (uint16_t)b;
-    i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires+1), &b);
+    if(i2cMasterRead(I2CGG_PHY_ADDR, 2, (I2CGG_BANK_Ires<<10)|(I2CGG_REG_Ires+1), &b)) {
+        panic("gasgauge_get_stats3");
+        goto exit_error;
+    }
+    //i2c_unlock();
     i2c_close();
 
     t |= (((uint16_t)b)<<8);
@@ -108,6 +121,12 @@ int gasgauge_get_stats (gasgauge_stats *stats) {
         }
     }
     return 0;
+
+exit_error:
+    //i2c_unlock();
+    i2c_close();
+    panic("gasgauge_get_stats");
+    return -1;
 }
 
 /*

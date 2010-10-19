@@ -112,7 +112,7 @@ static int l_accel_stats (lua_State *L) {
 
 extern uint32_t total_time_in_sleep;
 extern uint32_t total_time_in_deep_sleep;
-extern bool usb_connected;
+extern bool usb_state_connected;
 
 static int l_sys_stats (lua_State *L) {
 
@@ -137,10 +137,19 @@ static int l_sys_stats (lua_State *L) {
 #endif
 
     lua_pushstring(L, "usb_connected");
-    lua_pushnumber(L, usb_connected);
+    lua_pushnumber(L, usb_state_connected);
     lua_settable(L, -3);
 
     return 1;
+}
+
+bool lua_usb_msd_enabled = false;
+
+static int l_usb_mode (lua_State *L) {
+
+    TRACE_LUA("dynawa.x.usb_mode()\r\n");
+
+    return 0;
 }
 
 static const struct luaL_reg x [] = {
@@ -151,6 +160,7 @@ static const struct luaL_reg x [] = {
     {"battery_stats", l_battery_stats},
     {"accel_stats", l_accel_stats},
     {"sys_stats", l_sys_stats},
+    {"usb_mode", l_usb_mode},
     {NULL, NULL}  /* sentinel */
 };
 
