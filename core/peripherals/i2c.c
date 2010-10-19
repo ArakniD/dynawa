@@ -35,9 +35,11 @@
 #endif
 
 static char buff[128];
+#if I2C_IRQ
 xSemaphoreHandle i2c_semaphore;
 
 extern void (i2c_Isr_Wrapper)(void);
+#endif
 
 void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, uint8_t read)
 {
@@ -45,7 +47,7 @@ void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, ui
     uint32_t rflag = 0;
 
     //setup master mode etc...
-    //pTWI->TWI_CR = AT91C_TWI_SWRST;
+    pTWI->TWI_CR = AT91C_TWI_SWRST;
 
     //pTWI->TWI_CR = AT91C_TWI_MSDIS;
     //read status - just for clearance
@@ -56,7 +58,7 @@ void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, ui
     if (read)
         rflag = AT91C_TWI_MREAD; //read/write access
 
-    //pTWI->TWI_CR &= ~(AT91C_TWI_SWRST);
+    pTWI->TWI_CR &= ~(AT91C_TWI_SWRST);
 
     switch (intaddr_size)
     {
@@ -299,6 +301,7 @@ static xSemaphoreHandle i2c_mutex;
 int i2c_init() {
     volatile AT91PS_TWI pTWI = AT91C_BASE_TWI;
 
+/*
     pTWI->TWI_CR = AT91C_TWI_SWRST;
     pTWI->TWI_CR &= ~(AT91C_TWI_SWRST);
     uint32_t s;
@@ -307,12 +310,16 @@ int i2c_init() {
     s = pTWI->TWI_SR;
     TRACE_I2C("TWI_SR %x\r\n", s);
 
+    pTWI->TWI_CWGR = 0x048585; //I2C clk cca 9kHz 
+*/
+
     //i2c_mutex = xSemaphoreCreateMutex();
     i2c_mutex = MUTEX_CREATE();
     if(i2c_mutex == NULL) {
         panic("i2c_init");
     }
 
+#if I2C_IRQ
     vSemaphoreCreateBinary(i2c_semaphore);
     xSemaphoreTake(i2c_semaphore, -1);
 
@@ -327,27 +334,32 @@ int i2c_init() {
     AT91C_BASE_AIC->AIC_SMR[ AT91C_ID_TWI ] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | IRQ_I2C_PRI;
     AT91C_BASE_AIC->AIC_ICCR = mask;
     AT91C_BASE_AIC->AIC_IECR = mask;
+#endif
 
     return 0;
 }
 
 void i2c_deinit() {
     vQueueDelete(i2c_mutex);
+#if I2C_IRQ
     vQueueDelete(i2c_semaphore);
+#endif
 }
 
 int i2c_open() {
     MUTEX_TAKE(i2c_mutex, -1); 
-    if(!i2c_open_count++)
+    if(!i2c_open_count++) {
         pPMC->PMC_PCER = ( (uint32_t) 1 << AT91C_ID_TWI );
+    }
     MUTEX_GIVE(i2c_mutex); 
     return 0;
 }
 
 int i2c_close() {
     MUTEX_TAKE(i2c_mutex, -1); 
-    if(i2c_open_count && --i2c_open_count == 0)
+    if(i2c_open_count && --i2c_open_count == 0) {
         pPMC->PMC_PCDR = ( (uint32_t) 1 << AT91C_ID_TWI );
+    }
     MUTEX_GIVE(i2c_mutex); 
     return 0;
 }

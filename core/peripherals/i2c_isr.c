@@ -1,3 +1,5 @@
+#if I2C_IRQ
+
 #include "hardware_conf.h"
 #include "spi.h"
 #include "rtos.h"
@@ -48,3 +50,5 @@ void i2c_Isr_Wrapper( void )
     i2c_Isr_Handler();
     portRESTORE_CONTEXT(); // Restore the context of whichever task will execute next.
 }
+
+#endif // I2C_IRQ

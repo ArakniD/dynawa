@@ -125,7 +125,8 @@ int oled_power_state(bool on) {
         oledWriteCommand(CLOCK_DIV, 0x30);
 
         //delayms(1);
-        //for(i=0;i<100000;i++) asm volatile ("nop");
+        // TODO: task_sleep()
+        for(i=0;i<100000;i++) asm volatile ("nop");  // IMPORTANT! otherwise display shifted down 
         oledSetProfile(2);
         oledWriteCommand(DISPLAY_MODE_SET, 0x00);
         //
@@ -161,7 +162,9 @@ int oled_power_state(bool on) {
         oledWriteCommand(DISP_ON_OFF, 0x01);  
 
         //delayms(1);   
-        //for(i=0;i<100000;i++) asm volatile ("nop");
+        // TODO: task_sleep()
+        for(i=0;i<100000;i++) asm volatile ("nop");
+        //Task_sleep(10);
     } else {
         _TRACE_INFO("oled on, turning off\r\n");
         oledWriteCommand(DISP_ON_OFF, 0x00);  //disp off
