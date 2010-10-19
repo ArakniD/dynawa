@@ -4,6 +4,7 @@
 #include "hardware_conf.h"
 
 #define IRQ_SPI_PRI         4
+#define IRQ_I2C_PRI         4
 #define IRQ_ADC_PRI         4
 #define IRQ_SERIAL_PRI      4
 #define IRQ_TIMER_PRI       4

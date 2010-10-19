@@ -51,6 +51,7 @@
 #include "CDCGenericRequest.h"
 // #include <usb/common/cdc/CDCSetControlLineStateRequest.h>
 #include "CDCSetControlLineStateRequest.h"
+#include "debug/trace.h"
 
 //------------------------------------------------------------------------------
 //         Types
@@ -154,6 +155,7 @@ static void CDCDSerialDriver_SetControlLineState(unsigned char activateCarrier,
 //------------------------------------------------------------------------------
 void CB_REQUEST_RECEIVED(const USBGenericRequest *request)
 {
+    TRACE_USB("USBDCallbacks_RequestReceived_CDC\r\n");
     CDCDSerialDriver_RequestHandler(request);
 }
 

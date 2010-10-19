@@ -183,12 +183,12 @@ void Run( ) // this task gets called as soon as we boot up.
     scrWriteRect(80,126,120,127,0xffffff);
 #endif
 
-    usb_init();
-    TRACE_INFO("usb_init ok\n\r");
 #if 1
     battery_init();
     TRACE_INFO("battery_init ok\n\r");
 #endif
+    usb_init();
+    TRACE_INFO("usb_init ok\n\r");
 #if 1
     accel_init();
     TRACE_INFO("accel_init ok\n\r");

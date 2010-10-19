@@ -17,6 +17,8 @@
 #define TEST  0    
 #define LUA_LED 0 // !!! LED - PIO PA0 - AUDIO MUTE collision
 
+extern bool lua_usb_msd_enabled;
+
 static FATFS fatfs;
 static FILINFO fileInfo;
 
@@ -445,6 +447,11 @@ int lua_event_loop (void) {
             break;
         case EVENT_USB:
             TRACE_LUA("EVENT_USB state %d\r\n", ev.data.usb.state);
+
+            if (ev.data.usb.state == EVENT_USB_CONNECTED && lua_usb_msd_enabled) {
+                usb_msd(true);
+            }
+
             lua_newtable(L);
 
             lua_pushstring(L, "type");

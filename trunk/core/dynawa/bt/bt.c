@@ -86,7 +86,7 @@ static unsigned long baudRate = 460800;
 static struct bd_addr this_device_bdaddr;
 
 uint16_t bt_ps_set_bdaddr(uint16_t index) {
-    return this_device_bdaddr.addr[index] || (this_device_bdaddr.addr[index + 1] << 8);
+    return this_device_bdaddr.addr[index] | (this_device_bdaddr.addr[index + 1] << 8);
 }
 
 static ps_setrq_count;
