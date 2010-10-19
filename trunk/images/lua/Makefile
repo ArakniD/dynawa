@@ -419,6 +419,7 @@ LDSCRIPT=$(STARTUP)/dynawa.ld
 # ARM THUMB code options
 
 #-march=armv4t
+#-mlong-calls
 
 C_AND_CPP_FLAGS = \
 $(INCLUDEDIRS) \

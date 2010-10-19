@@ -32,11 +32,21 @@ REVISION:		$Revision: 1.1.1.1 $ by $Author: ca01 $
 #include "bt.h"
 #include "event.h"
 #include "io.h"
+#include <ff.h>
 
 #include "debug/trace.h"
 
+/*
+// PSKEY_BDADDR
+&0001 = 0000 a5a5 005b 0002
 
-#define SET_BDADDR                  0
+human readable
+00:02:5b:00:a5:a5
+
+00:02:5b - Cambridge Silicon
+*/
+
+#define SET_BDADDR                  1
 #define SET_HOST_UART_HW_FLOW       0
 #define SET_HOST_WAKE_UART_BREAK    0
 #define SET_HOST_WAKE_PIO           1
@@ -83,10 +93,20 @@ static unsigned long baudRate = 460800;
 #define USART_BAUDRATE_CD    0x0ebf
 #endif
 
-static struct bd_addr this_device_bdaddr;
+static struct bd_addr this_device_bdaddr = {0xa5, 0xa5, 0x00, 0x5b, 0x02, 0x00};
 
 uint16_t bt_ps_set_bdaddr(uint16_t index) {
-    return this_device_bdaddr.addr[index] | (this_device_bdaddr.addr[index + 1] << 8);
+    uint16_t w;
+    switch(index) {
+        case 2:
+        case 3:
+            w = this_device_bdaddr.addr[index];
+            break;
+        default:
+            w = this_device_bdaddr.addr[index] | (this_device_bdaddr.addr[index + 1] << 8);
+            break;
+    }
+    return w;
 }
 
 static ps_setrq_count;
@@ -104,12 +124,13 @@ static struct bccmd_index_value {
     {6, NULL, 1},
     {8, NULL, USART_BAUDRATE_CD},
 #if SET_BDADDR
-    {0, NULL, 11},
+    {0, NULL, 12},
     {5, NULL, PSKEY_BDADDR},
-    {6, NULL, 3},
-    {8, bt_ps_set_bdaddr, 0},
-    {9, bt_ps_set_bdaddr, 2},
-    {10, bt_ps_set_bdaddr, 4},
+    {6, NULL, 4},
+    {8, bt_ps_set_bdaddr, 2},    // 0xaabb},       // bdaddr PSKEY is 8bytes long!
+    {9, bt_ps_set_bdaddr, 0},   // 0102
+    {10, bt_ps_set_bdaddr, 3},  // 0304
+    {11, bt_ps_set_bdaddr, 4},  // 0506
 #endif
 #if SET_HOST_UART_HW_FLOW
     {0, NULL, 9},
@@ -355,6 +376,17 @@ TRACE_BT("abcsp_pumptxmsgs\r\n");
     // MV } while (0);
 }
 
+err_t bt_rbd_complete(void *arg, struct bd_addr *bdaddr) {
+    TRACE_INFO("bt_rbd_complete %02x:%02x:%02x:%02x:%02x:%02x\r\n", \
+            (bdaddr)->addr[0], \
+            (bdaddr)->addr[1], \
+            (bdaddr)->addr[2], \
+            (bdaddr)->addr[3], \
+            (bdaddr)->addr[4], \
+            (bdaddr)->addr[5]);
+    return ERR_OK;
+}
+
 static unsigned char cmdIssueCount;
 
 static void u_init_bt_task(void)
@@ -485,11 +517,14 @@ static void u_bt_task(bt_command *cmd)
 
         switch(bc_state) {
             case BC_STATE_READY:
+/*
                 readBdAddr = malloc(3);
                 readBdAddr[0] = (unsigned char) ((HCI_COMMAND_READ_BD_ADDR) & 0x00FF);
                 readBdAddr[1] = (unsigned char) (((HCI_COMMAND_READ_BD_ADDR) >> 8) & 0x00FF);
                 readBdAddr[2] = 0;
                 queueMessage(HCI_COMMAND_CHANNEL, 1, 3, readBdAddr);
+*/
+                hci_read_bd_addr(bt_rbd_complete);
                 break;
             case BC_STATE_STARTED:
                 {
@@ -608,6 +643,8 @@ static void restartHandler()
     StartTimer(TCP_INTERVAL, tcpHandler);
 #endif
     StartTimer(BT_INTERVAL, btHandler);
+
+    //hci_read_bd_addr(bt_rbd_complete);
 }
 
 
@@ -898,17 +935,6 @@ int bt_wait_for_data(void) {
 }
 
 
-/*
-// PSKEY_BDADDR
-&0001 = 0000 a5a5 005b 0002
-
-human readable
-00:02:5b:00:a5:a5
-
-00:02:5b - Cambridge Silicon
-*/
-
-#include <ff.h>
 
 int bt_read_bdaddr_from_disk (const char *path, struct bd_addr *bdaddr) {
     FATFS fatfs;
@@ -929,12 +955,19 @@ int bt_read_bdaddr_from_disk (const char *path, struct bd_addr *bdaddr) {
     if (file == NULL) {
         err = 1;
     } else {
-        int res = fscanf(file, "%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx", &bdaddr->addr[0], &bdaddr->addr[1], &bdaddr->addr[2], &bdaddr->addr[3], &bdaddr->addr[4], &bdaddr->addr[5]);
+        //int res = fscanf(file, "%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx", &bdaddr->addr[5], &bdaddr->addr[4], &bdaddr->addr[3], &bdaddr->addr[2], &bdaddr->addr[1], &bdaddr->addr[0]);
+        uint16_t tmp_bdaddr[6];
+        int res = fscanf(file, "%2hx:%2hx:%2hx:%2hx:%2hx:%2hx", &tmp_bdaddr[5], &tmp_bdaddr[4], &tmp_bdaddr[3], &tmp_bdaddr[2], &tmp_bdaddr[1], &tmp_bdaddr[0]);
 
         if (res == EOF || res != 6)
             err = 1;
 
         fclose(file);
+
+        int i;
+        for (i = 0; i < 6; i++) {
+            bdaddr->addr[i] = (uint8_t)tmp_bdaddr[i];
+        }
     }
 
     if ((f = f_mount (0, NULL)) != FR_OK) {
@@ -946,7 +979,12 @@ int bt_read_bdaddr_from_disk (const char *path, struct bd_addr *bdaddr) {
 // commands 
 
 int bt_init() {
+    struct bd_addr device_bdaddr;
+
     bc_state = BC_STATE_STOPPED;
+    if (!bt_read_bdaddr_from_disk("bdaddr.cfg", &device_bdaddr)) {
+        byte_memcpy(&this_device_bdaddr, &device_bdaddr, sizeof(device_bdaddr));
+    }
     return 0;
 }
 
