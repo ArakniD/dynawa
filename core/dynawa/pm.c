@@ -7,6 +7,8 @@
 
 static int _pm_lock = 0;
 
+static xSemaphoreHandle pm_mutex;
+
 #ifdef CFG_DEEP_SLEEP
 //static int toggle;
 //XTAL = 18,432MHz 
@@ -130,15 +132,35 @@ int check_power_mode(void) {
 }
 #endif
 
+int pm_init(void) {
+    pm_mutex = xSemaphoreCreateMutex();
+
+    if (pm_mutex == NULL) {
+        panic("pm_init");
+        return -1;
+    }
+
+    return 0;
+}
+
+int pm_close(void) {
+    vQueueDelete(pm_mutex);
+    return 0;
+}
+
 void pm_lock() {
+    xSemaphoreTake(pm_mutex, -1);
     _pm_lock++;
+    xSemaphoreGive(pm_mutex);
 }
 
 void pm_unlock() {
+    xSemaphoreTake(pm_mutex, -1);
     _pm_lock--;
     if (_pm_lock < 0) {
         panic("pm_unlock");
     }
+    xSemaphoreGive(pm_mutex);
 }
 
 uint32_t total_time_in_sleep = 0;
@@ -149,6 +171,7 @@ void vApplicationIdleHook( void )
     //TRACE_INFO("vApplicationIdleHook\r\n");
     //toggle = !toggle; // prevent the function from being optimized away?
 
+    taskENTER_CRITICAL();
     vTaskSuspendAll();
     // disable PIT (FreeRTOS ticks)
     //AT91C_BASE_PITC->PITC_PIMR &= ~AT91C_PITC_PITEN;
@@ -176,18 +199,19 @@ void vApplicationIdleHook( void )
     int32_t t = AT91C_BASE_RTTC->RTTC_RTAR - AT91C_BASE_RTTC->RTTC_RTVR;
     if (_pm_lock || (t > 0 && t < 100)) {
         deep_sleep = false;
-        taskENTER_CRITICAL();
+        //taskENTER_CRITICAL();
         PMC_DisableProcessorClock();
         taskEXIT_CRITICAL();
     } else {
         deep_sleep = true;
-        taskENTER_CRITICAL();
+        //taskENTER_CRITICAL();
         LowPowerMode();
         taskEXIT_CRITICAL();
     }
 #else
     deep_sleep = false;
     PMC_DisableProcessorClock();
+    taskEXIT_CRITICAL();
 #endif
     // CPU in idle mode now, waiting for IRQ
 
@@ -224,4 +248,13 @@ void pm_unlock() {
 int check_power_mode(void) {
     return 0;
 }
+
+int pm_init(void) {
+    return 0;
+}
+
+int pm_close(void) {
+    return 0;
+}
+
 #endif

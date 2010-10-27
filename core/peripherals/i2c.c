@@ -22,7 +22,7 @@
 //temporary test:
 
 #define I2C_IRQ         0
-#define I2C_TIMEOUT     1000
+#define I2C_TIMEOUT     500
 
 #if 1
 #define MUTEX_CREATE    xSemaphoreCreateMutex
@@ -47,7 +47,7 @@ void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, ui
     uint32_t rflag = 0;
 
     //setup master mode etc...
-    pTWI->TWI_CR = AT91C_TWI_SWRST;
+    //pTWI->TWI_CR = AT91C_TWI_SWRST;
 
     //pTWI->TWI_CR = AT91C_TWI_MSDIS;
     //read status - just for clearance
@@ -58,7 +58,7 @@ void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, ui
     if (read)
         rflag = AT91C_TWI_MREAD; //read/write access
 
-    pTWI->TWI_CR &= ~(AT91C_TWI_SWRST);
+    //pTWI->TWI_CR &= ~(AT91C_TWI_SWRST);
 
     switch (intaddr_size)
     {
@@ -68,7 +68,7 @@ void i2cMasterConf(uint8_t i2c_addr, uint8_t intaddr_size, uint32_t int_addr, ui
         case 3: { pTWI->TWI_MMR = (AT91C_TWI_IADRSZ_3_BYTE | (((uint32_t)i2c_addr)<<16) | rflag) ;break; }
     }
     pTWI->TWI_IADR = int_addr;
-    pTWI->TWI_CWGR = 0x048585; //I2C clk cca 9kHz 
+    //pTWI->TWI_CWGR = 0x048585; //I2C clk cca 9kHz 
     pTWI->TWI_CR = AT91C_TWI_SVDIS | AT91C_TWI_MSEN; //disable slave, enable master
 }
 
@@ -91,7 +91,7 @@ int i2cWriteByte(uint8_t data)
     }
     s1=pTWI->TWI_SR & AT91C_TWI_TXRDY_MASTER | AT91C_TWI_NACK_MASTER | AT91C_TWI_OVRE | AT91C_TWI_ARBLST_MULTI_MASTER;
     if (!(s1 & AT91C_TWI_TXRDY_MASTER)) {
-        sprintf(buff, "i2cRB1 %x", s1);
+        sprintf(buff, "i2cWB1 %x", s1);
         panic(buff);
         return -1;
     }
@@ -100,6 +100,7 @@ int i2cWriteByte(uint8_t data)
     //while (!((s1=pTWI->TWI_SR)&AT91C_TWI_TXRDY_MASTER)) if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return;
     while (!((s1=pTWI->TWI_SR)&AT91C_TWI_TXRDY_MASTER)) {
         if ((s1&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) {
+            panic("i2cWriteByte1");
             return -1;
         }
     }
@@ -124,6 +125,7 @@ int i2cWriteByte(uint8_t data)
     //while (!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)) if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(timeval > tmout)) return;
     while (!((s2=pTWI->TWI_SR)&AT91C_TWI_TXCOMP_MASTER)) {
         if ((s2&(AT91C_TWI_NACK_MASTER|AT91C_TWI_OVRE|AT91C_TWI_ARBLST_MULTI_MASTER))||(Timer_tick_count() > tmout)) {
+            panic("i2cWriteByte2");
             return -1;
         }
     }
@@ -301,7 +303,6 @@ static xSemaphoreHandle i2c_mutex;
 int i2c_init() {
     volatile AT91PS_TWI pTWI = AT91C_BASE_TWI;
 
-/*
     pTWI->TWI_CR = AT91C_TWI_SWRST;
     pTWI->TWI_CR &= ~(AT91C_TWI_SWRST);
     uint32_t s;
@@ -311,7 +312,6 @@ int i2c_init() {
     TRACE_I2C("TWI_SR %x\r\n", s);
 
     pTWI->TWI_CWGR = 0x048585; //I2C clk cca 9kHz 
-*/
 
     //i2c_mutex = xSemaphoreCreateMutex();
     i2c_mutex = MUTEX_CREATE();

@@ -48,7 +48,9 @@ static void battery_task( void* p ) {
 #endif
 
     while (true) {
-        gasgauge_get_stats(&_stats);
+        if(gasgauge_get_stats(&_stats)) {
+            panic("battery_task");
+        }
     
         if (_stats.voltage > 0) { 
             // TODO: BATTERY_STATE_CRITICAL

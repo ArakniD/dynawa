@@ -1014,7 +1014,11 @@ int _gettimeofday (struct timeval *tp, struct timezone *tzp)
 //
 clock_t _times (struct tms *tp)
 {
+#if CFG_PM
+    clock_t timeval = (clock_t) Timer_tick_count ();
+#else
     clock_t timeval = (clock_t) xTaskGetTickCount ();
+#endif
 
     if (tp)
     {

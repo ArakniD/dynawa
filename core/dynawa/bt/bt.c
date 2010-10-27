@@ -695,8 +695,10 @@ void bt_task(void *p)
     vSemaphoreCreateBinary(bt_wakeup_semaphore);
     xSemaphoreTake(bt_wakeup_semaphore, -1);
 
+#if BT_LED
     ledrgb_open();
     ledrgb_set(0x4, 0, 0, BT_LED_HIGH);
+#endif
 
     // TODO sys_init();
 #ifdef PERF
@@ -886,8 +888,10 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
     ev.data.bt.type = EVENT_BT_STOPPED;
     event_post(&ev);
 
+#if BT_LED
     ledrgb_set(0x4, 0, 0, 0x0);
     ledrgb_close();
+#endif
     vTaskDelete(NULL);
 }
 
