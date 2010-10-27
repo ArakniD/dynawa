@@ -4,13 +4,15 @@ app.id = "fuxoft.dynablob"
 function app:start()
 	self.window = self:new_window()
 	self:init_indices()
+	self:init_skelets()
 end
 
 function app:switching_to_front()
 	self.window:push()
 	self.run_id = dynawa.unique_id()
 	self:re_color()
-	self:animate(0)
+	self.blob = {count = 0, skelet = self.skelets[1]}
+	self:animate()
 end
 
 function app:re_color()
@@ -23,23 +25,15 @@ function app:re_color()
 	end
 end
 
-function app:animate(count)
+function app:animate()
+	local blob = self.blob
 	self.window:fill()
-	--self:put_sprite("testmark",0,0)
-	self:put_sprite("blob_4",80,120)
-	self:put_sprite("blob_3",80,105)
-	self:put_sprite("blob_3",80,90)
-	self:put_sprite("blob_2",80,80)
-	local eye = {"eye_rb","eye_lb","eye_top","eye_rt","eye_closed","eye_right","eye_center","eye_squint","eye_blood1","eye_blood2","eye_smaller"}
-	eye = eye[math.random(#eye)]
-	self:put_sprite(eye,80-10,80)
-	self:put_sprite(eye,80+10,80)
-	if math.random(5) == 1 then
-		self:put_sprite("mouth1",80,100)
-	else
-		self:put_sprite("mouth2",80,100)
-	end
-	dynawa.devices.timers:timed_event{delay = 200, receiver = self, run_id = self.run_id}
+	local count,wait_ms = blob.skelet.animate(self,blob.count)
+	assert(count)
+	assert(wait_ms >= 100)
+	blob.count = count
+	--local eyes = {"eye_rb","eye_lb","eye_top","eye_rt","eye_closed","eye_right","eye_center","eye_squint","eye_blood1","eye_blood2","eye_smaller"}
+	dynawa.devices.timers:timed_event{delay = wait_ms, receiver = self, run_id = self.run_id}
 end
 
 function app:handle_event_timed_event(event)
@@ -59,9 +53,8 @@ function app:put_sprite(sprid, cx, cy, window)
 	if not sprite then
 		error("Uknown sprite id: "..sprid)
 	end
-	local dx = math.random(5) - 3
-	local dy = math.random(5) - 3
-	window:show_bitmap_at(sprite.bitmap, cx - sprite.half_size.w + dx, cy - sprite.half_size.h + dy)
+	local dx = 80
+	window:show_bitmap_at(sprite.bitmap, math.floor(0.5 + cx - sprite.half_size.w + dx), math.floor(128.5 - cy - sprite.half_size.h))
 end
 
 function app:init_indices()
@@ -97,6 +90,30 @@ function app:init_indices()
 		assert(h>0)
 		self.sprites[id] = {bitmap = dynawa.bitmap.copy(parts,x,y,w,h),size = {w=w,h=h}, half_size = {w=math.floor(w/2), h=math.floor(h/2)}}
 	end
+end
+
+function app:init_skelets()
+	self.skelets = {}
+	self.skelets[1] = {
+		animate = function(self,count)
+			local diff = count % 20
+			if diff > 10 then
+				diff = 20 - diff
+			end
+			diff = diff - 5
+			local jmp = count % 3
+			self:put_sprite("blob_4",0,8)
+			self:put_sprite("blob_3",diff, 22 + jmp)
+			self:put_sprite("blob_3",diff * 2, 37)
+			self:put_sprite("blob_2",diff,48)
+			local eyediff = 10
+			local eye = "eye_rb"
+			self:put_sprite(eye,diff + eyediff,48)
+			self:put_sprite(eye,diff - eyediff,48)
+			self:put_sprite("mouth2",diff * 0.5,28)
+			return count + 1, 200
+		end
+	}
 end
 
 return app
