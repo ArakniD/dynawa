@@ -29,6 +29,7 @@
 #define TIMER_MAGIC 0x11223344
 
 #define TIMER_CYCLES_PER_MS 47
+#define MIN_DELAY_TICKS     2
 
 typedef void (*TimerHandler)( void *context ); /**< A handler for timers. */
 

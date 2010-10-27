@@ -23,8 +23,6 @@ the specific language governing permissions and limitations under the License.
 // debug
 #include "utils/time.h"
 
-#define MIN_DELAY_TICKS     2
-
 //extern volatile portTickType xTickCount;
 
 extern uint32_t _timer_tick_count;
@@ -170,7 +168,7 @@ void Timer_isrHandler( void )
             //manager->tc->TC_CCR = AT91C_TC_CLKDIS;
             manager->tc->TC_RC = manager->nextTime;
 #endif
-            manager->tc->RTTC_RTAR = manager->nextTime <= manager->tc->RTTC_RTVR ? manager->tc->RTTC_RTVR + 1 : manager->nextTime;
+            manager->tc->RTTC_RTAR = manager->nextTime <= manager->tc->RTTC_RTVR ? manager->tc->RTTC_RTVR + MIN_DELAY_TICKS : manager->nextTime;
             //Timer_enable();
         }
         else
