@@ -124,6 +124,7 @@ void Run( ) // this task gets called as soon as we boot up.
 {
     TRACE_INFO("Run\n\r");
 
+    pm_init();
 //#ifndef CFG_SCHEDULER_RTT
 #if 0
     Timer_init(&sys_timer, 0);

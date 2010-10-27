@@ -22,6 +22,16 @@ extern bool lua_usb_msd_enabled;
 static FATFS fatfs;
 static FILINFO fileInfo;
 
+void lua_timer_handler(void *context) {
+    event ev;
+    ev.type = EVENT_TIMER;
+    ev.data.timer.type = EVENT_TIMER_FIRED;
+    ev.data.timer.handle = (TimerHandle)context;
+
+    TRACE_LUA("lua_timer_handler %x\r\n", context);
+    event_post_isr(&ev);
+}
+
 int lua_event_loop (void) {
 
     TRACE_INFO("lua_event_loop %x\r\n", xTaskGetCurrentTaskHandle());

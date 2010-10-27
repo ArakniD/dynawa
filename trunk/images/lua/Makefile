@@ -258,7 +258,6 @@ THUMB_SRC= \
   $(DYNAWA)/io.c \
   $(DYNAWA)/led.c \
   $(DYNAWA)/lua/lua.c \
-  $(DYNAWA)/lua/lua_isr.c \
   $(DYNAWA)/lua/lib_dynawa.c \
   $(DYNAWA)/lua/lib_dynawa_timer.c \
   $(DYNAWA)/lua/lib_dynawa_bitmap.c \

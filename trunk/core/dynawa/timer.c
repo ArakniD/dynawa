@@ -127,7 +127,9 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
         //Timer_setTimeTarget( timer->timeInitial );
         Timer_setTimeTarget( timer->target <= timer_manager.tc->RTTC_RTVR ? timer_manager.tc->RTTC_RTVR + 1 : timer->target);
         Timer_enable();
-    }  
+    } else if (!(AT91C_BASE_RTTC->RTTC_RTMR & AT91C_RTTC_ALMIEN)) {
+        panic("AT91C_RTTC_ALMIEN");
+    }
 
 /*
     // Calculate how long remaining
@@ -185,6 +187,10 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
         }
         else
         {
+            if (remaining < 0) {
+                panic("RTVR>RTAR");
+            }
+
             // pretend that the existing time has been with us for the whole slice so that when the 
             // IRQ happens it credits the correct (reduced) time.
             //timer->timeCurrent += timeCurrent;

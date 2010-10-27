@@ -10,12 +10,16 @@ int event_init(int queue_length) {
 }
 
 int event_post(event *ev) {
-    xQueueSend(event_queue, ev, 0);
+    if(xQueueSend(event_queue, ev, 0) != pdTRUE) {
+        panic("event_post");
+    }
 }
 
 int event_post_isr(event *ev) {
     portBASE_TYPE xHigherPriorityTaskWoken;
-    xQueueSendFromISR(event_queue, ev, &xHigherPriorityTaskWoken);
+    if(xQueueSendFromISR(event_queue, ev, &xHigherPriorityTaskWoken) != pdTRUE) {
+        panic("event_post_isr");
+    }
 
     if(xHigherPriorityTaskWoken) {
         portYIELD_FROM_ISR();
