@@ -87,7 +87,8 @@ void spi_init(void)
 
     // channel 2 is PA31, SD-Card
     //pSPI->SPI_CSR[1] = 0x00000400 | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
-    pSPI->SPI_CSR[1] = 0x00000000 | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    //OK pSPI->SPI_CSR[1] = (0x04 << 24 /*DLYBCT*/ ) | (0x40 << 16 /*DLYBS*/) | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
+    pSPI->SPI_CSR[1] = (0x01 << 24 /*DLYBCT*/ ) | (0x0 << 16 /*DLYBS*/) | spi_scbr | AT91C_SPI_NCPHA | AT91C_SPI_CSAAT | AT91C_SPI_BITS_8;
 
 
     // Initialize the interrupts
@@ -212,7 +213,7 @@ uint16_t spi_byte(uint8_t channel, uint16_t dout, uint8_t last)
 
 uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint16_t len, uint8_t last)
 {
-    //TRACE_SPI("spi_rw_bytes(%x, %x, %d, %d)\r\n", buff_in, buff_out, len, last);
+    TRACE_SPI("spi_rw_bytes(%x, %x, %d, %d)\r\n", buff_in, buff_out, len, last);
 
     //spi_lock();
 
@@ -222,6 +223,7 @@ uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint
     spi_ready();
 #else
     while ( !( pSPI->SPI_SR & AT91C_SPI_TDRE ) ); // wait for channel ready
+    //TRACE_SPI("spi_ready\r\n");
 #endif
 
     //TRACE_SPI("spi ready\r\n");
@@ -254,8 +256,9 @@ uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint
     pSPI->SPI_PTCR = AT91C_PDC_RXTEN | AT91C_PDC_TXTEN;
 
     //TRACE_SPI("spi wait\r\n");
-    pm_lock();
 #if 1
+    TRACE_SPI("spi_ready %d %d\r\n", pSPI->SPI_RCR, pSPI->SPI_TCR);
+    pm_lock();
     if ( xSemaphoreTake(spi_semaphore, -1) != pdTRUE) {
         TRACE_ERROR("xSemaphoreTake err\r\n");
         pm_unlock();
@@ -264,8 +267,13 @@ uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint
     }
     pm_unlock();
 #else
+    uint32_t tmo = Timer_tick_count() + 1000;
     while ( pSPI->SPI_RCR ) {  // wait for incoming data
         //Task_sleep(500);
+        if (Timer_tick_count() > tmo) {
+            TRACE_ERROR("SPI %d %x\r\n",  pSPI->SPI_RCR, pSPI->SPI_PTSR);
+            tmo = Timer_tick_count() + 1000;
+        }
     }
 #endif
 
@@ -276,5 +284,6 @@ uint16_t spi_rw_bytes(uint8_t channel, uint8_t *buff_out, uint8_t *buff_in, uint
 
     //spi_unlock();
 
+    TRACE_SPI("<<<spi_rw_bytes\r\n");
     return len;
 }

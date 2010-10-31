@@ -697,7 +697,7 @@ void bt_task(void *p)
 
 #if BT_LED
     ledrgb_open();
-    ledrgb_set(0x4, 0, 0, BT_LED_HIGH);
+    ledrgb_set(0x4, 0, 0, BT_LED_START);
 #endif
 
     // TODO sys_init();
