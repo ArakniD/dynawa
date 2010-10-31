@@ -77,7 +77,7 @@ static void battery_task( void* p ) {
         //Task_sleep(10000);
         uint8_t battery_event;
 #ifdef CFG_PM
-        Timer_start(&timer, 1000, false, false);
+        Timer_start(&timer, 10000, false, false);
         xQueueReceive(battery_queue, &battery_event, -1);
         Timer_stop(&timer);
 #else

@@ -221,12 +221,16 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
         Task_exitCritical();
         //xSemaphoreGive(timer_mutex);
 
-        int remaining =  timer_manager.tc->RTTC_RTAR - timer_manager.tc->RTTC_RTVR;
-        if (remaining < 0) {
-            sprintf(buff, "VR>AR%d", -remaining);
-            //panic("RTVR>RTAR");
-            panic(buff);
+#if 0
+        if (timer_manager.tc->RTTC_RTMR & AT91C_RTTC_ALMIEN) {
+            int remaining =  timer_manager.tc->RTTC_RTAR - timer_manager.tc->RTTC_RTVR;
+            if (remaining < 0) {
+                sprintf(buff, "VR>AR%d", -remaining);
+                //panic("RTVR>RTAR");
+                panic(buff);
+            }
         }
+#endif
     }
 
     TRACE_TMR("<<Timer_start %x\r\n", timer);

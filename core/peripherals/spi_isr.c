@@ -20,10 +20,12 @@ void SPIIsr_Handler( )
     unsigned int status = (pSPI->SPI_SR & pSPI->SPI_IMR);
 
     TRACE_SPI("SPI IRQ\r\n");
-    if( status & (AT91C_SPI_ENDRX | AT91C_SPI_ENDTX)) {
+    //if( status & (AT91C_SPI_ENDRX | AT91C_SPI_ENDTX)) {
+    if( status & AT91C_SPI_ENDRX) {
         xSemaphoreGiveFromISR(spi_semaphore, &xHigherPriorityTaskWoken);
 
         pSPI->SPI_IDR = AT91C_SPI_ENDRX;
+        pSPI->SPI_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS;
     }
 
 

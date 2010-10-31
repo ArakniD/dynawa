@@ -54,8 +54,15 @@
 #define BT_COMMAND_LINK_KEY_REQ_NEG_REPLY 9
 
 #define BT_LED      1
+#if 1
+#define BT_LED_START        0x0
+#define BT_LED_LOW          0x0
+#define BT_LED_HIGH         0x40
+#else
+#define BT_LED_START        0x40
 #define BT_LED_LOW          0x40
 #define BT_LED_HIGH         0xff
+#endif
 
 #define BT_OK                       0
 #define BT_ERR_MEM                1
