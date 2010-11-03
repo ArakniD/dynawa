@@ -37,7 +37,8 @@ typedef struct {
     unsigned char               *pReadWriteBuffer;  //!< Pointer to LUN read/write buffer
     S_sbc_request_sense_data    sRequestSenseData;  //!< Sense data structure
     S_sbc_read_capacity_10_data sReadCapacityData;  //!< Capacity data sturcture
-    unsigned long               dSize;              //!< Size of LUN in bytes
+    //unsigned long               dSize;              //!< Size of LUN in bytes
+    unsigned long long               dSize;              //!< Size of LUN in bytes
     unsigned int                dBlockSize;         //!< Sector size of LUN in bytes
     unsigned char               bMediaStatus;       //!< LUN status
 
@@ -46,7 +47,8 @@ typedef struct {
 extern S_lun pLun[1]; 
 
 void lun_init(unsigned char *pBuffer,
-              unsigned long  dSize,
+              //unsigned long  dSize,
+              unsigned long long  dSize,
               unsigned int   dBlockSize);
 unsigned char lun_read(unsigned long dBlockAddress,
                        void         *pData,

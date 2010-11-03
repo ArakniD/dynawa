@@ -326,7 +326,8 @@ int8_t sd_init(void)
  * \todo This return value should be changed to allow cards > 4GB
  * 
 */
-uint32_t sd_info(void)
+//uint32_t sd_info(void)
+uint64_t sd_info(void)
 {
     int i;
     uint32_t l;
@@ -446,7 +447,8 @@ uint32_t sd_info(void)
         TRACE_SD("mult = %0d\n",mult);
         TRACE_SD("blockno = %ld\n",blockno);
         TRACE_SD("block len = %ld\n",block_len);
-        TRACE_SD("card size = %lu / (%lu MByte)\n\n", blockno * (uint32_t)block_len,blockno / 2048L);
+        //TRACE_SD("card size = %lu / (%lu MByte)\n\n", blockno * (uint32_t)block_len,blockno / 2048L);
+        TRACE_SD("card size = %lu / (%lu MByte)\n\n", blockno * (uint32_t)block_len,blockno / 1024L);
 
         sd_send_dummys();
         sd_numsectors = blockno;
@@ -456,7 +458,8 @@ uint32_t sd_info(void)
     else
     //orig. if( l == 0x40) // CSD 2.0 structure
     //correction petr sladek:
-    if((l&0xC0) == 0) // CSD 1.0 structure
+    //if((l&0xC0) == 0) // CSD 1.0 structure
+    if((l&0xC0) == 0x40) // CSD 2.0 structure
     {
     	TRACE_SD("CSD 2.0\n");
     	
@@ -473,10 +476,12 @@ uint32_t sd_info(void)
 
         l &= 0x0000ffff; // mask c_size field
         
-        uint32_t byte_size = ((l+1) * 524288L);
+        //uint32_t byte_size = ((l+1) * 524288L);
+        uint64_t byte_size = ((l+1) * 524288LL);
         
         TRACE_SD("C_SIZE = %08x\n",l);
-        TRACE_SD("card size = %lu / (%lu MByte)\n\n",byte_size , ((l+1)>>1));
+        //TRACE_SD("card size = %lu / (%lu MByte)\n\n",byte_size , ((l+1)>>1));
+        TRACE_SD("card size = %lu * 4G + %lu / (%lu MByte)\n\n", (uint32_t)(byte_size >> 32), (uint32_t)(byte_size & 0xffffffff) , ((l+1)>>1));
 
         sd_send_dummys();
         sd_numsectors = (byte_size / 512)-1;
