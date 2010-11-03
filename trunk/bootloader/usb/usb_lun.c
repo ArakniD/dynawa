@@ -98,7 +98,8 @@ static const S_sbc_inquiry_data sInquiryData = {
  * 
  */
 void lun_init(unsigned char *pBuffer,
-              unsigned long  dSize,
+              //unsigned long  dSize,
+              unsigned long long  dSize,
               unsigned int   dBlockSize)
 {
     unsigned int dLogicalBlockAddress = (dSize / dBlockSize) - 1;
