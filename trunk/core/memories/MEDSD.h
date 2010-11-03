@@ -52,7 +52,7 @@
 //         Definitions
 //------------------------------------------------------------------------------
 
-extern void SD_Initialize(Media *media, unsigned int size);
+extern void SD_Initialize(Media *media, unsigned long long size);
  
 #endif //#ifndef MEDSD_H
 

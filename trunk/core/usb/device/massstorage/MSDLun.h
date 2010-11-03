@@ -80,7 +80,8 @@ typedef struct {
     /// The start position of the media allocated to the LUN.
     unsigned int          baseAddress;
     /// The size of the media allocated to the LUN.
-    unsigned int          size;
+    //unsigned int          size;
+    unsigned long long      size;
     /// Sector size of the media
     unsigned int          blockSize;
 
@@ -93,7 +94,8 @@ extern void LUN_Init(MSDLun         *lun,
                      Media       *media,
                      unsigned char *buffer,
                      unsigned int  baseAddress,
-                     unsigned int  size,
+                     //unsigned int  size,
+                     unsigned long long size,
                      unsigned int  blockSize);
 
 extern unsigned char LUN_Write(MSDLun *lun,

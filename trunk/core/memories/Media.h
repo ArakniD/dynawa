@@ -108,7 +108,7 @@ struct _Media {
   Media_flush    flush;       //!< Flush method
   Media_handler  handler;     //!< Interrupt handler
   unsigned int   baseAddress; //!< Base address of media
-  unsigned int   size;        //!< Size of media
+  unsigned long long   size;        //!< Size of media
   MEDTransfer    transfer;    //!< Current transfer operation
   void           *interface;  //!< Pointer to the physical interface used
   unsigned char  state;       //!< Status of media

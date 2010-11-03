@@ -212,7 +212,7 @@ static unsigned char SD_Flush(Media *media) {
 //! \param  media Pointer to the Media instance to initialize
 //! \see    Media
 //------------------------------------------------------------------------------
-void SD_Initialize(Media *media, unsigned int size)
+void SD_Initialize(Media *media, unsigned long long size)
 {
     TRACE_SD("SD init\n\r");
 
