@@ -96,7 +96,8 @@ void LUN_Init(MSDLun         *lun,
               Media       *media,
               unsigned char *buffer,
               unsigned int  baseAddress,
-              unsigned int  size,
+              //unsigned int  size,
+              unsigned long long  size,
               unsigned int  blockSize)
 {
     unsigned int logicalBlockAddress = (size / blockSize) - 1;

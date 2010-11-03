@@ -140,7 +140,7 @@ void MSDDInitialize()
     TRACE_INFO("LUN SD\n\r");
 
     spi_lock();
-    uint32_t sd_size = sd_info();
+    uint64_t sd_size = sd_info();
     spi_unlock();
 
     SD_Initialize(&(medias[numMedias]), sd_size);

@@ -382,7 +382,8 @@ static uint32_t sd_tran_speed(uint8_t ts)
  * \todo This return value should be changed to allow cards > 4GB
  * 
 */
-uint32_t sd_info(void)
+//uint32_t sd_info(void)
+uint64_t sd_info(void)
 {
     int i;
     uint32_t l;
@@ -560,10 +561,12 @@ uint32_t sd_info(void)
 
         l &= 0x0000ffff; // mask c_size field
         
-        uint32_t byte_size = ((l+1) * 524288L);
+        //uint32_t byte_size = ((l+1) * 524288L);
+        uint64_t byte_size = ((l+1) * 524288LL);
         
         TRACE_SD("C_SIZE = %08x\n",l);
-        TRACE_SD("card size = %lu / (%lu MByte)\n\n",byte_size , ((l+1)>>1));
+        //TRACE_SD("card size = %lu / (%lu MByte)\n\n",byte_size , ((l+1)>>1));
+        TRACE_SD("card size = %lu * 4G + %lu / (%lu MByte)\n\n", (uint32_t)(byte_size >> 32), (uint32_t)(byte_size & 0xffffffff) , ((l+1)>>1));
 
         sd_send_dummys();
         sd_numsectors = (byte_size / 512)-1;
