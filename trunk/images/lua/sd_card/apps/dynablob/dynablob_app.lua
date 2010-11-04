@@ -1,19 +1,30 @@
 app.name = "DynaBlob"
 app.id = "fuxoft.dynablob"
 
+--[[
+	States:
+	normal
+	trippy
+	happy
+	unhappy
+	sleeping
+	sick
+]]
+
 function app:start()
 	self.window = self:new_window()
 	self.window:fill()
 	self:init_indices()
 	self:init_skelets()
 	self.background = assert(dynawa.bitmap.from_png_file(self.dir.."background.png"))
+	self.states = {"normal","trippy"}
 end
 
 function app:switching_to_front()
 	self.window:push()
 	self.run_id = dynawa.unique_id()
 	self:re_color()
-	self.blob = {count = 0, skelet = self.skelets[1]}
+	self.blob = {count = 0, skelet = self.skelets[1], state = "normal"}
 	self:animate()
 end
 
@@ -21,7 +32,12 @@ function app:handle_event_button(event)
 	if event.action == "button_down" and event.button == "bottom" then
 		local sk = table.remove(self.skelets)
 		table.insert(self.skelets,1,sk)
-		self.blob = {count = 0, skelet = self.skelets[1]}
+		self.blob = {count = 0, skelet = self.skelets[1], state = self.states[1]}
+	end
+	if event.action == "button_down" and event.button == "top" then
+		local sk = table.remove(self.states)
+		table.insert(self.states,1,sk)
+		self.blob = {count = 0, skelet = self.skelets[1], state = self.states[1]}
 	end
 	getmetatable(self).handle_event_button(self,event) --Parent's handler
 end
@@ -37,11 +53,38 @@ function app:re_color()
 	end
 end
 
+local random_eyes = {"eye_top", "eye_lb", "eye_closed", "eye_rt", "eye_right", "eye_center"}
+
 function app:animate()
 	local blob = self.blob
 	self.window:show_bitmap_at(self.background,0,0)
-	blob.eye_l = "eye_rb"
-	blob.eye_r = "eye_rb"
+	local state = assert(blob.state)
+	local count = assert(blob.count)
+	local eyel,eyer
+	if state == "normal" then
+		eyel = "eye_rb"
+		if math.random() > 0.7 then
+			eyel = random_eyes[math.random(#random_eyes)]
+		end
+		eyer = eyel
+	elseif state == "trippy" then
+		if math.random() < 0.2 then
+			if math.random() < 0.5 then
+				eyel = "eye_rb"
+				eyer = "eye_lb"
+			else
+				eyel = "eye_lb"
+				eyer = "eye_rb"
+			end
+		else
+			eyel = "eye_trippy"..(count % 2 + 1)
+			eyer = eyel
+		end
+	else
+		error("WTF")
+	end
+	blob.eye_l = assert(eyel)
+	blob.eye_r = assert(eyer)
 	local wait_ms = blob.skelet.animate(self,blob)
 	assert(wait_ms >= 100)
 	blob.count = blob.count + 1
@@ -81,7 +124,7 @@ function app:init_skelets()
 			self:put_sprite(blob.eye_r, diff + eyediff,48)
 			self:put_sprite(blob.eye_l,diff - eyediff,48)
 			self:put_sprite("mouth2",diff * 0.5,28)
-			return 200
+			return 100
 		end
 	}
 	self.skelets[1] = {
@@ -144,6 +187,8 @@ function app:init_indices()
 		["eye_blood1"] = {112,0,122,11},
 		["eye_blood2"] = {122,0,132,11},
 		["eye_smaller"] = {132,0,142,9},
+		["eye_trippy1"] = {142,0,152,11},
+		["eye_trippy2"] = {152,0,162,11},
 		["mouth1"] = {0,19,14,29},
 		["mouth2"] = {15,23,29,27},
 	}
