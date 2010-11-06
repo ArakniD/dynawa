@@ -17,7 +17,7 @@ function app:start()
 	self:init_indices()
 	self:init_skelets()
 	self.background = assert(dynawa.bitmap.from_png_file(self.dir.."background.png"))
-	self.states = {"normal","trippy"}
+	self.states = {"normal","trippy","sleeping"}
 end
 
 function app:switching_to_front()
@@ -54,6 +54,7 @@ function app:re_color()
 end
 
 local random_eyes = {"eye_top", "eye_lb", "eye_closed", "eye_rt", "eye_right", "eye_center"}
+local trippy_mouths = {"mouth_wave","mouth_closed","mouth_open","mouth_teeth"}
 
 function app:animate()
 	local blob = self.blob
@@ -63,32 +64,51 @@ function app:animate()
 	local eyel,eyer
 	if state == "normal" then
 		eyel = "eye_rb"
-		if math.random() > 0.7 then
+		if math.random() > 0.8 then
 			eyel = random_eyes[math.random(#random_eyes)]
 		end
 		eyer = eyel
 	elseif state == "trippy" then
 		if math.random() < 0.2 then
-			if math.random() < 0.5 then
-				eyel = "eye_rb"
-				eyer = "eye_lb"
-			else
-				eyel = "eye_lb"
-				eyer = "eye_rb"
-			end
+			eyel = "eye_x"
+			eyer = "eye_x"
 		else
 			eyel = "eye_trippy"..(count % 2 + 1)
 			eyer = eyel
 		end
+	elseif state == "sleeping" then
+		eyel = "eye_closed"
+		eyer = "eye_closed"
 	else
 		error("WTF")
 	end
 	blob.eye_l = assert(eyel)
 	blob.eye_r = assert(eyer)
+	
+	local mouth
+	if state == "normal" then
+		if math.random() > 0.8 then
+			mouth = "mouth_closed"
+		else
+			mouth = "mouth_smile"
+		end
+	elseif state == "trippy" then
+		mouth = trippy_mouths[math.random(#trippy_mouths)]
+	elseif state == "sleeping" then
+		if count % 20 < 7 then
+			mouth = "mouth_open"
+		else
+			mouth = "mouth_closed"
+		end
+	else
+		error("WTF")
+	end
+	
+	blob.mouth = assert(mouth)
+	
 	local wait_ms = blob.skelet.animate(self,blob)
 	assert(wait_ms >= 100)
 	blob.count = blob.count + 1
-
 	--local eyes = {"eye_rb","eye_lb","eye_top","eye_rt","eye_closed","eye_right","eye_center","eye_squint","eye_blood1","eye_blood2","eye_smaller"}
 	dynawa.devices.timers:timed_event{delay = wait_ms, receiver = self, run_id = self.run_id}
 end
@@ -123,7 +143,7 @@ function app:init_skelets()
 			local eye = "eye_rb"
 			self:put_sprite(blob.eye_r, diff + eyediff,48)
 			self:put_sprite(blob.eye_l,diff - eyediff,48)
-			self:put_sprite("mouth2",diff * 0.5,28)
+			self:put_sprite(blob.mouth,diff * 0.5,28)
 			return 100
 		end
 	}
@@ -138,7 +158,7 @@ function app:init_skelets()
 			local facex,facey = self:xy_add(40,20,self:anim_circle(count+4,8,4))
 			self:put_sprite(blob.eye_l,facex - 12, facey + 8)
 			self:put_sprite(blob.eye_r,facex + 12, facey + 8)
-			self:put_sprite("mouth2",facex,facey-5)
+			self:put_sprite(blob.mouth,facex,facey-5)
 			return 100
 		end
 	}
@@ -180,6 +200,7 @@ function app:init_indices()
 		["eye_top"] = {25,0,35,11},
 		["eye_lb"] = {35,0,45,11},
 		["eye_closed"] = {45,3,54,6},
+		["eye_x"] = {54,0,61,7},
 		["eye_rt"] = {72,0,82,11},
 		["eye_right"] = {82,0,92,11},
 		["eye_center"] = {92,0,102,11},
@@ -189,8 +210,13 @@ function app:init_indices()
 		["eye_smaller"] = {132,0,142,9},
 		["eye_trippy1"] = {142,0,152,11},
 		["eye_trippy2"] = {152,0,162,11},
-		["mouth1"] = {0,19,14,29},
-		["mouth2"] = {15,23,29,27},
+		["mouth_teeth"] = {0,19,14,29},
+		["mouth_smile"] = {15,23,29,27},
+		["mouth_bigsmile"] = {30,19,44,29},
+		["mouth_frown"] = {45,22,59,27},
+		["mouth_open"] = {62,19,72,29},
+		["mouth_closed"] = {77,23,87,26},
+		["mouth_wave"] = {88,22,98,27},
 	}
 	self.sprites = {}
 	for id, ind in pairs(indices) do
