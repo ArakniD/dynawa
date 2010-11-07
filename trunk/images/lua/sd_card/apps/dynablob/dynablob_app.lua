@@ -147,15 +147,27 @@ function app:init_skelets()
 			return 100
 		end
 	}
-	self.skelets[1] = {
+	self.skelets[1] = {--"worm"
 		animate = function(self,blob)
 			local count = blob.count
-			self:put_sprite("blob_5", self:xy_add(-45,5,self:anim_circle(count,8,4)))
-			self:put_sprite("blob_1", self:xy_add(-30,5,self:anim_circle(count+1,8,4)))
-			self:put_sprite("blob_1", self:xy_add(-10,7,self:anim_circle(count+2,8,4)))
-			self:put_sprite("blob_2", self:xy_add(10,10,self:anim_circle(count+3,8,4)))
-			self:put_sprite("blob_3", self:xy_add(35,20,self:anim_circle(count+4,8,4)))
-			local facex,facey = self:xy_add(40,20,self:anim_circle(count+4,8,4))
+			local radius = 3
+			local period = 12
+			if blob.state == "sleeping" then
+				radius = 2
+				period = 30
+			elseif blob.state == "trippy" then
+				radius = 6
+				period = 8
+			end
+			self:put_sprite("blob_5", self:xy_add(-45,5,self:anim_circle(count,period,radius)))
+			self:put_sprite("blob_1", self:xy_add(-30,5,self:anim_circle(count+1,period,radius)))
+			self:put_sprite("blob_1", self:xy_add(-10,7,self:anim_circle(count+2,period,radius)))
+			self:put_sprite("blob_2", self:xy_add(10,10,self:anim_circle(count+3,period,radius)))
+			self:put_sprite("blob_3", self:xy_add(35,20,self:anim_circle(count+4,period,radius)))
+			local facex,facey = self:xy_add(40,20,self:anim_circle(count+4,period,radius))
+			if blob.state == "sleeping" then
+				facey = facey + 5 - (count % 20) / 2
+			end
 			self:put_sprite(blob.eye_l,facex - 12, facey + 8)
 			self:put_sprite(blob.eye_r,facex + 12, facey + 8)
 			self:put_sprite(blob.mouth,facex,facey-5)

@@ -12,16 +12,20 @@ function app:info(text)
 end
 
 function app:open(args)
+	log("showing popup: "..args.text)
 	dynawa.busy()
-	--text, style
 	if self.window then
-		self:switching_to_back()
+		self:destroy_window()
 	end
 	local autoclose = args.autoclose
 	if autoclose and type(autoclose) ~= "number" then
-		autoclose = 5000 --Default autoclose interval
+		autoclose = 9999 --Default autoclose interval
 	end
 	self.window = self:new_window()
+	self.window.overlaid_by = function(_self,win)
+		dynawa.window_manager:remove_from_stack(_self)
+		_self:push()
+	end
 	local his_win = dynawa.window_manager:peek()
 	local his_bmp = (his_win or {}).bitmap
 	local wsize --Window size
@@ -70,20 +74,25 @@ end
 function app:handle_event_timed_event(event) --Autoclose still valid?
 	local window_id = assert(event.window_id)
 	if self.window and self.window.id == window_id then
-		self:switching_to_back()
+		self:destroy_window()
 	end
 end
 
 function app:switching_to_back()
-	self.window:pop()
-	self.window:_delete()
+	self:destroy_window()
+end
+
+function app:destroy_window()
+	local win = assert(self.window)
+	dynawa.window_manager:remove_from_stack(win)
+	win:_delete()
 	self.window = false
 end
 
 function app:handle_event_button(event)
 	if assert(event.action) == "button_down" and dynawa.ticks() - self.timestamp > 250 then
 		local callback = self.window["popup_on_"..event.button]
-		self:switching_to_back()
+		self:destroy_window()
 		if callback then
 --			log("Doing popup callback for "..event.button)
 			callback()

@@ -187,7 +187,7 @@ function app:activity_chunk_received(activity, chunk)
 		log("Unexpected Ack chunk received (ignored)")
 		return
 	end
-	log("Ack OK")
+	--log("Ack OK")
 	activity.sender.waiting_for_ack = nil
 	if #activity.sender.pieces > 0 then
 		self:activity_send_piece(activity)
@@ -288,7 +288,7 @@ end
 
 -- Sends data to given activity
 function app:activity_send_data(activity, data)
-	log("---Sending data from watch")
+	--log("---Sending data from watch")
 	data = table.concat(self:encode_data(data, {}))
 	if activity.status ~= "connected" then
 		return false, "Not connected - Activity status is '"..tostring(activity.status).."'"
@@ -362,7 +362,7 @@ function app:split_data(data, piece_size, pieces)
 	local size = #data
 	assert(size > 0, "Empty data")
 	local n_pieces = math.floor(size / piece_size) + 1
-	log("Split to "..n_pieces.." pieces...")
+	--log("Split to "..n_pieces.." pieces...")
 	for n_piece = 1,n_pieces do
 		local f, t = (n_piece - 1) * piece_size + 1, n_piece * piece_size
 		local substr = data:sub(f,t)

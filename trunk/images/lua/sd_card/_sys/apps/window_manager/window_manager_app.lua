@@ -38,6 +38,9 @@ function app:push(x)
 	--self:window_to_front(x)
 	x.in_front = true
 	log("Pushed "..x..", "..#(self.stack).." now on stack")
+	if #self.stack >= 2 then
+		self.stack[2]:overlaid_by(x)
+	end
 end
 
 --For debugging only, #todo remove
@@ -63,6 +66,22 @@ function app:pop()
 	end
 	--self:log_windows()
 	return x
+end
+
+function app:remove_from_stack(win)
+	assert(win.is_window,"Should be window")
+	if win.in_front then
+		return win:pop()
+	end
+	for i,w in ipairs(self.stack) do
+		--log("stack "..i.." = "..w)
+		if w == win then
+			table.remove(self.stack, i)
+			log(w .. " removed from stack position "..i)
+			return w
+		end
+	end
+	error(win.." not found in window stack")
 end
 
 --This is a powerful but potentially dangerous method that pops all menuwindows from top of the stack

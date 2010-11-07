@@ -1,4 +1,4 @@
-dynawa.version = {wristOS="0.9", settings_revision = 101015}
+dynawa.version = {wristOS="0.9", settings_revision = 101106}
 
 dynawa.dofile = function(...)
 	dynawa.busy()
@@ -52,7 +52,7 @@ if not dynawa.settings or dynawa.settings.revision < dynawa.version.settings_rev
 		revision = dynawa.version.settings_revision,
 		default_font = "/_sys/fonts/default10.png",
 		display = {brightness = 2, autosleep = 0},
-		autostart = {"/_sys/apps/clock/clock_app.lua","/_sys/apps/inbox/inbox_app.lua", "/_sys/apps/bluetooth_apps/dyno/dyno_bt_app.lua","/_sys/apps/call_manager/call_manager_app.lua"},
+		autostart = {"/_sys/apps/clock/clock_app.lua","/_sys/apps/inbox/inbox_app.lua", "/_sys/apps/bluetooth_apps/dyno/dyno_bt_app.lua","/_sys/apps/call_manager/call_manager_app.lua","/_sys/apps/http_request/http_request_app.lua"},
 		switchable = {"dynawa.clock","dynawa.inbox","dynawa.bluetooth_manager"},
 		gestures = {enabled = true},
 	}
