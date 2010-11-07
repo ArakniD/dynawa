@@ -21,10 +21,17 @@ function app:send_request(request)
 	data.server = "www.google.com"
 	data.port = 80
 	data.id = dynawa.unique_id()
-	local id,act = next(dyno.activities)
-	if not act then
-		return nil,"No Dyno activities" --#todo
+	local id,act
+	for i,a in pairs(dyno.activities) do
+		if a.status == "connected" then
+			act = a
+			break
+		end
 	end
+	if not act then
+		log("Dyno doesn't have any activity whose status is 'connected'. Trying again in a while.")
+		return
+	end 
 	log("**** Sending http request")
 	local stat,err = dyno:bdaddr_send_data(act.bdaddr,data)
 	if not stat then
