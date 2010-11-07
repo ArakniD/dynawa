@@ -78,7 +78,7 @@ end
 function app:phone_action(action,bdaddr)
 	local dyno = dynawa.app_manager:app_by_id("dynawa.dyno")
 	if not dyno then
-		dynawa.popup:error("Dyno is not running, cannot control the phone")
+		dynawa.popup:error("Dyno is not running, Call Manager cannot control the phone")
 		return false,"No Dyno"
 	end
 	local stat,err = dyno:bdaddr_send_data(bdaddr,{command="call_resolution",resolution=assert(action)})

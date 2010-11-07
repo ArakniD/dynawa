@@ -83,6 +83,11 @@ function class:pop()
 	return self
 end
 
+function class:overlaid_by(win)
+	--This window was in front but is now overlaid by window 'win'
+	--Do nothing
+end
+
 --[[function class:to_front()
 	return dynawa.window_manager:window_to_front(self)
 end]]
