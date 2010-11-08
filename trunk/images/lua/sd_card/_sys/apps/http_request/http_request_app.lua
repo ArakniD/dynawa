@@ -18,7 +18,7 @@ function app:send_request(request)
 	end
 	local data = {command = "HTTP_request"}
 	data.message = "GET / HTTP/1.0\r\n\r\n"
-	data.server = "www.google.com"
+	data.address = "www.kompost.cz"
 	data.port = 80
 	data.id = dynawa.unique_id()
 	local id,act
@@ -29,7 +29,7 @@ function app:send_request(request)
 		end
 	end
 	if not act then
-		log("Dyno doesn't have any activity whose status is 'connected'. Trying again in a while.")
+		log("HTTP Requester: Dyno doesn't have any activity whose status is 'connected'. Trying again in a while.")
 		return
 	end 
 	log("**** Sending http request")
@@ -37,6 +37,31 @@ function app:send_request(request)
 	if not stat then
 		log("Cannot send http request: "..err)
 	end
+end
+
+function app:parse_response(response)
+	if not response.message then
+		return {error = assert(response.error)}
+	end
+	local parsed = {timestamp = dynawa.ticks(), headers = {}}
+	local headers,body = response.message:match("(.-)\r\n\r\n(.*)")
+	if not body then
+		headers = response.message
+	end
+	local status_line,headers = headers:match("(.-)\r\n(.*)")
+	assert(headers,"Cannot parse responses headers")
+	parsed.protocol, parsed.status = status_line:match("(.-) (.*)")
+	assert(#parsed.status >= 3, "No response status")
+	headers = headers .. "\r\n"
+	headers:gsub("(.-)\r\n", function(line)
+		local key, val = line:match("(.-): (.*)")
+		assert(val, "Cannot match value in "..line)
+		parsed.headers[key] = val
+	end)
+	if body then
+		parsed.body = "<BODY OK! (omitted for testing)>"
+	end
+	return parsed
 end
 
 function app:handle_event_dyno_data_from_phone(ev)
@@ -49,5 +74,6 @@ function app:handle_event_timed_event(ev)
 end
 
 function app:handle_response(response)
-	log("HTTP response: "..dynawa.file.serialize(response))
+	--log("HTTP response: "..dynawa.file.serialize(response))
+	log("HTTP response parsed: "..dynawa.file.serialize(self:parse_response(response)))
 end
