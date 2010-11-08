@@ -57,7 +57,7 @@ function app:sleep()
 end
 
 function app:handle_event_timed_event(event)
-	log("Sandman: Timed event "..event.timestamp.." x "..tostring(self.last_timestamp))
+	--log("Sandman: Timed event "..event.timestamp.." x "..tostring(self.last_timestamp))
 	if event.timestamp ~= self.last_timestamp then
 		--New timed event was triggered by Sandman AFTER his previous event fired! Ignore previous event.
 		return
