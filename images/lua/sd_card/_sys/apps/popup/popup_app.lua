@@ -12,7 +12,7 @@ function app:info(text)
 end
 
 function app:open(args)
-	log("showing popup: "..args.text)
+	log("showing popup with text: "..tostring(args.text))
 	dynawa.busy()
 	if self.window then
 		self:destroy_window()
