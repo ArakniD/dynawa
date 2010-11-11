@@ -176,8 +176,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
         //TRACE_TMR("%d < %d %d\r\n", timer->timeCurrent, remaining, TIMER_MARGIN);
         TRACE_TMR("%d < %d %d\r\n", timer->target, target, TIMER_MARGIN);
         //if ( timer->timeCurrent < ( remaining - TIMER_MARGIN ) )
-        if ( timer->target < target )
-        {
+        if ( timer->target < target ) {
             // Damn it!  Reschedule the next callback
             //Timer_setTimeTarget( target - ( remaining - timer->timeCurrent ));
             Timer_setTimeTarget( timer->target <= timer_manager.tc->RTTC_RTVR ? timer_manager.tc->RTTC_RTVR + MIN_DELAY_TICKS : timer->target);
@@ -186,9 +185,10 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
             // pretend that the existing time has been with us for the whole slice so that when the 
             // IRQ happens it credits the correct (reduced) time.
             //timer->timeCurrent += timeCurrent;
-        }
-        else
-        {
+        } else if (remaining < 0) {
+// workround
+            Timer_setTimeTarget( timer_manager.tc->RTTC_RTVR + MIN_DELAY_TICKS);
+        } else {
             // pretend that the existing time has been with us for the whole slice so that when the 
             // IRQ happens it credits the correct (reduced) time.
             //timer->timeCurrent += timeCurrent;

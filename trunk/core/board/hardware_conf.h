@@ -28,6 +28,50 @@
 
 #define BOARD_V2
 
+/*
+PIO
+audio codec/dac (DAC7311DCK)
+-
+
+audio zesilovac (LM4916LD)
+PA25 audio shutdown
+PA0  mute (sdilene s LED na dev boardu)
+
+oled
+PA27 NENVOL
+PA29 NORES
+PA24 SEL
+PB19 VSYNCO
+
+sd card
+PA19 SDPWRON
+
+gas gauge
+PA28 CHARGEEN
+PA2 CHARGING
+PA18 CHARGEDONE
+
+buttons
+PB18 BUT0
+PB31 BUT1
+PB21 BUT2
+PB24 BUT3
+PB27 BUT4
+
+bluecore
+PB23 BC4 PIO0
+PB25 BC4 PIO1
+PB29 BC4 PIO4
+PB30 BCNRES
+
+usb
+PA21 USBPEN2
+PB22 USB_DETECT
+
+accelerometer
+PB20 MINT
+*/
+
 /**
  * \name Clock constants
  *

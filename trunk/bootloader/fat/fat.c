@@ -237,7 +237,7 @@ void fat_init(void)
     }
     else
     {
-        TRACE_FAT("Unkown\n");
+        TRACE_FAT("Unknown\n");
     }
 
     // Read Partition Boot Record (Volume ID)
@@ -301,7 +301,7 @@ void fat_init(void)
     TRACE_FAT("FirstDataSector = %ld\n",first_data_sector);
     TRACE_FAT("FirstDirSector  = %ld\n",first_dir_sector);
     TRACE_FAT("root_dir_cluster  = %ld\n",root_dir_cluster);
-    TRACE_SCR(": %dMB\n\r", (data_sectors*bytes_per_sector)/(1024*1024) );
+    TRACE_SCR(": %ldMB\n\r", (unsigned long)(((long long)data_sectors*bytes_per_sector)/(1024*1024)) );
     
 
     // clear filehandles

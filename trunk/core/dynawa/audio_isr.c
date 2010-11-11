@@ -30,7 +30,7 @@ static void audio_isr(void)
     // Last buffer sent
     if ((status & AT91C_SSC_TXBUFE) != 0) {
 
-        audio_stop();
+        audio_stop_isr();
     // One buffer sent & more buffers to send
     } else {
         if (audio_current_sample_remaining == 0 && audio_current_sample_loop) {

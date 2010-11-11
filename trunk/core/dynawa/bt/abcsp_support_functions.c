@@ -55,7 +55,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
 
     TRACE_BT("abcsp_delivermsg %d\r\n", channel);
 
-#if BT_LED
+#if _BT_LED
     ledrgb_set(0x4, 0, 0, BT_LED_HIGH);
 #endif
 
@@ -192,7 +192,7 @@ void abcsp_delivermsg(abcsp * thisInstance, ABCSP_RXMSG * message, unsigned chan
 	free(messageBuffer->buffer);
 	free(messageBuffer);
 
-#if BT_LED
+#if _BT_LED
     ledrgb_set(0x4, 0, 0, BT_LED_LOW);
 #endif
 }

@@ -163,6 +163,13 @@ void pm_unlock() {
     xSemaphoreGive(pm_mutex);
 }
 
+void pm_unlock_isr() {
+    _pm_lock--;
+    if (_pm_lock < 0) {
+        panic("pm_unlock");
+    }
+}
+
 uint32_t total_time_in_sleep = 0;
 uint32_t total_time_in_deep_sleep = 0;
 

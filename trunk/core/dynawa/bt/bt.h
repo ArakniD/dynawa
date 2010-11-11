@@ -55,6 +55,10 @@
 
 #define BT_LED      1
 #if 1
+#define BT_LED_START        0x40
+#define BT_LED_LOW          0x0
+#define BT_LED_HIGH         0x0
+#elif 0
 #define BT_LED_START        0x0
 #define BT_LED_LOW          0x0
 #define BT_LED_HIGH         0x40

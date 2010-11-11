@@ -160,6 +160,10 @@ void Run( ) // this task gets called as soon as we boot up.
     gasgauge_init();
     TRACE_INFO("gasgauge_init ok\n\r");
 #endif
+#if 1
+    audio_init();
+    TRACE_INFO("audio_init ok\n\r");
+#endif
 
     event_init(100);
     TRACE_INFO("event_init ok\n\r");
