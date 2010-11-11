@@ -828,8 +828,8 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
 
     //TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
 
-    pPIOB->PIO_PER = BCNRES_MASK;
-    pPIOB->PIO_OER = BCNRES_MASK;
+    //pPIOB->PIO_PER = BCNRES_MASK;
+    //pPIOB->PIO_OER = BCNRES_MASK;
     pPIOB->PIO_CODR = BCNRES_MASK; //set to log0
 
     //TRACE_INFO("B_PIO_ODSR %x\r\n", pPIOB->PIO_ODSR);
@@ -859,6 +859,7 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
 
     TRACE_BT("BC restarted\r\n");
  
+
     if (!UartDrv_Start())
     {
         TerminateMicroSched();
@@ -867,7 +868,16 @@ Petr: takze nejprve drzet v resetu a potom nastavit piny BCBOOT0:2 na jaky proto
         //StartTimer(KEYBOARD_SCAN_INTERVAL, keyboardHandler);
 	    abcsp_init(&AbcspInstanceData);
         //StartTimer(PUMP_INTERVAL, pumpHandler);
+#if BT_LED
+    ledrgb_set(0x4, 0, 0, 0x0);
+    ledrgb_close();
+#endif
+
         MicroSched();
+#if BT_LED
+    ledrgb_open();
+    ledrgb_set(0x4, 0, 0, BT_LED_START);
+#endif
         UartDrv_Stop();
         CloseMicroSched();
     }
@@ -984,6 +994,10 @@ int bt_read_bdaddr_from_disk (const char *path, struct bd_addr *bdaddr) {
 
 int bt_init() {
     struct bd_addr device_bdaddr;
+
+    pPIOB->PIO_PER = BCNRES_MASK;
+    pPIOB->PIO_OER = BCNRES_MASK;
+    pPIOB->PIO_CODR = BCNRES_MASK; //set to log0
 
     bc_state = BC_STATE_STOPPED;
     if (!bt_read_bdaddr_from_disk("bdaddr.cfg", &device_bdaddr)) {

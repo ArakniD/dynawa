@@ -65,12 +65,8 @@ void audio_play(audio_sample *sample, uint32_t sample_rate, uint32_t loop, void*
     SSC_EnableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_TXBUFE | AT91C_SSC_ENDTX);
 }
 
-void audio_stop(void)
+void _audio_stop()
 {
-    if (audio_current_sample == NULL) {
-        return;
-    }
-    pm_unlock();
     SSC_DisableInterrupts(BOARD_DAC7311_SSC, AT91C_SSC_TXBUFE | AT91C_SSC_ENDTX);
     BOARD_DAC7311_SSC->SSC_PTCR = AT91C_PDC_TXTDIS;
     BOARD_DAC7311_SSC->SSC_TNCR = 0;
@@ -82,6 +78,24 @@ void audio_stop(void)
         (*audio_current_sample_stop_callback)(audio_current_sample_stop_callback_arg);
     }
     audio_current_sample = NULL;
+}  
+
+void audio_stop()
+{
+    if (audio_current_sample == NULL) {
+        return;
+    }
+    pm_unlock();
+    _audio_stop();
+}  
+
+void audio_stop_isr()
+{
+    if (audio_current_sample == NULL) {
+        return;
+    }
+    pm_unlock_isr();
+    _audio_stop();
 }  
 
 #define WAV_BUF_SIZE 512
@@ -448,4 +462,8 @@ audio_sample* _audio_sample_from_wav_file(const char *filename, int8_t _volume, 
 
     TRACE_AUDIO("ok\n");
     return sample;
+}
+
+int audio_init(void) {
+    DAC7311_Init();
 }

@@ -37,4 +37,7 @@
 #define TASK_USB_MSD_PRI     2
 #define TASK_USB_MSD_STACK   1024
 
+#define TASK_SD_PRI     2
+#define TASK_SD_STACK   512
+
 #endif // TASK_PARAM_H

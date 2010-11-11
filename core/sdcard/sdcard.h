@@ -98,8 +98,11 @@ enum {
 
 uint8_t sd_card_detect(void);
 int8_t sd_init(void);
+int8_t sd_lock(void);
+int8_t sd_unlock(void);
 //uint32_t sd_info(void);
 uint64_t sd_info(void);
+uint64_t sd_get_size(void);
 int8_t sd_readsector(uint32_t lba,
                      uint8_t *buffer,
                      Callback_f   fCallback,

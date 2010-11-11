@@ -6,7 +6,8 @@
 #include "queue.h"
 #include "task_param.h"
 
-#define WAKEUP_EVENT_TIMED_EVENT        1
+#define WAKEUP_EVENT_CLOSE          1
+#define WAKEUP_EVENT_TIMED_EVENT        2
 
 static xTaskHandle battery_task_handle;
 static gasgauge_stats _stats;
@@ -83,7 +84,9 @@ static void battery_task( void* p ) {
 #else
         xQueueReceive(battery_queue, &battery_event, 10000);
 #endif
-        if (battery_event == WAKEUP_EVENT_USB_DISCONNECTED) {
+        if (battery_event == WAKEUP_EVENT_CLOSE) {
+            break;
+        } else if (battery_event == WAKEUP_EVENT_USB_DISCONNECTED) {
             event ev;
             ev.type = EVENT_BATTERY;
             ev.data.battery.state = BATTERY_STATE_DICHARGING;
@@ -122,6 +125,7 @@ int battery_init () {
 }
 
 int battery_close() {
-    vQueueDelete(battery_queue);
+    uint8_t ev = WAKEUP_EVENT_CLOSE;
+    xQueueSend(battery_queue, &ev, 0);
     return 0;
 }

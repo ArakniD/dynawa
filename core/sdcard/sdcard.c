@@ -34,23 +34,53 @@
 #include <utils/delay.h>
 #include <utils/time.h>
 #include "sdcard.h"
+#include "timer.h"
+#include "rtos.h"
+#include "task.h"
+#include "queue.h"
+#include "task_param.h"
+#include "io.h"
 
+#define SD_PM       1
 #define SPI_DMA     1
 
 #define SPI_SD_CHANNEL  1
 
-uint8_t ver2_card = false;  //!< Flag to indicate version 2.0 SD card
-uint8_t sdhc_card = false;  //!< Flag to indicate version SDHC card
-uint32_t sd_numsectors; //!< Total number of sectors on card
-uint32_t sd_size; //!< Total number of sectors on card
-uint32_t sd_blocksize; //!< Total number of sectors on card
-uint8_t sd_sectorbuffer[512];   //!< buffer to hold one sector of card
-uint32_t sd_clock; //!< Total number of sectors on card
+#define PIO_SDPOWER  IO_PA19
+
+#define WAKEUP_EVENT_CLOSE          1
+#define WAKEUP_EVENT_TIMED_EVENT    2
+
+#if SD_PM
+#define SD_PM_TIMEOUT    2000
+
+static Io sd_io;
+static xTaskHandle sd_task_handle;
+static xSemaphoreHandle sd_mutex;
+static xQueueHandle sd_queue;
+static Timer sd_timer;
+static bool sd_ready;
+static bool sd_timeout;
+static bool sd_pm = true;
+
+#endif
+
+static uint8_t sd_ver2_card = false;  //!< Flag to indicate version 2.0 SD card
+static uint8_t sd_sdhc_card = false;  //!< Flag to indicate version SDHC card
+static uint32_t sd_numsectors; //!< Total number of sectors on card
+static uint64_t sd_size = 0; //!< Total number of sectors on card
+static uint32_t sd_blocksize; //!< Total number of sectors on card
+static uint8_t sd_sectorbuffer[512];   //!< buffer to hold one sector of card
+static uint32_t sd_clock; //!< Total number of sectors on card
 
 #if SPI_DMA
 static uint8_t spi_dummy_buff_in[512];
 static uint8_t spi_dummy_buff_out[512];
 #endif
+
+uint64_t sd_get_size(void) {
+    return sd_size;
+}
 
 /**
  * Return SD card present status.
@@ -192,7 +222,11 @@ uint8_t sd_get_datatoken(void)
  * \return  Error code
  * 
  */
+#if SD_PM
+int8_t _sd_init(void)
+#else
 int8_t sd_init(void)
+#endif
 {
     // Card not initalized
     
@@ -205,13 +239,15 @@ int8_t sd_init(void)
     uint8_t retries;
     uint8_t resp;
 
-    TRACE_SD("Init SD card\n\r");
+    TRACE_SD("Init SD card\r\n");
     
+    int ticks = Timer_tick_count();
 #if SPI_DMA
     memset(spi_dummy_buff_out, 0xff, 512);
 #endif
 
     spi_lock();
+
     for(retries = 0, resp = 0; (retries < 5) && (resp != SD_R1_IDLE_STATE) ; retries++)
     {
         // send CMD0 to reset card
@@ -225,6 +261,8 @@ int8_t sd_init(void)
     
     if(resp != SD_R1_IDLE_STATE) return SD_E_IDLE;
 
+    TRACE_SD("SD idle %d\r\n", Timer_tick_count() - ticks);
+
     // send CMD8 to check voltage range
     // this also determines if the card is a 2.0 (or later) card
     sd_command(SD_SEND_IF_COND,0x000001AA);
@@ -236,7 +274,7 @@ int8_t sd_init(void)
     {
     	TRACE_SD("2.0 card\n\r");
         uint32_t r7reply;
-        ver2_card = true;  // mark this as a version2 card
+        sd_ver2_card = true;  // mark this as a version2 card
         r7reply = sd_get_response();     
         r7reply <<= 8;
         r7reply |= sd_get_response();    
@@ -245,13 +283,13 @@ int8_t sd_init(void)
         r7reply <<= 8;
         r7reply |= sd_get_response();
 
-        TRACE_SD("CMD8REPLY: %08x\n",r7reply);
+        TRACE_SD("CMD8REPLY: %08x\n\r",r7reply);
         
         // verify that we're compatible
         if ( (r7reply & 0x00000fff) != 0x01AA )
         {
             spi_unlock();
-            TRACE_SD("Voltage range mismatch\n");
+            TRACE_SD("Voltage range mismatch\n\r");
             return SD_E_VOLT;  // voltage range mismatch, unsuable card
         }
     }
@@ -273,23 +311,23 @@ int8_t sd_init(void)
         // send CMD55
         sd_command(SD_APP_CMD, 0);    // CMD55, prepare for APP cmd
 
-        TRACE_SD("Sending CMD55\n");
+        TRACE_SD("Sending CMD55\n\r");
         
         if ((sd_get_response() & 0xFE) != 0)
         {
-             TRACE_SD("CMD55 failed\n");
+             TRACE_SD("CMD55 failed\n\r");
         }
         // send ACMD41
-        TRACE_SD("Sending ACMD41\n");
+        TRACE_SD("Sending ACMD41\n\r");
         
-        if(ver2_card)
+        if(sd_ver2_card)
         	sd_command(SD_ACMD_SEND_OP_COND, 1UL << 30); // ACMD41, HCS bit 1
         else
         	sd_command(SD_ACMD_SEND_OP_COND, 0); // ACMD41, HCS bit 0
         
         i = sd_get_response();
         
-        TRACE_SD("response = %02x\n",i);
+        TRACE_SD("response = %02x\n\r",i);
         
         if (i != 0)
         {
@@ -301,30 +339,30 @@ int8_t sd_init(void)
             resp = 1;
         
         //delayms(500);
-        Task_sleep(500);
+        //Task_sleep(500);
     }
 
     if (!resp)
     {
         spi_unlock();
-        TRACE_SD("not valid\n");
+        TRACE_SD("not valid\n\r");
         return SD_E_INIT;          // init failure
     }
     sd_send_dummys();     // clean up
 
-    if (ver2_card)
+    if (sd_ver2_card)
     {
         uint32_t ocr;
         // check for High Cap etc
         
         // send CMD58
-        TRACE_SD("sending CMD58\n");
+        TRACE_SD("sending CMD58\n\r");
 
         sd_command(SD_READ_OCR,0);    // CMD58, get OCR
         TRACE_SD(".resp.");
         if (sd_get_response() != 0)     // MV blocks upon sd_init() call
         {
-            TRACE_SD("CMD58 failed\n");
+            TRACE_SD("CMD58 failed\n\r");
         }
         else
         {
@@ -339,21 +377,23 @@ int8_t sd_init(void)
             ocr <<= 8;
             ocr |= sd_get_response();
              
-            TRACE_SD("OCR = %08x\n", ocr);
+            TRACE_SD("OCR = %08x\n\r", ocr);
             
             if((ocr & 0xC0000000) == 0xC0000000)
             {
-            	TRACE_SD("SDHC card.\n");
-            	sdhc_card = true; // Set HC flag.
+            	TRACE_SD("SDHC card.\n\r");
+            	sd_sdhc_card = true; // Set HC flag.
             }
         }
     }
     sd_send_dummys();     // clean up
 
-    sd_info();
+    if (sd_size == 0) {
+        sd_size = sd_info();
+    }
 
     spi_unlock();
-    TRACE_SD("Init SD card OK\n");
+    TRACE_SD("Init SD card OK %d\n\r", Timer_tick_count() - ticks);
     return SD_OK;   
 }
 
@@ -534,7 +574,6 @@ uint64_t sd_info(void)
         sd_numsectors = blockno;
         sd_blocksize = block_len;
         uint32_t byte_size = blockno * (uint32_t)block_len;
-        sd_size = byte_size;
         return byte_size;
     }
     else
@@ -572,7 +611,6 @@ uint64_t sd_info(void)
         sd_numsectors = (byte_size / 512)-1;
 // TODO
         sd_blocksize = 512;
-        sd_size = byte_size;
 
         return byte_size;
     }
@@ -605,8 +643,9 @@ int8_t sd_readsector(uint32_t lba,
     
     TRACE_SD("SDrd%ld   ", lba);
 
-    spi_lock();
-    if(sdhc_card)
+    //spi_lock();
+    sd_lock();
+    if(sd_sdhc_card)
     	 // on new High Capacity cards, the lba is sent
     	sd_command(SD_READ_SINGLE_BLOCK,lba);
     else
@@ -618,7 +657,8 @@ int8_t sd_readsector(uint32_t lba,
     if (sd_get_response() != 0) // if no valid token
     {
         sd_send_dummys(); // cleanup and  
-        spi_unlock();
+        //spi_unlock();
+        sd_unlock();
         TRACE_ERROR("sd_readsector() error: cmd response timeout\r\n");
         return SD_ERROR;   // return error code
     }
@@ -626,7 +666,8 @@ int8_t sd_readsector(uint32_t lba,
     if (sd_get_datatoken() != SD_STARTBLOCK_READ) // if no valid token
     {
         sd_send_dummys(); // cleanup and  
-        spi_unlock();
+        //spi_unlock();
+        sd_unlock();
         TRACE_ERROR("sd_readsector() error: data packet timeout\r\n");
         return SD_ERROR;   // return error code
     }
@@ -662,7 +703,8 @@ int8_t sd_readsector(uint32_t lba,
 #endif
 
     sd_send_dummys();     // cleanup
-    spi_unlock();
+    //spi_unlock();
+    sd_unlock();
 
     // Invoke callback
     if (fCallback != 0) {
@@ -714,8 +756,9 @@ int8_t sd_writesector(uint32_t lba,
 
     TRACE_SD("SDwr%ld   ", lba);
 
-    spi_lock();
-    if(sdhc_card)
+    //spi_lock();
+    sd_lock();
+    if(sd_sdhc_card)
     	 // on new High Capacity cards, the lba is sent
     	sd_command(SD_WRITE_BLOCK,lba);
     else
@@ -727,7 +770,8 @@ int8_t sd_writesector(uint32_t lba,
     if (sd_get_response() != 0) // if no valid token
     {
         sd_send_dummys(); // cleanup and
-        spi_unlock();
+        //spi_unlock();
+        sd_unlock();
         TRACE_ERROR("sd_writesector() error: cmd response timeout\r\n");
         return SD_ERROR;   // return error code
     }
@@ -751,7 +795,8 @@ int8_t sd_writesector(uint32_t lba,
     if ( (sd_get_response()&0x0F) != 0x05) // if no valid token
     {
         sd_send_dummys(); // cleanup and
-        spi_unlock();
+        //spi_unlock();
+        sd_unlock();
         TRACE_ERROR("sd_writesector() error: data response timeout\r\n");
         return SD_ERROR;   // return error code
     }
@@ -776,7 +821,8 @@ int8_t sd_writesector(uint32_t lba,
         {
             //spi_unlock();
             sd_send_dummys();   // cleanup and
-            spi_unlock();
+            //spi_unlock();
+            sd_unlock();
             TRACE_ERROR("sd_writesector() error: busy timeout\r\n");
             return SD_ERROR;    // return failure
         }
@@ -785,7 +831,8 @@ int8_t sd_writesector(uint32_t lba,
     //spi_unlock();
 
     sd_send_dummys(); // cleanup  
-    spi_unlock();
+    //spi_unlock();
+    sd_unlock();
     
     // Invoke callback
     if (fCallback != 0) {
@@ -795,3 +842,145 @@ int8_t sd_writesector(uint32_t lba,
    
     return SD_OK;   // return success
 }
+
+int8_t sd_lock() {
+#if SD_PM
+    if (sd_pm || !sd_ready) {
+        xSemaphoreTake(sd_mutex, -1);
+
+        if (sd_timeout) {
+            Timer_stop(&sd_timer);
+            sd_timeout = false;
+        }
+        if (!sd_ready) {
+            // PA19 high
+            Io_setValue(&sd_io, 1);
+            //Task_sleep(10);
+            _sd_init();
+            sd_ready = true;
+            TRACE_INFO("sd powered on\r\n");
+        }
+
+        xSemaphoreGive(sd_mutex);
+    }
+#endif
+    spi_lock();
+    return SD_OK;
+}
+
+#if SD_PM
+void sd_start_timer(void) {
+    xSemaphoreTake(sd_mutex, -1);
+
+    Timer_start(&sd_timer, SD_PM_TIMEOUT, false, false);
+    sd_timeout = true;
+
+    xSemaphoreGive(sd_mutex);
+}
+#endif
+
+int8_t sd_unlock() {
+    spi_unlock();
+#if SD_PM
+    sd_start_timer();
+#endif
+    return SD_OK;
+}
+
+#if SD_PM
+void sd_set_pm(bool on) {
+    if (sd_pm == on) {
+        return;
+    }
+    sd_pm = on;
+    if (on) {
+        sd_start_timer();
+    }
+}
+
+void sd_timer_handler(void* context) {
+    //TRACE_INFO("sd_timer_handler\r\n");
+
+    portBASE_TYPE xHigherPriorityTaskWoken;
+    uint8_t event = WAKEUP_EVENT_TIMED_EVENT;
+
+    xQueueSendFromISR(sd_queue, &event, &xHigherPriorityTaskWoken);
+
+    if(xHigherPriorityTaskWoken) {
+        portYIELD_FROM_ISR();
+    }
+}
+
+static void sd_task( void* p ) {
+    TRACE_INFO("sd task %x\r\n", xTaskGetCurrentTaskHandle());
+
+    while (true) {
+        uint8_t sd_event;
+        xQueueReceive(sd_queue, &sd_event, -1);
+
+        if (sd_event == WAKEUP_EVENT_CLOSE) {
+            Timer_stop(&sd_timer);
+            break;
+        } 
+
+        xSemaphoreTake(sd_mutex, -1);
+
+        sd_timeout = false;
+        if (sd_ready) {
+            // PA19 low
+            Io_setValue(&sd_io, 0);
+            sd_ready = false;
+            TRACE_INFO("sd powered off\r\n");
+        }
+        xSemaphoreGive(sd_mutex);
+    }
+    Timer_close(&sd_timer);
+    vQueueDelete(sd_queue);
+    vTaskDelete(NULL);
+}
+
+int8_t sd_init () {
+
+    Io_init(&sd_io, PIO_SDPOWER, IO_GPIO, OUTPUT);
+    Io_setValue(&sd_io, 1);
+
+    _sd_init();
+
+    Io_setValue(&sd_io, 0);
+    TRACE_INFO("sd powered off\r\n");
+
+    sd_ready = false;
+    sd_timeout = false;
+
+    Timer_init(&sd_timer, 0);
+    Timer_setHandler(&sd_timer, sd_timer_handler, NULL);
+
+    sd_mutex = xSemaphoreCreateMutex();
+
+    if (sd_mutex == NULL) {
+        panic("sd_init mutex");
+        return SD_E_INIT;
+    }
+    sd_queue = xQueueCreate(1, sizeof(uint8_t));
+    if (sd_queue == NULL) {
+        panic("sd_init queue");
+        return SD_E_INIT;
+    }
+
+    if (xTaskCreate( sd_task, "sd", TASK_STACK_SIZE(TASK_SD_STACK), NULL, TASK_SD_PRI, &sd_task_handle ) != 1 ) {
+        return SD_E_INIT;
+    }
+
+    return SD_OK;
+}
+#endif
+
+int8_t sd_close() {
+#if SD_PM
+    uint8_t ev = WAKEUP_EVENT_CLOSE;
+    xQueueSend(sd_queue, &ev, 0);
+    vQueueDelete(sd_mutex);
+#endif
+    return SD_OK;
+}
+

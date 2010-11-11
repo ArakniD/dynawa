@@ -1,5 +1,6 @@
 #include "io.h"
 #include "usb.h"
+#include "sdcard/sdcard.h"
 #include "debug/trace.h"
 #include "event.h"
 #include "task.h"
@@ -139,9 +140,12 @@ void MSDDInitialize()
     // Memory initialization
     TRACE_INFO("LUN SD\n\r");
 
-    spi_lock();
-    uint64_t sd_size = sd_info();
-    spi_unlock();
+    //spi_lock();
+    //sd_lock();
+    //uint64_t sd_size = sd_info();
+    uint64_t sd_size = sd_get_size();
+    //spi_unlock();
+    //sd_unlock();
 
     SD_Initialize(&(medias[numMedias]), sd_size);
     LUN_Init(&(luns[numMedias]), &(medias[numMedias]),
