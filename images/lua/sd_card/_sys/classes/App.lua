@@ -64,6 +64,11 @@ function class:handle_event_gesture_sleep()
 	--log(self.." sleep gesture")
 end
 
+function class:going_to_sleep()
+	return false
+	--if this is overriden to return "remember", this app is switched to after wakeup
+end
+
 function class:menu_item_selected()
 	return false
 end

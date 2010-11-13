@@ -21,7 +21,12 @@ function app:activity(force)
 		dynawa.devices.display.power(1)
 		self.sleeping = false
 		if not dynawa.window_manager:peek() then
-			dynawa.window_manager:show_default()
+			if self.waking_app then
+				dynawa.app_manager:app_by_id(self.waking_app):switching_to_front()
+				self.waking_app = nil
+			else
+				dynawa.window_manager:show_default()
+			end
 		end
 		self:activity()
 	else
@@ -50,6 +55,15 @@ function app:sleep()
 		return
 	end
 	log("Going to sleep")
+	local topwin = dynawa.window_manager:peek()
+	if topwin then
+		local param = topwin.app:going_to_sleep()
+		assert(param == false or param == "remember")
+		if param == "remember" then
+			param = assert(topwin.app.id)
+		end
+		self.waking_app = param
+	end
 	dynawa.window_manager:stack_cleanup()
 	self.sleeping = true
 	self.last_timestamp, self.last_handle = -1, false
