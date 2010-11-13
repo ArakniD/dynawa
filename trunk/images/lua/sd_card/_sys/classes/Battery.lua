@@ -32,7 +32,6 @@ function class:handle_hw_event(event)
 end
 
 function class:voltage_to_percent(v)
-	-- 3000 - 4150
 	local pct = (v - self.pct0) / (self.pct100 - self.pct0) * 100
 	pct = math.floor(pct + 0.5)
 	if pct < 0 then

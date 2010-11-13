@@ -45,6 +45,10 @@ function app:gfx_init()
      self.bmp_blank = dynawa.bitmap.new(150, 10) 
 end
 
+function app:going_to_sleep()
+	return "remember"
+end
+
 function app:start()
 	self:gfx_init()
 end
