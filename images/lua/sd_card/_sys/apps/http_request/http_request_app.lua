@@ -12,20 +12,29 @@ function app:start()
 end
 
 function app:make_request(request)
-	assert(request.server, "No server specified in HTTP request")
+	assert(request.address, "No server specified in HTTP request")
 	request.id = dynawa.unique_id()
 	request.port = request.port or 80
 	request.path = request.path or "/"
+	request.headers = request.headers or {}
+	if not request.headers.Host then
+		request.headers.Host = request.address
+	end
 	local dyno = dynawa.app_manager:app_by_id("dynawa.dyno")
 	if not dyno then
 		dynawa.popup:error("Dyno is not running, HTTP Request Service cannot control the phone")
 		return false,"No Dyno"
 	end
 	local data = {command = "HTTP_request"}
-	data.message = "GET "..request.path.." HTTP/1.0\r\n\r\n"
-	data.address = assert(request.server)
-	data.port = assert(request.port)
+	data.message = "GET "..request.path.." HTTP/1.0\r\n"
+	data.address = request.address
+	data.port = request.port
 	data.id = request.id
+	local headers_lines = {}
+	for k,v in pairs(request.headers) do
+		table.insert(headers_lines, k..": "..v)
+	end
+	data.message = data.message .. table.concat(headers_lines,"\r\n") .. "\r\n\r\n"
 	local id,act
 	for i,a in pairs(dyno.activities) do
 		if a.status == "connected" then
@@ -51,6 +60,7 @@ function app:parse_response(response)
 		return {error = assert(response.error)}
 	end
 	local parsed = {timestamp = dynawa.ticks(), headers = {}}
+	parsed.id = assert(response.id, "Missing id in response")
 	local headers,body = response.message:match("(.-)\r\n\r\n(.*)")
 	if not body then
 		headers = response.message
@@ -66,9 +76,11 @@ function app:parse_response(response)
 		parsed.headers[key] = val
 	end)
 	if body then
-		parsed.body = "<BODY OK! (omitted for testing)>"
+		parsed.body = body
 	end
-	return parsed
+	local request = assert(self.requests[parsed.id],"HTTP response with uknown id.")
+	self.requests[parsed.id] = nil
+	return parsed, request
 end
 
 function app:handle_event_dyno_data_from_phone(ev)
@@ -82,5 +94,6 @@ end]]
 
 function app:handle_response(response)
 	--log("HTTP response: "..dynawa.file.serialize(response))
-	log("HTTP response parsed: "..dynawa.file.serialize(self:parse_response(response)))
+	local parsed, request = self:parse_response(response)
+	request.callback(parsed,request)
 end

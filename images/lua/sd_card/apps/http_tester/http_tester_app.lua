@@ -39,9 +39,16 @@ end
 
 function app:make_request(id)
 	local srv_data = assert(self.servers[id])
-	local request = {server = srv_data.server}
+	local request = {address = srv_data.server}
 	request.callback = function(result)
 		self:response(result,id)
+	end
+	if id == "maps" then
+		local x = 51.477222 + math.random()
+		local y = 0 - math.random()
+		local url = "/maps/api/staticmap?center="..x..","..y.."&zoom=14&size=160x110&sensor=false"
+		request.path = url
+		request.address, request.path = "www.fuxoft.cz","/smap2.png"
 	end
 	local http_app = dynawa.app_manager:app_by_id("dynawa.http_request")
 	if not http_app then
@@ -51,18 +58,28 @@ function app:make_request(id)
 	http_app:make_request(request)
 end
 
-function app:response(result,id)
+function app:response(response,id)
 	log("Got response from "..id)
+	if id == "maps" then
+		log("PNG has "..#(response.body).." bytes")
+		if #response.body < 100 then
+			for i=1,#response.body do
+				log("byte at $"..string.format("%02x",i).." = $"..string.format("%02x",string.byte(response.body:sub(i))))
+			end
+		end
+		local bmp = assert(dynawa.bitmap.from_png(response.body),"Cannot parse PNG")
+		self.window:show_bitmap_at(bmp,0,0)
+	end
 end
 
 function app:start_requests()
 	local servers = {}
 	self.servers = servers
-	servers.google = {server = "www.google.com", index = 1}
-	servers.yahoo = {server = "www.yahoo.com", index = 2}
-	servers.kompost = {server = "www.kompost.cz", index = 3}
-	servers.fuxoft = {server = "www.fuxoft.cz", index = 4}
-	servers.novinky = {server = "www.novinky.cz", index = 5}
+	servers.maps = {server = "maps.google.com", index = 1}
+--	servers.yahoo = {server = "www.yahoo.com", index = 2}
+--	servers.kompost = {server = "www.kompost.cz", index = 3}
+--	servers.fuxoft = {server = "www.fuxoft.cz", index = 4}
+--	servers.novinky = {server = "www.novinky.cz", index = 5}
 	self.running = true
 	for id, tbl in pairs(self.servers) do
 		self:make_request(id)
