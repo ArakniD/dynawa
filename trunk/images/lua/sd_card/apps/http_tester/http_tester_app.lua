@@ -7,37 +7,18 @@ function app:display(bitmap, x, y)
 	self.window:show_bitmap_at(bitmap, x, y)
 end
 
-function app:update(message)
-
-
-    dynawa.devices.timers:timed_event{delay = 1000, receiver = self}
-end
-
-function app:handle_event_timed_event(event)
-	self:update(event)
-end
-
 function app:switching_to_back()
 	self.window:pop()
 end
 
 function app:switching_to_front()
 	self.window:push()
-    self:update()
-end
-
-function app:gfx_init()
-	self.window = self:new_window()
-	self.window:fill()
-	self.blocks = {}
-	local x,y = 10,10
-	self.blocks.error = dynawa.bitmap.new(x,y,255,0,0)
-	self.blocks.ok = dynawa.bitmap.new(x,y,0,255,0)
-	self.blocks.working = dynawa.bitmap.new(x,y,255,255,0)
-	self.blocks.clear = dynawa.bitmap.new(x,y,0,0,0)
-end
+	end
 
 function app:make_request(id)
+	if not self.running then
+		return
+	end
 	local srv_data = assert(self.servers[id])
 	local request = {address = srv_data.server}
 	request.callback = function(result)
@@ -56,11 +37,21 @@ function app:make_request(id)
 		return
 	end
 	http_app:make_request(request)
+	self:indicator(srv_data.index,"waiting")
+end
+
+function app:handle_event_timed_event(ev)
+	if not self.running then
+		return
+	end
+	assert(ev.make_request)
+	self:make_request(ev.make_request)
 end
 
 function app:response(response,id)
 	log("Got response from "..id)
-	if id == "maps" then
+	local server = assert(self.servers[id])
+	if id == "#todo maps" then --All of this is temporary hack until Dyno transfer gets fixed.
 		log("PNG has "..#(response.body).." bytes")
 		if #response.body < 100 then
 			for i=1,#response.body do
@@ -70,6 +61,24 @@ function app:response(response,id)
 		local bmp = assert(dynawa.bitmap.from_png(response.body),"Cannot parse PNG")
 		self.window:show_bitmap_at(bmp,0,0)
 	end
+	if response.status == "200 OK" then
+		self:indicator(server.index,"ok")
+	else
+		log("Bad response for "..id..": "..tostring(response.status))
+		self:indicator(server.index,"error")
+	end
+	if not self.running then
+		return
+	end
+	dynawa.devices.timers:timed_event{delay = 3000, receiver = self, make_request = id}
+end
+
+function app:indicator(index,block)
+	assert (index > 0)
+	local x = index * 15 -15
+	local y = 128-10
+	local bmp = assert(self.blocks[block])
+	self.window:show_bitmap_at(bmp,x,y)
 end
 
 function app:start_requests()
@@ -87,7 +96,6 @@ function app:start_requests()
 end
 
 function app:stop_requests()
-	self.servers = nil
 	self.running = nil
 end
 
@@ -115,5 +123,16 @@ function app:handle_event_button(event)
 		end
 	end
 	getmetatable(self).handle_event_button(self,event) --Parent's handler
+end
+
+function app:gfx_init()
+	self.window = self:new_window()
+	self.window:fill()
+	self.blocks = {}
+	local x,y = 10,10
+	self.blocks.error = dynawa.bitmap.new(x,y,255,0,0)
+	self.blocks.ok = dynawa.bitmap.new(x,y,0,255,0)
+	self.blocks.waiting = dynawa.bitmap.new(x,y,255,255,0)
+	self.blocks.clear = dynawa.bitmap.new(x,y,0,0,0)
 end
 

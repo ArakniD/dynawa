@@ -56,28 +56,30 @@ function app:make_request(request)
 end
 
 function app:parse_response(response)
-	if not response.message then
-		return {error = assert(response.error)}
-	end
 	local parsed = {timestamp = dynawa.ticks(), headers = {}}
 	parsed.id = assert(response.id, "Missing id in response")
-	local headers,body = response.message:match("(.-)\r\n\r\n(.*)")
-	if not body then
-		headers = response.message
+	if not response.message then
+		assert(response.error,"Response without message must have error code")
+	else
+		local headers,body = response.message:match("(.-)\r\n\r\n(.*)")
+		if not body then
+			headers = response.message
+		end
+		local status_line,headers = headers:match("(.-)\r\n(.*)")
+		assert(headers,"Cannot parse responses headers")
+		parsed.protocol, parsed.status = status_line:match("(.-) (.*)")
+		assert(#parsed.status >= 3, "No response status")
+		headers = headers .. "\r\n"
+		headers:gsub("(.-)\r\n", function(line)
+			local key, val = line:match("(.-): (.*)")
+			assert(val, "Cannot match value in "..line)
+			parsed.headers[key] = val
+		end)
+		if body then
+			parsed.body = body
+		end
 	end
-	local status_line,headers = headers:match("(.-)\r\n(.*)")
-	assert(headers,"Cannot parse responses headers")
-	parsed.protocol, parsed.status = status_line:match("(.-) (.*)")
-	assert(#parsed.status >= 3, "No response status")
-	headers = headers .. "\r\n"
-	headers:gsub("(.-)\r\n", function(line)
-		local key, val = line:match("(.-): (.*)")
-		assert(val, "Cannot match value in "..line)
-		parsed.headers[key] = val
-	end)
-	if body then
-		parsed.body = body
-	end
+--	log("id = "..parsed.id)
 	local request = assert(self.requests[parsed.id],"HTTP response with uknown id.")
 	self.requests[parsed.id] = nil
 	return parsed, request
