@@ -110,7 +110,7 @@ void scrWriteRect(scr_coord_t left_x, scr_coord_t top_y, scr_coord_t right_x, sc
   volatile oled_access_cmd *pOLED;
   uint32_t writes,i;
     
-  TRACE_ALL("[SCR TRG:"); 
+  //TRACE_ALL("[SCR TRG:"); 
   if (scrbuf==NULL)
   {
     //direct to screen

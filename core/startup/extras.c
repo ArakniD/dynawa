@@ -13,6 +13,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+#include "usb.h"
 
 void *byte_memcpy(void *dest, const void *src, size_t n) {
     int i;
@@ -376,6 +377,10 @@ void syscallsInit (void)
 int _mkdir (const char *path, mode_t mode __attribute__ ((unused)))
 {
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
+
     FRESULT f;
 
     if ((f = f_mkdir (path)) != FR_OK)
@@ -391,6 +396,9 @@ int _mkdir (const char *path, mode_t mode __attribute__ ((unused)))
 int _chmod (const char *path, mode_t mode)
 {
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return EIO;
+    }
     FRESULT f;
 
     if ((f = f_chmod (path, (mode & S_IWUSR) ? 0 : AM_RDO, AM_RDO)) != FR_OK)
@@ -434,6 +442,9 @@ _ssize_t _read (int fd, void *ptr, size_t len)
 
                    bytesUnRead = len - i;
                    */
+                if (usb_get_mode() != USB_MODE_CDC) {
+                    return set_errno (EIO);
+                }
                 int bytesRead = UsbSerial_read(ptr, len, xBlockTime);
                 bytesUnRead = len - bytesRead;
             }
@@ -478,6 +489,9 @@ _ssize_t _read (int fd, void *ptr, size_t len)
 
                    bytesUnRead = len - i;
                    */
+                if (usb_get_mode() != USB_MODE_CDC) {
+                    return set_errno (EIO);
+                }
                 int bytesRead = UsbSerial_read(ptr, len, xBlockTime);
                 bytesUnRead = len - bytesRead;
 #else
@@ -489,6 +503,9 @@ _ssize_t _read (int fd, void *ptr, size_t len)
         default :
             {
 #ifdef CFG_FATFS
+                if (usb_get_mode() == USB_MODE_MSD) {
+                    return set_errno (EIO);
+                }
                 if (openfiles [slot].fatfsFCB)
                 {
                     FRESULT f;
@@ -524,6 +541,9 @@ int _lseek (int fd, int ptr, int dir)
         return set_errno (EBADF);
 
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
     if (dir == SEEK_SET)
         f = f_lseek (openfiles [slot].fatfsFCB, ptr); 
     else if (dir == SEEK_CUR)
@@ -573,6 +593,9 @@ _ssize_t _write (int fd, const void *ptr, size_t len)
 
         case MONITOR_STDOUT :
             {
+            if (usb_get_mode() != USB_MODE_CDC) {
+                return set_errno (EIO);
+            }
             int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
             //int bytesWritten = len;
             bytesUnWritten = len - bytesWritten;
@@ -688,15 +711,21 @@ bytesUnWritten = len - i;
 
     bytesUnWritten = len - i;
     */
-    int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
-    //int bytesWritten = len;
-    bytesUnWritten = len - bytesWritten;
-    }
-    break;
+        if (usb_get_mode() != USB_MODE_CDC) {
+            return set_errno (EIO);
+        }
+        int bytesWritten = UsbSerial_write(ptr, len, xBlockTime);
+        //int bytesWritten = len;
+        bytesUnWritten = len - bytesWritten;
+        }
+        break;
 
     default :
     {
     #ifdef CFG_FATFS
+        if (usb_get_mode() == USB_MODE_MSD) {
+            return set_errno (EIO);
+        }
         if (openfiles [slot].fatfsFCB)
         {
             FRESULT f;
@@ -748,6 +777,9 @@ int _open (const char *path, int flags, int mode)
     else
     {
 #ifdef CFG_FATFS
+        if (usb_get_mode() == USB_MODE_MSD) {
+            return set_errno (EIO);
+        }
         UCHAR fatfsFlags = FA_OPEN_EXISTING;
         FRESULT f;
 
@@ -831,6 +863,9 @@ int _close (int fd)
     openfiles [slot].handle = -1;
 
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
     if (openfiles [slot].fatfsFCB)
     {
         FRESULT f;
@@ -924,6 +959,9 @@ int _stat (const char *fname, struct stat *st)
 {
     TRACE_SYS("_stat %s\r\n", fname);
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
     FRESULT f;
     FILINFO fi;
 
@@ -962,6 +1000,9 @@ int _link (void)
 int _unlink (const char *path)
 {
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
     FRESULT f;
 
     if ((f = f_unlink (path)) != FR_OK)
@@ -1049,6 +1090,9 @@ int _system (const char *s)
 int _rename (const char *oldpath, const char *newpath)
 {
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
     FRESULT f;
 
     if ((f = f_rename (oldpath, newpath)))
@@ -1075,6 +1119,9 @@ int rename (const char *oldpath, const char *newpath)
 void _sync (void)
 {
 #ifdef CFG_FATFS
+    if (usb_get_mode() == USB_MODE_MSD) {
+        return set_errno (EIO);
+    }
     int slot;
 
     for (slot = 0; slot < MAX_OPEN_FILES; slot++)
