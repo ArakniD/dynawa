@@ -463,7 +463,7 @@ LOAD /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../ar
 LOAD /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libc.a
 END GROUP
 
-.fixed          0x00100000    0x17534
+.fixed          0x00100000    0x1751c
                 0x00100000                . = ALIGN (0x4)
                 0x00100000                _sfixed = .
  *(.text*)
@@ -757,214 +757,214 @@ END GROUP
  .text.scrInit  0x0010e834       0x94 obj/flash-bl_screen.o
                 0x0010e834                scrInit
  .text.scrWriteRect
-                0x0010e8c8      0x42c obj/flash-bl_screen.o
+                0x0010e8c8      0x414 obj/flash-bl_screen.o
                 0x0010e8c8                scrWriteRect
  .text.scrWriteBitmap
-                0x0010ecf4      0x470 obj/flash-bl_screen.o
-                0x0010ecf4                scrWriteBitmap
+                0x0010ecdc      0x470 obj/flash-bl_screen.o
+                0x0010ecdc                scrWriteBitmap
  .text.oledWriteCommand
-                0x0010f164       0x6c obj/flash-bl_oled.o
-                0x0010f164                oledWriteCommand
+                0x0010f14c       0x6c obj/flash-bl_oled.o
+                0x0010f14c                oledWriteCommand
  .text.oledInitHw
-                0x0010f1d0      0x41c obj/flash-bl_oled.o
-                0x0010f1d0                oledInitHw
+                0x0010f1b8      0x41c obj/flash-bl_oled.o
+                0x0010f1b8                oledInitHw
  .text.fontSetCharPos
-                0x0010f5ec       0x48 obj/flash-bl_font.o
-                0x0010f5ec                fontSetCharPos
+                0x0010f5d4       0x48 obj/flash-bl_font.o
+                0x0010f5d4                fontSetCharPos
  .text.fontPutChar
-                0x0010f634       0x34 obj/flash-bl_font.o
-                0x0010f634                fontPutChar
+                0x0010f61c       0x34 obj/flash-bl_font.o
+                0x0010f61c                fontPutChar
  .text.fontPutChar6x8
-                0x0010f668      0x228 obj/flash-bl_font.o
-                0x0010f668                fontPutChar6x8
+                0x0010f650      0x228 obj/flash-bl_font.o
+                0x0010f650                fontPutChar6x8
  .text.fontPutChar10x14
-                0x0010f890      0x2dc obj/flash-bl_font.o
-                0x0010f890                fontPutChar10x14
+                0x0010f878      0x2dc obj/flash-bl_font.o
+                0x0010f878                fontPutChar10x14
  .text.winMainSelectCallback
-                0x0010fb6c      0x4a0 obj/flash-bl_blconfgui.o
-                0x0010fb6c                winMainSelectCallback
+                0x0010fb54      0x4a0 obj/flash-bl_blconfgui.o
+                0x0010fb54                winMainSelectCallback
  .text.winImageSelectCallback
-                0x0011000c      0x1cc obj/flash-bl_blconfgui.o
-                0x0011000c                winImageSelectCallback
+                0x0010fff4      0x1cc obj/flash-bl_blconfgui.o
+                0x0010fff4                winImageSelectCallback
  .text.winMiscSelectCallback
-                0x001101d8       0xc0 obj/flash-bl_blconfgui.o
-                0x001101d8                winMiscSelectCallback
+                0x001101c0       0xc0 obj/flash-bl_blconfgui.o
+                0x001101c0                winMiscSelectCallback
  .text.winBtnSelectCallback
-                0x00110298       0xc0 obj/flash-bl_blconfgui.o
-                0x00110298                winBtnSelectCallback
+                0x00110280       0xc0 obj/flash-bl_blconfgui.o
+                0x00110280                winBtnSelectCallback
  .text.winPostSelectCallback
-                0x00110358       0x80 obj/flash-bl_blconfgui.o
-                0x00110358                winPostSelectCallback
+                0x00110340       0x80 obj/flash-bl_blconfgui.o
+                0x00110340                winPostSelectCallback
  .text.winCancelBtnCallback
-                0x001103d8       0x54 obj/flash-bl_blconfgui.o
-                0x001103d8                winCancelBtnCallback
+                0x001103c0       0x54 obj/flash-bl_blconfgui.o
+                0x001103c0                winCancelBtnCallback
  .text.winEPropSelectCallback
-                0x0011042c      0x394 obj/flash-bl_blconfgui.o
-                0x0011042c                winEPropSelectCallback
+                0x00110414      0x394 obj/flash-bl_blconfgui.o
+                0x00110414                winEPropSelectCallback
  .text.winQrySelectCallback
-                0x001107c0       0xb8 obj/flash-bl_blconfgui.o
-                0x001107c0                winQrySelectCallback
+                0x001107a8       0xb8 obj/flash-bl_blconfgui.o
+                0x001107a8                winQrySelectCallback
  .text.uguiPrintHWstat
-                0x00110878      0x15c obj/flash-bl_blconfgui.o
-                0x00110878                uguiPrintHWstat
+                0x00110860      0x15c obj/flash-bl_blconfgui.o
+                0x00110860                uguiPrintHWstat
  .text.blConfGuiInit
-                0x001109d4     0x159c obj/flash-bl_blconfgui.o
-                0x001109d4                blConfGuiInit
+                0x001109bc     0x159c obj/flash-bl_blconfgui.o
+                0x001109bc                blConfGuiInit
  .text.searchImages
-                0x00111f70      0x2a8 obj/flash-bl_blconfgui.o
-                0x00111f70                searchImages
+                0x00111f58      0x2a8 obj/flash-bl_blconfgui.o
+                0x00111f58                searchImages
  .text.readBootImage
-                0x00112218      0x160 obj/flash-bl_blconfgui.o
-                0x00112218                readBootImage
+                0x00112200      0x160 obj/flash-bl_blconfgui.o
+                0x00112200                readBootImage
  .text.blConfig
-                0x00112378      0x258 obj/flash-bl_blconfgui.o
-                0x00112378                blConfig
+                0x00112360      0x258 obj/flash-bl_blconfgui.o
+                0x00112360                blConfig
  .text.readSetupConf
-                0x001125d0      0x494 obj/flash-bl_nvmrc.o
-                0x001125d0                readSetupConf
+                0x001125b8      0x494 obj/flash-bl_nvmrc.o
+                0x001125b8                readSetupConf
  .text.writeSetupConf
-                0x00112a64      0x2ec obj/flash-bl_nvmrc.o
-                0x00112a64                writeSetupConf
+                0x00112a4c      0x2ec obj/flash-bl_nvmrc.o
+                0x00112a4c                writeSetupConf
  .text.resetByRstCtrl
-                0x00112d50       0x6c obj/flash-bl_nvmrc.o
-                0x00112d50                resetByRstCtrl
- .text.getUID   0x00112dbc       0x24 obj/flash-bl_nvmrc.o
-                0x00112dbc                getUID
+                0x00112d38       0x6c obj/flash-bl_nvmrc.o
+                0x00112d38                resetByRstCtrl
+ .text.getUID   0x00112da4       0x24 obj/flash-bl_nvmrc.o
+                0x00112da4                getUID
  .text.getBatVoltage
-                0x00112de0      0x10c obj/flash-bl_nvmrc.o
-                0x00112de0                getBatVoltage
+                0x00112dc8      0x10c obj/flash-bl_nvmrc.o
+                0x00112dc8                getBatVoltage
  .text.ugd_rect
-                0x00112eec      0x108 obj/flash-bl_ugscrdrv.o
-                0x00112eec                ugd_rect
+                0x00112ed4      0x108 obj/flash-bl_ugscrdrv.o
+                0x00112ed4                ugd_rect
  .text.ugd_bitmap
-                0x00112ff4       0x94 obj/flash-bl_ugscrdrv.o
-                0x00112ff4                ugd_bitmap
+                0x00112fdc       0x94 obj/flash-bl_ugscrdrv.o
+                0x00112fdc                ugd_bitmap
  .text.ugd_putchar
-                0x00113088       0xa8 obj/flash-bl_ugscrdrv.o
-                0x00113088                ugd_putchar
+                0x00113070       0xa8 obj/flash-bl_ugscrdrv.o
+                0x00113070                ugd_putchar
  .text.ugd_charh
-                0x00113130       0x58 obj/flash-bl_ugscrdrv.o
-                0x00113130                ugd_charh
+                0x00113118       0x58 obj/flash-bl_ugscrdrv.o
+                0x00113118                ugd_charh
  .text.ugd_print
-                0x00113188       0xd4 obj/flash-bl_ugscrdrv.o
-                0x00113188                ugd_print
- .text.uguiBtn  0x0011325c      0x4b0 obj/flash-bl_microgui.o
-                0x0011325c                uguiBtn
+                0x00113170       0xd4 obj/flash-bl_ugscrdrv.o
+                0x00113170                ugd_print
+ .text.uguiBtn  0x00113244      0x4b0 obj/flash-bl_microgui.o
+                0x00113244                uguiBtn
  .text.uguiLabel
-                0x0011370c      0x138 obj/flash-bl_microgui.o
-                0x0011370c                uguiLabel
+                0x001136f4      0x138 obj/flash-bl_microgui.o
+                0x001136f4                uguiLabel
  .text.itemprint.2553
-                0x00113844      0x2fc obj/flash-bl_microgui.o
+                0x0011382c      0x2fc obj/flash-bl_microgui.o
  .text.uguiListbox
-                0x00113b40      0x49c obj/flash-bl_microgui.o
-                0x00113b40                uguiListbox
+                0x00113b28      0x49c obj/flash-bl_microgui.o
+                0x00113b28                uguiListbox
  .text.redraw.2556
-                0x00113fdc      0x468 obj/flash-bl_microgui.o
- .text.uguiWin  0x00114444      0x2ac obj/flash-bl_microgui.o
-                0x00114444                uguiWin
+                0x00113fc4      0x468 obj/flash-bl_microgui.o
+ .text.uguiWin  0x0011442c      0x2ac obj/flash-bl_microgui.o
+                0x0011442c                uguiWin
  .text.uguiWinAddObj
-                0x001146f0       0xb4 obj/flash-bl_microgui.o
-                0x001146f0                uguiWinAddObj
+                0x001146d8       0xb4 obj/flash-bl_microgui.o
+                0x001146d8                uguiWinAddObj
  .text.uguiWriteEvt
-                0x001147a4       0x68 obj/flash-bl_microgui.o
-                0x001147a4                uguiWriteEvt
+                0x0011478c       0x68 obj/flash-bl_microgui.o
+                0x0011478c                uguiWriteEvt
  .text.uguiReadEvt
-                0x0011480c       0x90 obj/flash-bl_microgui.o
-                0x0011480c                uguiReadEvt
+                0x001147f4       0x90 obj/flash-bl_microgui.o
+                0x001147f4                uguiReadEvt
  .text.uguiContextAddWin
-                0x0011489c       0x90 obj/flash-bl_microgui.o
-                0x0011489c                uguiContextAddWin
+                0x00114884       0x90 obj/flash-bl_microgui.o
+                0x00114884                uguiContextAddWin
  .text.uguiContextSwitch
-                0x0011492c       0x94 obj/flash-bl_microgui.o
-                0x0011492c                uguiContextSwitch
+                0x00114914       0x94 obj/flash-bl_microgui.o
+                0x00114914                uguiContextSwitch
  .text.uguiLastContext
-                0x001149c0       0x24 obj/flash-bl_microgui.o
-                0x001149c0                uguiLastContext
+                0x001149a8       0x24 obj/flash-bl_microgui.o
+                0x001149a8                uguiLastContext
  .text.uguiContextWrapper
-                0x001149e4       0x6c obj/flash-bl_microgui.o
-                0x001149e4                uguiContextWrapper
+                0x001149cc       0x6c obj/flash-bl_microgui.o
+                0x001149cc                uguiContextWrapper
  .text.uguiInitContext
-                0x00114a50       0x64 obj/flash-bl_microgui.o
-                0x00114a50                uguiInitContext
+                0x00114a38       0x64 obj/flash-bl_microgui.o
+                0x00114a38                uguiInitContext
  .text.usb_irq_service
-                0x00114ab4      0x3bc obj/flash-bl_usb_irq.o
-                0x00114ab4                usb_irq_service
+                0x00114a9c      0x3bc obj/flash-bl_usb_irq.o
+                0x00114a9c                usb_irq_service
  .text.timer_int
-                0x00114e70      0x104 obj/flash-bl_time.o
-                0x00114e70                timer_int
+                0x00114e58      0x104 obj/flash-bl_time.o
+                0x00114e58                timer_int
  .text.timer_init
-                0x00114f74       0xa4 obj/flash-bl_time.o
-                0x00114f74                timer_init
- .text          0x00115018      0x110 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivsi3.o)
-                0x00115018                __udivsi3
-                0x00115018                __aeabi_uidiv
-                0x00115110                __aeabi_uidivmod
- .text          0x00115128      0x140 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_divsi3.o)
-                0x00115128                __aeabi_idiv
-                0x00115128                __divsi3
-                0x00115250                __aeabi_idivmod
- .text          0x00115268       0xcc /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_umodsi3.o)
-                0x00115268                __umodsi3
- .text          0x00115334        0x4 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_dvmd_tls.o)
-                0x00115334                __aeabi_ldiv0
-                0x00115334                __div0
-                0x00115334                __aeabi_idiv0
- .text          0x00115338      0x444 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivdi3.o)
-                0x00115338                __udivdi3
- .text          0x0011577c       0x48 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_clzsi2.o)
-                0x0011577c                __clzsi2
- .text          0x001157c4      0x19c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strchr.o)
-                0x001157c4                strchr
- .text          0x00115960       0x9c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strlen.o)
-                0x00115960                strlen
- .text          0x001159fc       0xe8 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strncpy.o)
-                0x001159fc                strncpy
- .text          0x00115ae4       0x4c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strnlen.o)
-                0x00115ae4                strnlen
- .text          0x00115b30      0x84c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strstr.o)
-                0x00116000                strstr
- .text          0x0011637c       0xd4 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memchr.o)
-                0x0011637c                memchr
- .text          0x00116450       0xa8 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcmp.o)
-                0x00116450                memcmp
+                0x00114f5c       0xa4 obj/flash-bl_time.o
+                0x00114f5c                timer_init
+ .text          0x00115000      0x110 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivsi3.o)
+                0x00115000                __udivsi3
+                0x00115000                __aeabi_uidiv
+                0x001150f8                __aeabi_uidivmod
+ .text          0x00115110      0x140 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_divsi3.o)
+                0x00115110                __aeabi_idiv
+                0x00115110                __divsi3
+                0x00115238                __aeabi_idivmod
+ .text          0x00115250       0xcc /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_umodsi3.o)
+                0x00115250                __umodsi3
+ .text          0x0011531c        0x4 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_dvmd_tls.o)
+                0x0011531c                __aeabi_ldiv0
+                0x0011531c                __div0
+                0x0011531c                __aeabi_idiv0
+ .text          0x00115320      0x444 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivdi3.o)
+                0x00115320                __udivdi3
+ .text          0x00115764       0x48 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_clzsi2.o)
+                0x00115764                __clzsi2
+ .text          0x001157ac      0x19c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strchr.o)
+                0x001157ac                strchr
+ .text          0x00115948       0x9c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strlen.o)
+                0x00115948                strlen
+ .text          0x001159e4       0xe8 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strncpy.o)
+                0x001159e4                strncpy
+ .text          0x00115acc       0x4c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strnlen.o)
+                0x00115acc                strnlen
+ .text          0x00115b18      0x84c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strstr.o)
+                0x00115fe8                strstr
+ .text          0x00116364       0xd4 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memchr.o)
+                0x00116364                memchr
+ .text          0x00116438       0xa8 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcmp.o)
+                0x00116438                memcmp
  *(.rodata*)
- .rodata        0x001164f8      0x2e0 obj/flash-bl_main.o
- .rodata        0x001167d8       0x10 obj/flash-bl_ff.o
- .rodata        0x001167e8       0x1c obj/flash-bl_fat.o
- .rodata        0x00116804       0x14 obj/flash-bl_sdcard.o
- .rodata        0x00116818       0x9c obj/flash-bl_usb_dsc.o
-                0x00116818                sDeviceDescriptor
-                0x0011682c                sConfigurationDescriptor
-                0x0011684c                sDeviceQualifierDescriptor
-                0x00116858                sLanguageID
-                0x0011685c                pManufacturer
-                0x00116874                pProduct
-                0x0011688c                pSerial
-                0x001168a4                sDescriptors
- .rodata        0x001168b4       0x60 obj/flash-bl_usb_lun.o
- .rodata        0x00116914        0x4 obj/flash-bl_usb_sbc_func.o
- .rodata        0x00116918       0x14 obj/flash-bl_screen.o
- .rodata        0x0011692c      0x780 obj/flash-bl_font.o
-                0x0011692c                pCharset10x14
- .rodata        0x001170ac      0x3e4 obj/flash-bl_blconfgui.o
- .rodata        0x00117490       0x20 obj/flash-bl_nvmrc.o
- .rodata        0x001174b0       0x84 obj/flash-bl_microgui.o
-                0x00117534                . = ALIGN (0x4)
-                0x00117534                _efixed = .
+ .rodata        0x001164e0      0x2e0 obj/flash-bl_main.o
+ .rodata        0x001167c0       0x10 obj/flash-bl_ff.o
+ .rodata        0x001167d0       0x1c obj/flash-bl_fat.o
+ .rodata        0x001167ec       0x14 obj/flash-bl_sdcard.o
+ .rodata        0x00116800       0x9c obj/flash-bl_usb_dsc.o
+                0x00116800                sDeviceDescriptor
+                0x00116814                sConfigurationDescriptor
+                0x00116834                sDeviceQualifierDescriptor
+                0x00116840                sLanguageID
+                0x00116844                pManufacturer
+                0x0011685c                pProduct
+                0x00116874                pSerial
+                0x0011688c                sDescriptors
+ .rodata        0x0011689c       0x60 obj/flash-bl_usb_lun.o
+ .rodata        0x001168fc        0x4 obj/flash-bl_usb_sbc_func.o
+ .rodata        0x00116900       0x14 obj/flash-bl_screen.o
+ .rodata        0x00116914      0x780 obj/flash-bl_font.o
+                0x00116914                pCharset10x14
+ .rodata        0x00117094      0x3e4 obj/flash-bl_blconfgui.o
+ .rodata        0x00117478       0x20 obj/flash-bl_nvmrc.o
+ .rodata        0x00117498       0x84 obj/flash-bl_microgui.o
+                0x0011751c                . = ALIGN (0x4)
+                0x0011751c                _efixed = .
 
-.glue_7         0x00117534        0x0
+.glue_7         0x0011751c        0x0
  .glue_7        0x00000000        0x0 linker stubs
 
-.glue_7t        0x00117534        0x0
+.glue_7t        0x0011751c        0x0
  .glue_7t       0x00000000        0x0 linker stubs
 
-.vfp11_veneer   0x00117534        0x0
+.vfp11_veneer   0x0011751c        0x0
  .vfp11_veneer  0x00000000        0x0 linker stubs
 
-.v4_bx          0x00117534        0x0
+.v4_bx          0x0011751c        0x0
  .v4_bx         0x00000000        0x0 linker stubs
 
-.relocate       0x00200000     0x11c0 load address 0x00117534
+.relocate       0x00200000     0x11c0 load address 0x0011751c
                 0x00200000                . = ALIGN (0x4)
                 0x00200000                _srelocate = .
  *(.vectors)
@@ -1024,7 +1024,7 @@ END GROUP
                 0x002011c0                . = ALIGN (0x4)
                 0x002011c0                _erelocate = .
 
-.bss            0x002011c0     0x252a load address 0x001186f4
+.bss            0x002011c0     0x252a load address 0x001186dc
                 0x002011c0                _szero = .
  *(.bss)
  .bss           0x002011c0       0x2c obj/flash-bl_main.o
@@ -1315,7 +1315,7 @@ OUTPUT(bin/bl-ev2-rev0-btwwev-2-at91sam7se512-flash-bl.elf elf32-littlearm)
  .comment       0x00000000       0x12 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcmp.o)
  .comment       0x00000000       0x12 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-reent.o)
 
-.debug_line     0x00000000     0x5426
+.debug_line     0x00000000     0x5425
  .debug_line    0x00000000       0x9d obj/flash-bl_board_cstartup-bl.o
  .debug_line    0x0000009d      0x2ce obj/flash-bl_main.o
  .debug_line    0x0000036b      0x154 obj/flash-bl_board_lowlevel.o
@@ -1335,42 +1335,42 @@ OUTPUT(bin/bl-ev2-rev0-btwwev-2-at91sam7se512-flash-bl.elf elf32-littlearm)
  .debug_line    0x0000235d      0x12c obj/flash-bl_usb_std.o
  .debug_line    0x00002489       0xc7 obj/flash-bl_delay.o
  .debug_line    0x00002550      0x1d0 obj/flash-bl_rprintf.o
- .debug_line    0x00002720      0x1d8 obj/flash-bl_screen.o
- .debug_line    0x000028f8      0x168 obj/flash-bl_oled.o
- .debug_line    0x00002a60      0x178 obj/flash-bl_font.o
- .debug_line    0x00002bd8      0x456 obj/flash-bl_blconfgui.o
- .debug_line    0x0000302e      0x153 obj/flash-bl_nvmrc.o
- .debug_line    0x00003181      0x16d obj/flash-bl_ugscrdrv.o
- .debug_line    0x000032ee      0x336 obj/flash-bl_microgui.o
- .debug_line    0x00003624       0x53 obj/flash-bl_abort.o
- .debug_line    0x00003677       0xda obj/flash-bl_interrupt_utils.o
- .debug_line    0x00003751       0xbe obj/flash-bl_usb_irq.o
- .debug_line    0x0000380f      0x113 obj/flash-bl_time.o
- .debug_line    0x00003922       0x96 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivsi3.o)
- .debug_line    0x000039b8       0xa2 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_divsi3.o)
- .debug_line    0x00003a5a       0x7f /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_umodsi3.o)
- .debug_line    0x00003ad9       0x6a /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_dvmd_tls.o)
- .debug_line    0x00003b43       0xd2 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivdi3.o)
- .debug_line    0x00003c15       0x77 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_clzsi2.o)
- .debug_line    0x00003c8c       0x96 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-ctype_.o)
- .debug_line    0x00003d22      0x15e /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-malloc.o)
- .debug_line    0x00003e80      0x25b /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-mallocr.o)
- .debug_line    0x000040db      0x15f /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcpy.o)
- .debug_line    0x0000423a      0x14e /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memset.o)
- .debug_line    0x00004388      0x113 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-mlock.o)
- .debug_line    0x0000449b      0x154 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-sbrkr.o)
- .debug_line    0x000045ef       0xce /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strchr.o)
- .debug_line    0x000046bd       0xbc /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strcmp.o)
- .debug_line    0x00004779       0xb4 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strcpy.o)
- .debug_line    0x0000482d      0x109 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strlen.o)
- .debug_line    0x00004936      0x120 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strncpy.o)
- .debug_line    0x00004a56       0xfe /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strnlen.o)
- .debug_line    0x00004b54      0x2ac /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strstr.o)
- .debug_line    0x00004e00      0x19f /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-freer.o)
- .debug_line    0x00004f9f      0x101 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-impure.o)
- .debug_line    0x000050a0      0x121 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memchr.o)
- .debug_line    0x000051c1      0x11c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcmp.o)
- .debug_line    0x000052dd      0x149 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-reent.o)
+ .debug_line    0x00002720      0x1d7 obj/flash-bl_screen.o
+ .debug_line    0x000028f7      0x168 obj/flash-bl_oled.o
+ .debug_line    0x00002a5f      0x178 obj/flash-bl_font.o
+ .debug_line    0x00002bd7      0x456 obj/flash-bl_blconfgui.o
+ .debug_line    0x0000302d      0x153 obj/flash-bl_nvmrc.o
+ .debug_line    0x00003180      0x16d obj/flash-bl_ugscrdrv.o
+ .debug_line    0x000032ed      0x336 obj/flash-bl_microgui.o
+ .debug_line    0x00003623       0x53 obj/flash-bl_abort.o
+ .debug_line    0x00003676       0xda obj/flash-bl_interrupt_utils.o
+ .debug_line    0x00003750       0xbe obj/flash-bl_usb_irq.o
+ .debug_line    0x0000380e      0x113 obj/flash-bl_time.o
+ .debug_line    0x00003921       0x96 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivsi3.o)
+ .debug_line    0x000039b7       0xa2 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_divsi3.o)
+ .debug_line    0x00003a59       0x7f /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_umodsi3.o)
+ .debug_line    0x00003ad8       0x6a /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_dvmd_tls.o)
+ .debug_line    0x00003b42       0xd2 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_udivdi3.o)
+ .debug_line    0x00003c14       0x77 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/libgcc.a(_clzsi2.o)
+ .debug_line    0x00003c8b       0x96 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-ctype_.o)
+ .debug_line    0x00003d21      0x15e /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-malloc.o)
+ .debug_line    0x00003e7f      0x25b /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-mallocr.o)
+ .debug_line    0x000040da      0x15f /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcpy.o)
+ .debug_line    0x00004239      0x14e /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memset.o)
+ .debug_line    0x00004387      0x113 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-mlock.o)
+ .debug_line    0x0000449a      0x154 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-sbrkr.o)
+ .debug_line    0x000045ee       0xce /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strchr.o)
+ .debug_line    0x000046bc       0xbc /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strcmp.o)
+ .debug_line    0x00004778       0xb4 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strcpy.o)
+ .debug_line    0x0000482c      0x109 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strlen.o)
+ .debug_line    0x00004935      0x120 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strncpy.o)
+ .debug_line    0x00004a55       0xfe /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strnlen.o)
+ .debug_line    0x00004b53      0x2ac /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-strstr.o)
+ .debug_line    0x00004dff      0x19f /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-freer.o)
+ .debug_line    0x00004f9e      0x101 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-impure.o)
+ .debug_line    0x0000509f      0x121 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memchr.o)
+ .debug_line    0x000051c0      0x11c /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-memcmp.o)
+ .debug_line    0x000052dc      0x149 /usr/local/arm-elf-toolchain/gcc-4.4.3/lib/gcc/arm-elf/4.4.3/../../../../arm-elf/lib/libg.a(lib_a-reent.o)
 
 .debug_info     0x00000000    0x13bdf
  .debug_info    0x00000000       0x79 obj/flash-bl_board_cstartup-bl.o

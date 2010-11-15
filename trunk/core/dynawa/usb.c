@@ -30,6 +30,10 @@ static Io usb_io;
 bool usb_mode_cdc_enabled = true;
 int usb_mode = USB_MODE_NONE;   // USB_MODE_CDC, USB_MODE_MSD
 
+int usb_get_mode() {
+    return usb_mode;
+}
+
 //------------------------------------------------------------------------------
 /// Re-implemented callback, invoked when a new USB Request is received.
 //------------------------------------------------------------------------------
