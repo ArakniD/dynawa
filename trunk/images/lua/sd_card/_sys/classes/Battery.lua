@@ -1,9 +1,9 @@
 local class = Class("Battery", Class.EventSource)
 
 local function log_file(txt)
-	--[[if true then
+	if true then
 		return
-	end]]
+	end
 	local time = os.date("*t")
 	local timetxt = string.format("%02d:%02d:%02d", time.hour, time.min, time.sec)
 	local fd = assert(io.open("/battery_log.txt","a"))
