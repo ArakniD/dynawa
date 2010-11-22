@@ -20,7 +20,7 @@ function app:make_request(id)
 		return
 	end
 	local srv_data = assert(self.servers[id])
-	local request = {address = srv_data.server, path = srv_data.path}
+	local request = {address = srv_data.server, path = srv_data.path, size_limit = 10000, timeout = 10000}
 	request.callback = function(result)
 		self:response(result,id)
 	end
@@ -35,6 +35,7 @@ function app:make_request(id)
 		log("HTTP Request app not available!")
 		return
 	end
+	log("**** Sending HTTP tester request for: "..id)
 	local status = http_app:make_request(request)
 	if not status then
 		self:indicator(srv_data.index,"error")

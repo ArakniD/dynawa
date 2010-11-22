@@ -47,7 +47,7 @@ function app:make_request(request)
 		log("HTTP Requester: Dyno doesn't have any activity whose status is 'connected'.") --#todo
 		return nil, "Dyno not connected"
 	end 
-	log("**** Sending http request "..request.id)
+	--log("**** Sending http request "..request.id)
 	request.bdaddr = act.bdaddr
 	self.requests[request.id] = request
 	local stat,err = dyno:bdaddr_send_data(act.bdaddr,data)

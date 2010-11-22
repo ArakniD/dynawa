@@ -172,7 +172,7 @@ function app:activity_chunk_received(activity, chunk)
 			table.insert(activity.receiver.pieces, piece)
 			assert(#activity.receiver.pieces == piece_n, "Wrong piece_n: "..piece_n)
 		end
-		log("Acknowledging piece "..piece_n.." of "..of..", file id "..safe_string(file_id))
+		--log("Acknowledging piece "..piece_n.." of "..of..", file id "..safe_string(file_id))
 		local ack = table.concat({"A",file_id,piece_n_str})
 		self:activity_send_chunk(activity, ack)
 		if piece_n == of then --binstring is complete
@@ -353,7 +353,7 @@ end
 function app:activity_send_piece(activity)
 	assert(activity.sender.pieces)
 	local piece = assert(table.remove(activity.sender.pieces, 1))
-	log("Sending piece #"..string.byte(piece:sub(6)).." of "..string.byte(piece:sub(8)))
+	--log("Sending piece #"..string.byte(piece:sub(6)).." of "..string.byte(piece:sub(8)))
 	activity.sender.waiting_for_ack = "A"..piece:sub(2,6)
 	self:activity_send_chunk(activity, piece)
 end
