@@ -256,9 +256,11 @@ function app:handle_event_bluetooth(event)
 end
 
 function app:handle_event_dyno_status_changed(event)
+	--log("clock: dyno status changed")
 	local acts = assert(event.activities)
 	local connecting = false
 	for bdaddr, act in pairs(acts) do
+		--log("act.status in clock = "..act.status)
 		if act.status == "connected" then
 			self:display_dyno_icon("red")
 			return

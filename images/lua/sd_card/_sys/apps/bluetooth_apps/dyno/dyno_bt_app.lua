@@ -270,7 +270,7 @@ function app:handle_event_socket_connected(socket)
 	socket.activity.reconnect_delay = nil
 	self:info("Succesfully connected to "..socket.activity.name)
 	self:activity_send_data(socket.activity,"HELLO")
-	--self:status_changed()
+	self:status_changed()
 end
 
 function app:send_data_test(data)
