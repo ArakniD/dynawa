@@ -30,6 +30,7 @@ function app:make_request(request)
 	data.address = request.address
 	data.port = request.port
 	data.timeout = request.timeout
+	data.size_limit = request.size_limit
 	data.id = request.id
 	local headers_lines = {}
 	for k,v in pairs(request.headers) do

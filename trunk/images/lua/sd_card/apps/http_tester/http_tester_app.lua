@@ -20,7 +20,7 @@ function app:make_request(id)
 		return
 	end
 	local srv_data = assert(self.servers[id])
-	local request = {address = srv_data.server, path = srv_data.path, size_limit = 10000, timeout = 10000}
+	local request = {address = srv_data.server, path = srv_data.path, size_limit = 30000, timeout = 10000}
 	request.callback = function(result)
 		self:response(result,id)
 	end
