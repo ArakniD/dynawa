@@ -159,7 +159,10 @@ function app:handle_event_socket_data(socket, data_in)
 end
 
 function app:activity_chunk_received(activity, chunk)
-	local socket = assert(activity.socket)
+	if not activity.socket then --Closed before the chunk was received
+		return
+	end
+	local socket = activity.socket
 	--log("Chunk is "..#chunk.." bytes")
 	local file_id, piece_n_str, of_str, piece = chunk:match("^P(...)(..)(..)(.*)$")
 	if piece then --It's P chunk
