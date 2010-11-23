@@ -11,9 +11,25 @@ function app:start()
 --	self:handle_event_timed_event()
 end
 
+function app:cleanup()
+	local count = 0
+	local time = dynawa.ticks()
+	for id,request in pairs(self.requests) do
+		if time - request.timestamp > 60000 then
+			self.requests[id] = nil
+			count = count + 1
+		end
+	end
+	if count > 0 then
+		log("********** HTTP requester - Cleaned up requests = "..count)
+	end
+end
+
 function app:make_request(request)
+	self:cleanup()
 	assert(request.address, "No server specified in HTTP request")
 	request.id = dynawa.unique_id()
+	request.timestamp = dynawa.ticks() 
 	request.port = request.port or 80
 	request.path = request.path or "/"
 	request.headers = request.headers or {}
@@ -60,7 +76,7 @@ function app:make_request(request)
 end
 
 function app:parse_response(response)
-	local parsed = {timestamp = dynawa.ticks(), headers = {}}
+	local parsed = {headers = {}}
 	parsed.id = assert(response.id, "Missing id in response")
 	local request = assert(self.requests[parsed.id],"HTTP response with uknown id.")
 	self.requests[parsed.id] = nil

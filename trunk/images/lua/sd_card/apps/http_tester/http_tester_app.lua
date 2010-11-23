@@ -35,7 +35,7 @@ function app:make_request(id)
 		log("HTTP Request app not available!")
 		return
 	end
-	log("**** Sending HTTP tester request for: "..id)
+	log("Sending HTTP tester request for: "..id)
 	local status = http_app:make_request(request)
 	if not status then
 		self:indicator(srv_data.index,"error")
