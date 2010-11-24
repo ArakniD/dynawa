@@ -21,6 +21,9 @@ function app:make_request(id)
 	end
 	local srv_data = assert(self.servers[id])
 	local request = {address = srv_data.server, path = srv_data.path, size_limit = 30000, timeout = 10000}
+	if id == "fuxoft" then
+		request.sanitize_text = true
+	end
 	request.callback = function(result)
 		self:response(result,id)
 	end
@@ -39,7 +42,7 @@ function app:make_request(id)
 	local status = http_app:make_request(request)
 	if not status then
 		self:indicator(srv_data.index,"error")
-		dynawa.devices.timers:timed_event{delay = 1000, receiver = self, make_request = id}		
+		dynawa.devices.timers:timed_event{delay = 2000, receiver = self, make_request = id}		
 	else
 		self:indicator(srv_data.index,"waiting")
 	end
@@ -65,6 +68,8 @@ function app:response(response,id)
 			log("PNG has "..#(response.body).." bytes")
 			local bmp = assert(dynawa.bitmap.from_png(response.body),"Cannot parse PNG")
 			self.window:show_bitmap_at(bmp,0,0)
+		elseif id == "fuxoft" then
+			log("********* Text from fuxoft.cz should be sanitized: "..response.body)
 		end
 	else
 		log("Bad response for "..id..": "..tostring(response.status).." ("..tostring(response.error)..")")
@@ -87,7 +92,7 @@ function app:start_requests()
 	servers.maps = {server = "maps.google.com", index = 1}
 	servers.smartmad = {server = "www.smartmadsoft.com", index = 2}
 	servers.mageo = {server = "www.mageo.cz", path = "/sys/gfx/u0018.jpg", index = 3}
-	servers.fuxoft = {server = "www.fuxoft.cz", index = 4}
+	servers.fuxoft = {server = "www.fuxoft.cz", path = "/vyplody/1995_senov.htm", index = 4}
 	servers.novinky = {server = "www.novinky.cz", index = 5}
 	self.running = true
 	for id, tbl in pairs(self.servers) do

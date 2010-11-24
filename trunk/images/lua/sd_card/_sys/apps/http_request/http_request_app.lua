@@ -46,6 +46,7 @@ function app:make_request(request)
 	data.address = request.address
 	data.port = request.port
 	data.timeout = request.timeout
+	data.sanitize_text = request.sanitize_text
 	data.size_limit = request.size_limit
 	data.id = request.id
 	local headers_lines = {}
