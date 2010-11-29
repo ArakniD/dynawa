@@ -6,6 +6,7 @@
 #include "lwbt/bd_addr.h"
 
 #include "bt/bt_socket.h"
+#include "types.h"
 
 #define BT_HOST_WAKE_SLEEP_TIMEOUT  500
 
@@ -81,6 +82,15 @@ typedef struct {
     } param; 
 } bt_command;
 
+typedef struct {
+    uint8_t id;
+    bt_socket *sock;
+    union {
+        void *ptr;
+        uint8_t cn;
+    } param; 
+} bt_command_result;
+
 #define BT_LINK_KEY_LEN     16
 #define BT_BDADDR_LEN      6
 
@@ -103,5 +113,7 @@ struct bt_bdaddr_cn {
     struct bd_addr bdaddr;
     uint8_t cn;
 };
+
+bool bt_set_command_result(bt_command_result *res);
 
 #endif /* BT_H__ */

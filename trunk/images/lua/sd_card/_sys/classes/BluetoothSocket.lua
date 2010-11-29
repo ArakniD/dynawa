@@ -1,10 +1,15 @@
 local class = Class("BluetoothSocket")
 class.is_bluetooth_socket = true
 
-function class:_init(protocol)
+function class:_init(protocol, c_socket)
 	self.proto = assert(protocol)
 	self.id = dynawa.unique_id()
-	self._c = dynawa.devices.bluetooth.cmd:socket_new(self)
+    if c_socket then
+	    dynawa.devices.bluetooth.cmd:socket_bind(self, c_socket)
+        self._c = c_socket
+    else
+	    self._c = dynawa.devices.bluetooth.cmd:socket_new(self)
+    end
 	self.state = "initialized"
 	log("Initialized new socket: "..self)
 	return self
@@ -23,7 +28,12 @@ function class:connect(bdaddr, channel)
 end
 
 function class:listen(channel)
+	self.state = "listening"
 	dynawa.devices.bluetooth.cmd:listen(self._c, channel)
+end
+
+function class:advertise_service(service)
+    assert(self.state == "listening")
 end
 
 function class:send(data)
@@ -43,7 +53,11 @@ function class:handle_bt_event_disconnected(event)
 end
 
 function class:handle_bt_event_accepted(event)
-	error(self.." - error")
+    local sock = Class.BluetoothSocket(self.proto, assert(event.client_socket))
+    sock.app = self.app
+	sock.state = "connected"
+	self.app:handle_event_socket_connection_accepted(self, sock)
+	self.app:handle_event_socket_connected(sock)
 end
 
 function class:handle_bt_event_data(event)

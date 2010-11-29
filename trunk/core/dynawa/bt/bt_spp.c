@@ -1498,10 +1498,19 @@ err_t l2cap_connected2(void *arg, struct l2cap_pcb *l2cappcb, u16_t result, u16_
 err_t _bt_rfcomm_listen(bt_socket *sock, u8_t cn) {
 	struct rfcomm_pcb *rfcommpcb;
 	struct sdp_record *record;
+    err_t ret;
 
-	LWIP_DEBUGF(RFCOMM_DEBUG, ("bt_spp_init: Allocate RFCOMM PCB for CN 1\n"));
+    if (cn == 0) {
+	    LWIP_DEBUGF(RFCOMM_DEBUG, ("_bt_rfcomm_listen: Getting a free port\n"));
+	    err_t ret = rfcomm_get_free_port(&cn);
+        if (ret != ERR_OK) {
+            return ret;
+        }
+    }
+
+	LWIP_DEBUGF(RFCOMM_DEBUG, ("_bt_rfcomm_listen: Allocate RFCOMM PCB for CN %d\n", cn));
 	if((rfcommpcb = rfcomm_new(NULL)) == NULL) {
-		LWIP_DEBUGF(BT_SPP_DEBUG, ("lap_init: Could not alloc RFCOMM PCB for channel 1\n"));
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_rfcomm_listen: Could not alloc RFCOMM PCB for channel %d\n", cn));
 		return ERR_MEM;
 	}
     sock->state = BT_SOCKET_STATE_RFCOMM_LISTENING;
@@ -1509,14 +1518,20 @@ err_t _bt_rfcomm_listen(bt_socket *sock, u8_t cn) {
     sock->cn = cn;
 
     rfcomm_arg(rfcommpcb, sock);
-	rfcomm_listen(rfcommpcb, 1, rfcomm_accept);
+	ret = rfcomm_listen(rfcommpcb, cn, rfcomm_accept);
+    if (ret != ERR_OK) {
+        rfcomm_free(rfcommpcb);
+        return ret;
+    }
 
+#if 1
 	if((record = sdp_record_new((u8_t *)spp_service_record, sizeof(spp_service_record))) == NULL) {
-		LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_spp_init: Could not alloc SDP record\n"));
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_rfcomm_listen: Could not alloc SDP record\n"));
 		return ERR_MEM;
 	} else {
 		sdp_register_service(record);
 	}
+#endif
     return ERR_OK;
 }
 

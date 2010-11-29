@@ -62,6 +62,7 @@ xQueueHandle bt_wakeup_queue;
 uint32_t bc_hci_event_count;
 static Task bt_task_handle;
 static xQueueHandle command_queue;
+static xQueueHandle command_result_queue;
 static Io bt_io;
 
 static unsigned int bt_open_count = 0;
@@ -467,6 +468,9 @@ static void u_bt_task(bt_command *cmd)
                 bt_socket *sock = cmd->sock;
 
                 _bt_rfcomm_listen(sock, cmd->param.cn);
+
+                bt_command_result res;
+                bt_set_command_result(&res);
             }
             break;
         case BT_COMMAND_RFCOMM_CONNECT:
@@ -909,9 +913,13 @@ bool bt_get_command(bt_command *cmd) {
     return xQueueReceive(command_queue, cmd, 0);
 }
 
+bool bt_set_command_result(bt_command_result *res) {
+    return xQueueSend(command_result_queue, res, portMAX_DELAY);
+}
 
 void bt_stop_callback() {
     vQueueDelete(command_queue);
+    vQueueDelete(command_result_queue);
 }
 
 void trace_bytes(char *text, uint8_t *bytes, int len) {
@@ -1010,7 +1018,8 @@ int bt_open() {
 
     if(!bt_open_count++) {
         bc_state = BC_STATE_STARTING;
-        command_queue = xQueueCreate(BT_COMMAND_QUEUE_LEN, sizeof(bt_command));
+        command_queue = xQueueCreate(1, sizeof(bt_command));
+        command_result_queue = xQueueCreate(1, sizeof(bt_command_result));
         //bt_task_handle = Task_create( bt_task, "bt_main", TASK_BT_MAIN_STACK, TASK_BT_MAIN_PRI, NULL );
         xTaskCreate(bt_task, "bt_main", TASK_STACK_SIZE(TASK_BT_MAIN_STACK), NULL, TASK_BT_MAIN_PRI, &bt_task_handle);
         return BT_OK;
@@ -1118,6 +1127,7 @@ void bt_inquiry() {
 
 void bt_rfcomm_listen(bt_socket *sock, uint8_t channel) {
     bt_command cmd;
+    bt_command_result res;
 
     TRACE_INFO("bt_rfcomm_listen %x %d\r\n", sock, channel);
 
@@ -1127,6 +1137,8 @@ void bt_rfcomm_listen(bt_socket *sock, uint8_t channel) {
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
+
+    xQueueReceive(command_result_queue, &res, portMAX_DELAY);
     return BT_OK;
 }
 
