@@ -45,6 +45,10 @@
 #include "arch/lwbtopts.h"
 #include "lwip/debug.h"
 
+#define RFCOMM_MAX_CN       31
+
+u32_t rfcomm_cn_mask;
+
 struct rfcomm_pcb_listen *rfcomm_listen_pcbs; /* List of all RFCOMM PCBs listening for 
 												 an incomming connection on a specific
 												 server channel */
@@ -66,6 +70,7 @@ void rfcomm_init(void)
 	rfcomm_listen_pcbs = NULL;
 	rfcomm_active_pcbs = NULL;
 	rfcomm_tmp_pcb = NULL;
+    rfcomm_cn_mask = 0;
 }
 
 /*
@@ -131,6 +136,11 @@ err_t rfcomm_lp_disconnected(struct l2cap_pcb *l2cappcb)
 	return ret;
 }
 
+void rfcomm_free(struct rfcomm_pcb *pcb)
+{
+    lwbt_memp_free(MEMP_RFCOMM_PCB_LISTEN, pcb);
+}
+
 /* 
  * rfcomm_new():
  *
@@ -170,12 +180,27 @@ void rfcomm_close(struct rfcomm_pcb *pcb)
 #endif
 	if(pcb->state == RFCOMM_LISTEN) {
 		RFCOMM_RMV((struct rfcomm_pcb **)&rfcomm_listen_pcbs, pcb);
+        rfcomm_cn_mask &= ~(1 << pcb->cn);
 		lwbt_memp_free(MEMP_RFCOMM_PCB_LISTEN, pcb);
 	} else {
 		RFCOMM_RMV(&rfcomm_active_pcbs, pcb);
 		lwbt_memp_free(MEMP_RFCOMM_PCB, pcb);
 	}
 	pcb = NULL;
+}
+
+err_t rfcomm_get_free_port(u8_t *cn)
+{
+    for(*cn = 1; *cn <= RFCOMM_MAX_CN; *cn++) {
+        if ((rfcomm_cn_mask & (1 << *cn)) == 0)
+            return ERR_OK;
+    }
+    return ERR_USE;    
+}
+
+err_t rfcomm_check_free_port(u8_t cn)
+{
+    return (rfcomm_cn_mask & (1 << cn)) ? ERR_USE : ERR_OK;
 }
 
 /* 
@@ -1418,6 +1443,8 @@ void rfcomm_disc(struct rfcomm_pcb *pcb,
 	pcb->disconnected = disc;
 }
 
+//err_t rfcomm_listen(struct rfcomm_pcb *npcb, u8_t cn, 
+
 /* 
  * rfcomm_listen():
  * 
@@ -1432,6 +1459,10 @@ err_t rfcomm_listen(struct rfcomm_pcb *npcb, u8_t cn,
 {
 	struct rfcomm_pcb_listen *lpcb;
 
+    if ((rfcomm_cn_mask & (1 << cn)) != 0) {
+		return ERR_USE;
+    }
+
 	if((lpcb = lwbt_memp_malloc(MEMP_RFCOMM_PCB_LISTEN)) == NULL) {
 		LWIP_DEBUGF(RFCOMM_DEBUG, ("rfcomm_listen: Could not allocate memory for pcb\n"));
 		return ERR_MEM;
@@ -1443,5 +1474,6 @@ err_t rfcomm_listen(struct rfcomm_pcb *npcb, u8_t cn,
 
 	lwbt_memp_free(MEMP_RFCOMM_PCB, npcb);
 	RFCOMM_REG((struct rfcomm_pcb **)&rfcomm_listen_pcbs, (struct rfcomm_pcb *)lpcb);
+    rfcomm_cn_mask |= 1 << cn;
 	return ERR_OK;
 }

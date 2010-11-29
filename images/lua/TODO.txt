@@ -19,3 +19,5 @@
 - rotace display
 - RTC presnost
 - SD DMA access
+- timer.c: TBD TIMER
+- peripherals/i2c.c: panic "i2cReadByte 1"

@@ -45,6 +45,10 @@ function class:handle_event_socket_connected(socket)
 	log(socket.." connected")
 end
 
+function class:handle_event_socket_connection_accepted(socket, connection_socket)
+	log(socket.." connection accepted " .. connection_socket)
+end
+
 function class:handle_event_socket_data(socket,data)
 	log(string.format("%s got %s bytes of data: '%q'", tostring(socket), #data, data))
 end

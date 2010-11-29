@@ -186,7 +186,7 @@ int Timer_start( Timer *timer, int millis, bool repeat, bool freeOnStop )
             // IRQ happens it credits the correct (reduced) time.
             //timer->timeCurrent += timeCurrent;
         } else if (remaining < 0) {
-// workround
+// TBD TIMER
             Timer_setTimeTarget( timer_manager.tc->RTTC_RTVR + MIN_DELAY_TICKS);
         } else {
             // pretend that the existing time has been with us for the whole slice so that when the 
