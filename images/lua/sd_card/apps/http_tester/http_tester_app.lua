@@ -13,7 +13,7 @@ end
 
 function app:switching_to_front()
 	self.window:push()
-	end
+end
 
 function app:make_request(id)
 	if not self.running then
