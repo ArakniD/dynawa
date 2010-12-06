@@ -660,6 +660,33 @@ err_t sdp_service_search_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 	return ret;
 }
 
+err_t sdp_error_rsp(struct l2cap_pcb *pcb, struct sdp_hdr *reqhdr, u16_t err_code)
+{
+	err_t ret;
+	struct sdp_hdr *rsphdr;
+
+	struct pbuf *q;
+
+    /* Allocate rsp packet header + error code */
+    q  = pbuf_alloc(PBUF_RAW, SDP_PDUHDR_LEN+2, PBUF_RAM);
+    rsphdr = q->payload;
+    rsphdr->pdu = SDP_ERR_PDU;
+    //rsphdr->id = reqhdr->id;
+    CPU2U16LE((u8_t *)&rsphdr->id, U16LE2CPU((u8_t*)&reqhdr->id));
+
+    //*((u16_t *)(((u8_t *)q->payload) + SDP_PDUHDR_LEN)) = err_code;
+    CPU2U16LE((u8_t *)q->payload + SDP_PDUHDR_LEN, err_code);
+
+    /* Add paramenter length to header */
+    //rsphdr->len = htons(2);
+    CPU2U16LE((u8_t *)&rsphdr->len, htons(2));
+
+    ret = l2ca_datawrite(pcb, q);
+    pbuf_free(q);
+
+    return ret;
+}
+
 /*
  * sdp_service_attrib_rsp():
  * 
@@ -745,6 +772,7 @@ err_t sdp_service_attrib_rsp(struct l2cap_pcb *pcb, struct pbuf *p, struct sdp_h
 	} else {
 	    //TODO: ERROR NO SERVICE RECORD MATCHING HANDLE FOUND
         LWIP_DEBUGF(SDP_DEBUG, ("ERROR NO SERVICE RECORD MATCHING HANDLE FOUND\n"));
+        sdp_error_rsp(pcb, reqhdr, SDP_ERROR_INVALID_SERVICE_RECORD_HANDLE);
     }
 	return ERR_OK;
 }

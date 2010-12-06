@@ -222,7 +222,7 @@ void txThreadFunc(void)
                         if (!Serial_writeDMA(SERIAL_CHANNEL, &(txBuf[txOut]), no2Send, -1))
                         {
                             //TRACE_BT("data written\r\n");
-                            TRACE_INFO("data written\r\n");
+                            //TRACE_INFO("data written\r\n");
                             bytesWritten = no2Send;
                             if (bytesWritten > 0)
                             {
@@ -600,13 +600,13 @@ void rxThreadFunc(void)
         xSemaphoreGive(rxMutex);
 
 		/*	find next position for rx data in and if any space available in buffer	*/
-        TRACE_INFO("rxSize %d rxIn %d\r\n", theRxSize, rxIn);
+        //TRACE_INFO("rxSize %d rxIn %d\r\n", theRxSize, rxIn);
 		if (theRxSize < RX_BUF_MAX_SIZE)
 		{
             // ring buffer cycled 
             if (rxIn == 0) {
 
-                TRACE_INFO("\n---------------- Cycle %d -----------------\r\n\n", ringBuffCycle);
+                //TRACE_INFO("\n---------------- Cycle %d -----------------\r\n\n", ringBuffCycle);
                 if (ringBuffCycle) {
                     Serial_setDMARxBuff(SERIAL_CHANNEL, NULL, 0, rxBuf, RX_BUF_MAX_SIZE);
                 }
@@ -695,7 +695,7 @@ void rxThreadFunc(void)
             }
     
 #endif
-            TRACE_INFO("bytesRead %d\r\n", bytesRead);
+            //TRACE_INFO("bytesRead %d\r\n", bytesRead);
             if (bytesRead >= 0)
             {
                 readSuccess = TRUE;

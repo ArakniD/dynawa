@@ -115,6 +115,14 @@ err_t sdp_recv(void *arg, struct l2cap_pcb *pcb, struct pbuf *p, err_t err);
 #define SDP_SSA_PDU 0x06
 #define SDP_SSAR_PDU 0x07
 
+/* Error Response error codes */
+#define SDP_ERROR_INVALID_UNSUPPORTED_SDP_VERSION 0x0001
+#define SDP_ERROR_INVALID_SERVICE_RECORD_HANDLE 0x0002
+#define SDP_ERROR_INVALID_REQUEST_SYNTAX 0x0003
+#define SDP_ERROR_INVALID_PDU_SIZE 0x0004
+#define SDP_ERROR_INVALID_CONTINUATION_STATE 0x0005
+#define SDP_ERROR_INSUFFICIENT_RESOURCES_TO_SATISFY_REQUEST 0x0006
+
 /* Response lengths and sizes */
 #define SDP_PDUHDR_LEN 5
 #define SDP_ATTRIBIDHDR_LEN 3
