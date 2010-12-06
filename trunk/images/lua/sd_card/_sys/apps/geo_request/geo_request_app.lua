@@ -69,7 +69,7 @@ function app:find_request(response)
 	local id = assert(response.id, "Missing id in response")
 	local request = self.requests[id]
 	if not request then
-		log("Uknown geo response with id="..id)
+		log("Unknown geo response with id="..id)
 		return nil
 	end
 	return request
