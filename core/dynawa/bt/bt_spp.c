@@ -1524,7 +1524,12 @@ err_t _bt_rfcomm_listen(bt_socket *sock, u8_t cn) {
         return ret;
     }
 
-#if 1
+    int i;
+    for(i = 0; i < sizeof(spp_service_record); i++) {
+        TRACE_INFO(" %x", spp_service_record[i]);
+    }
+    TRACE_INFO("\r\n");
+#if 0
 	if((record = sdp_record_new((u8_t *)spp_service_record, sizeof(spp_service_record))) == NULL) {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_rfcomm_listen: Could not alloc SDP record\n"));
 		return ERR_MEM;
@@ -1532,6 +1537,24 @@ err_t _bt_rfcomm_listen(bt_socket *sock, u8_t cn) {
 		sdp_register_service(record);
 	}
 #endif
+    return ERR_OK;
+}
+
+err_t _bt_advertise_service(bt_socket *sock, u8_t *record_de_list, u16_t rlen) {
+
+	struct sdp_record *record;
+
+    int i;
+    for(i = 0; i < rlen; i++) {
+        TRACE_INFO(" %x", record_de_list[i]);
+    }
+    TRACE_INFO("\r\n");
+	if((record = sdp_record_new(record_de_list, rlen)) == NULL) {
+		LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_advertise_service: Could not alloc SDP record\n"));
+		return ERR_MEM;
+	} else {
+		sdp_register_service(record);
+	}
     return ERR_OK;
 }
 
@@ -1548,8 +1571,7 @@ err_t _bt_rfcomm_connect(bt_socket *sock, struct bd_addr *bdaddr, u8_t cn) {
     l2cap_arg(l2cappcb, sock);
     LWIP_DEBUGF(BT_SPP_DEBUG, ("bt_rfcomm_connect: RFCOMM channel: %d\n", sock->cn));
 
-    l2ca_connect_req(l2cappcb, bdaddr, RFCOMM_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
-    return ERR_OK;
+    return l2ca_connect_req(l2cappcb, bdaddr, RFCOMM_PSM, HCI_ALLOW_ROLE_SWITCH, l2cap_connected2);
 }
 
 err_t _bt_find_service(bt_socket *sock, struct bd_addr *bdaddr) {

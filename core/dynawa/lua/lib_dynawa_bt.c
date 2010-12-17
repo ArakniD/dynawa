@@ -106,7 +106,12 @@ static int l_cmd (lua_State *L) {
 
             uint8_t channel = luaL_checkint(L, 3);
 
-            bt_rfcomm_listen((bt_socket*)sock, channel);
+            if (bt_rfcomm_listen((bt_socket*)sock, &channel) == BT_OK) {
+                lua_pushnumber(L, sock->sock.cn);
+            } else {
+                lua_pushnil(L);
+            }
+            return 1;
         }
         break;
     case 301:       // CONNECT
@@ -137,6 +142,29 @@ static int l_cmd (lua_State *L) {
             TRACE_INFO("data %s %d\r\n", data, len);
 
             bt_rfcomm_send((bt_socket*)sock, data, len);
+        }
+        break;
+    case 500:       // ADVERTISE_SERVICE
+        {
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
+
+            lua_pushvalue(L, 3);
+            uint32_t ref_lua_record = luaL_ref(L, LUA_REGISTRYINDEX);
+            sock->ref_lua_sdp_record = ref_lua_record;
+
+            size_t len;
+            const char *record = luaL_checklstring(L, 3, &len);
+
+            bt_rfcomm_advertise_service((bt_socket*)sock, record, len);
+        }
+        break;
+    case 501:       // STOP_ADVERTISING
+        {
+            luaL_checktype(L, 2, LUA_TLIGHTUSERDATA); 
+            bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
+
+            luaL_unref(L, LUA_REGISTRYINDEX, sock->ref_lua_sdp_record);
         }
         break;
     }

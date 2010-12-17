@@ -16,6 +16,8 @@ function class:_init()
 		listen = 300,
 		connect = 301,
 		send = 400,
+		advertise_service = 500,
+		stop_advertising = 501,
 	}
 	self.cmd = {}
 	for key, val in pairs(cmd) do

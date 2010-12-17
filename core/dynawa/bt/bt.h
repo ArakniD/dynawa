@@ -53,6 +53,7 @@
 #define BT_COMMAND_RFCOMM_LISTEN 7
 #define BT_COMMAND_LINK_KEY_REQ_REPLY 8
 #define BT_COMMAND_LINK_KEY_REQ_NEG_REPLY 9
+#define BT_COMMAND_ADVERTISE_SERVICE 10
 
 #define BT_LED      1
 #if 1
@@ -74,13 +75,9 @@
 #define BT_ERR_ALREADY_STARTED    10
 
 typedef struct {
-    uint8_t id;
-    bt_socket *sock;
-    union {
-        void *ptr;
-        uint8_t cn;
-    } param; 
-} bt_command;
+    void *record;
+    uint16_t len;
+} sdp_service;
 
 typedef struct {
     uint8_t id;
@@ -88,7 +85,18 @@ typedef struct {
     union {
         void *ptr;
         uint8_t cn;
+        sdp_service service;
     } param; 
+} bt_command;
+
+typedef struct {
+    uint8_t id;
+    bt_socket *sock;
+    uint8_t error;
+    union {
+        void *ptr;
+        uint8_t cn;
+    } data; 
 } bt_command_result;
 
 #define BT_LINK_KEY_LEN     16

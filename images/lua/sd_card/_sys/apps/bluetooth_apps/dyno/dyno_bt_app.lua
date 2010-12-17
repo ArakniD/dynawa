@@ -430,12 +430,12 @@ function app:handle_event_socket_find_service_result(sock0,channel)
 	log ("Find_service_result channel = "..tostring(channel))
 	local activity = sock0.activity
 	if channel == 0 then
-		--[[
+		---[[
 		self:should_reconnect(activity)
 		return
 		--]]
 		-- android donut dyno workaround
-		channel = 15
+		--channel = 15
 	end
 	activity.channel = channel
 	local socket = self:new_socket("rfcomm")
