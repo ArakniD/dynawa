@@ -16,6 +16,7 @@ typedef struct {
     uint8_t current_cmd;
     void *pcb;
     uint8_t cn;
+    uint8_t sdp_record;
 } bt_socket;
 
 #endif /* BT_SOCKET_H_ */

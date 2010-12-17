@@ -466,10 +466,10 @@ static void u_bt_task(bt_command *cmd)
             {
                 TRACE_INFO("BT_COMMAND_RFCOMM_LISTEN\r\n");
                 bt_socket *sock = cmd->sock;
-
-                _bt_rfcomm_listen(sock, cmd->param.cn);
-
                 bt_command_result res;
+
+                res.error = _bt_rfcomm_listen(sock, cmd->param.cn);
+
                 bt_set_command_result(&res);
             }
             break;
@@ -478,10 +478,12 @@ static void u_bt_task(bt_command *cmd)
                 TRACE_INFO("BT_COMMAND_RFCOMM_CONNECT\r\n");
                 bt_socket *sock = cmd->sock;
                 struct bt_bdaddr_cn *bdaddr_cn = cmd->param.ptr;
+                bt_command_result res;
 
-                _bt_rfcomm_connect(sock, &bdaddr_cn->bdaddr, bdaddr_cn->cn);
+                res.error = _bt_rfcomm_connect(sock, &bdaddr_cn->bdaddr, bdaddr_cn->cn);
 
                 free(bdaddr_cn);
+                bt_set_command_result(&res);
             }
             break;
         case BT_COMMAND_FIND_SERVICE:
@@ -500,6 +502,16 @@ static void u_bt_task(bt_command *cmd)
             {
                 TRACE_INFO("BT_COMMAND_INQUIRY\r\n");
                 _bt_inquiry();
+            }
+            break;
+        case BT_COMMAND_ADVERTISE_SERVICE:
+            {
+                TRACE_INFO("BT_COMMAND_ADVERTISE_SERVICE\r\n");
+                bt_socket *sock = cmd->sock;
+                bt_command_result res;
+
+                res.error = _bt_advertise_service(sock, cmd->param.service.record, cmd->param.service.len);
+                bt_set_command_result(&res);
             }
             break;
         }
@@ -1044,7 +1056,7 @@ int bt_close() {
     return BT_OK;
 }
 
-void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
+int bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
     bt_command cmd;
 
     TRACE_INFO("bt_set_link_key\r\n");
@@ -1067,7 +1079,7 @@ void bt_set_link_key(uint8_t *bdaddr, uint8_t *link_key) {
     return BT_OK;
 }
 
-void bt_link_key_req_reply(uint8_t *bdaddr, uint8_t *link_key) {
+int bt_link_key_req_reply(uint8_t *bdaddr, uint8_t *link_key) {
     bt_command cmd;
 
     TRACE_INFO("bt_link_key_req_reply\r\n");
@@ -1090,7 +1102,7 @@ void bt_link_key_req_reply(uint8_t *bdaddr, uint8_t *link_key) {
     return BT_OK;
 }
 
-void bt_link_key_req_neg_reply(uint8_t *bdaddr) {
+int bt_link_key_req_neg_reply(uint8_t *bdaddr) {
     bt_command cmd;
 
     TRACE_INFO("bt_link_key_req_neg_reply\r\n");
@@ -1111,7 +1123,7 @@ void bt_link_key_req_neg_reply(uint8_t *bdaddr) {
     return BT_OK;
 }
 
-void bt_inquiry() {
+int bt_inquiry() {
     bt_command cmd;
 
     TRACE_INFO("bt_inquiry\r\n");
@@ -1125,15 +1137,15 @@ void bt_inquiry() {
 
 // socket commands
 
-void bt_rfcomm_listen(bt_socket *sock, uint8_t channel) {
+int bt_rfcomm_listen(bt_socket *sock, uint8_t *channel) {
     bt_command cmd;
     bt_command_result res;
 
-    TRACE_INFO("bt_rfcomm_listen %x %d\r\n", sock, channel);
+    TRACE_INFO("bt_rfcomm_listen %x %d\r\n", sock, *channel);
 
     cmd.id = BT_COMMAND_RFCOMM_LISTEN;
     cmd.sock = sock;
-    cmd.param.cn = channel;
+    cmd.param.cn = *channel;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
@@ -1142,8 +1154,9 @@ void bt_rfcomm_listen(bt_socket *sock, uint8_t channel) {
     return BT_OK;
 }
 
-void bt_rfcomm_connect(bt_socket *sock, uint8_t *bdaddr, uint8_t channel) {
+int bt_rfcomm_connect(bt_socket *sock, uint8_t *bdaddr, uint8_t channel) {
     bt_command cmd;
+    bt_command_result res;
 
     TRACE_INFO("bt_rfcomm_connect %x %d\r\n", sock, channel);
 
@@ -1162,10 +1175,12 @@ void bt_rfcomm_connect(bt_socket *sock, uint8_t *bdaddr, uint8_t channel) {
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
+
+    xQueueReceive(command_result_queue, &res, portMAX_DELAY);
     return BT_OK;
 }
 
-void bt_find_service(bt_socket *sock, uint8_t *bdaddr) {
+int bt_find_service(bt_socket *sock, uint8_t *bdaddr) {
     bt_command cmd;
 
     TRACE_INFO("bt_find_service %x\r\n", sock);
@@ -1207,5 +1222,22 @@ int bt_rfcomm_send(bt_socket *sock, const char *data, size_t len) {
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
+    return BT_OK;
+}
+
+
+int bt_rfcomm_advertise_service(bt_socket *sock, const char *record, size_t len) {
+    bt_command cmd;
+    bt_command_result res;
+
+    cmd.id = BT_COMMAND_ADVERTISE_SERVICE;
+    
+    cmd.param.service.record = record;
+    cmd.param.service.len = len;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+
+    xQueueReceive(command_result_queue, &res, portMAX_DELAY);
     return BT_OK;
 }
