@@ -11,7 +11,8 @@ local service = {
     {
         SDP.UINT16(0x0001), -- Service class ID list attribute
         {
-            SDP.UUID16(0x111e) -- Handsfree
+            SDP.UUID16(0x111e), -- Hands-Free
+            SDP.UUID16(0x1203) -- Generic Audio
         }
     },
     {
@@ -27,64 +28,106 @@ local service = {
         }
     },
     {
+        SDP.UINT16(0x0009), -- Profile descriptor list attribute
+        {
+            {
+                SDP.UUID16(0x111e), -- Hands-Free
+                SDP.UINT16(0x0105) -- Version
+            }
+        }
+    }
+--[[
+    {
         SDP.UINT16(0x0005), -- Browse group list
         {
             SDP.UUID16(0x1002) -- PublicBrowseGroup
         }
     }
+--]]
 }
 
 app.parser_state_machine = {
     [1] = {
-        {"%*SEAM", 2, "AT*SEAUDIO=0,0\r", nil},
-        {"OK", 2, "AT*SEAUDIO=0,0\r", nil},
+        {"+BRSF:", nil, nil, nil},
+        {"OK", 2, "AT+CIND=?\r", nil},
     },
     [2] = {
-        {"ERR", 3, "AT+CIND=?\r", nil},
+        {"%+CIND:", nil, nil,  
+            -- +CIND: ("service",(0-1)),("call",(0-1)),("callsetup",(0-3)),("callheld",(0->)),("signal",(0-5)),("roam",(0-1)),("battchg",(0-5))
+            function(app, socket, data)
+                for ind, val_min, val_max in string.gfind(data, '%("(%a+)",%(([^%-,]+)[%-,]([^%)]+)%)%)') do
+                    log("ind <" .. ind .. "> min " .. val_min .. " max " .. val_max)
+                    table.insert(socket.indicators, {ind, val_min, val_max})
+                end 
+            end
+        },
+        {"OK", 3, "AT+CIND?\r", nil},
     },
     [3] = {
-        {"%+CIND:", 4, "AT+CIND?\r",  nil},
+        {"%+CIND:", nil, nil,
+            -- +CIND: 1,0,0,0,4,0,4
+            function(app, socket, data)
+                local ind_index = 1
+                for val in string.gfind(data, "%d+") do
+                    local ind_data = socket.indicators[ind_index]
+                    if ind_data then
+                        log("ind <" .. ind_data[1] .. "> val " .. val)
+                    else
+                        log("ind " .. ind_index .. " val " .. val)
+                    end 
+                    ind_index = ind_index + 1
+                end
+            end
+        },
+        {"OK", 4, "AT+CMER=3,0,0,1\r", nil},
     },
     [4] = {
-        {"%+CIND:", 5, "AT+CMER=3,0,0,1\r", nil},
+        {"OK", 5, "AT+CLIP=1\r", nil},
     },
     [5] = {
-        {"OK", 6, "AT+CCWA=1\r", nil},
+        {"OK", 6, nil, nil},
     },
     [6] = {
-        {"OK", 7, "AT+CLIP=1\r", nil},
-    },
-    [7] = {
-        {"OK", 8, "AT+GCLIP=1\r", nil},
-    },
-    [8] = {
-        {"OK", 9, "AT+CSCS=\"UTF-8\"\r", nil},
-    },
-    [9] = {
-        {"OK", 10, "AT*SEMMIR=2\r", nil},
-    },
-    [10] = {
-        {"OK", 11, "AT*SEVOL?\r", nil},
-    },
-    [11] = {
-        {"SEVOL", 12, "ATE0\r", nil},
-    },
-    [12] = {
-        {"OK", 13, "AT+CCLK?\r", nil},
-    },
-    [13] = {
-        --{"CCLK", 14, nil, nil},
-        {"CCLK", 14, nil, 
-            function(socket, data)
-                -- example: +CCLK: "2010/03/11,23:45:14+00"
-                local year, month, day, hour, min, sec = string.match(data, "CCLK: \"(%d+)/(%d+)/(%d+),(%d+):(%d+):(%d+)")
-                local time = os.time({["year"]=year, ["month"]=month, ["day"]=day, ["hour"]=hour, ["min"]=min, ["sec"]=sec})
-                log("time " .. time)
-                dynawa.time.set(time)
-            end 
+        {"+CIEV:", nil, nil, 
+            -- +CIEV: 3,1
+            function(app, socket, data)
+                local ind_index, val = string.match(data, '(%d+),(%d+)')
+                local ind_data = socket.indicators[0 + ind_index]
+                if ind_data then
+                    local ind_handler = app.ind_handlers[ind_data[1]]
+                    if ind_handler then
+                        ind_handler(app, socket, ind_data[1], val)
+                    else
+                        log("no handler for indicator " .. ind_data[1])   
+                    end
+                else
+                    log("invalid indicator index " .. ind_index)   
+                end
+            end
+        },
+        {"RING", nil, nil, nil},
+        {"+CLIP:", nil, nil,
+            -- +CLIP: "+420222562062",145
+            function(app, socket, data)
+                local phone_number, format = string.match(data, '"([^"]*)",(%d+)')
+                log("phone number " .. phone_number .. " " .. format)
+            end
         },
     },
-    --{ "X", "AT+CHUP" },
+}
+
+app.default_ind_handler = function(app, socket, ind, val)
+        log("ind <" .. ind .. "> val " .. val)
+end
+
+app.ind_handlers = {
+    service = app.default_ind_handler,
+    call = app.default_ind_handler,
+    callsetup = app.default_ind_handler,
+    callheld = app.default_ind_handler,
+    signal = app.default_ind_handler,
+    roam = app.default_ind_handler,
+    battchg = app.default_ind_handler,
 }
 
 function app:log(socket, msg)
@@ -129,41 +172,45 @@ function app:handle_event_socket_connection_accepted(socket, connection_socket)
 	self.num_activities = self.num_activities + 1
 
     connection_socket.parser_state = 1
+    connection_socket.indicators = {}
 end
 
 function app:handle_event_socket_data(socket, data_in)
-    local data_out
+    local data_out = {}
 
     if not data_in then
         self:log(socket, "got empty data")
-        --data_out = "OK"
+        --table.insert(data_out, "OK")
     else
         self:log(socket, "got " .. data_in)
-        local state_transitions = self.parser_state_machine[socket.parser_state]
-        if state_transitions then
-            for i, transition in ipairs(state_transitions) do
-                if string.match(data_in, transition[1]) then
-                    -- next state
-                    if transition[2] then
-                        self:log(socket, "state " .. socket.parser_state .. " -> " .. transition[2])
-                        socket.parser_state = transition[2]
+        for line in string.gfind(data_in, "[^\r\n]+") do
+            local state_transitions = self.parser_state_machine[socket.parser_state]
+            if state_transitions then
+                for i, transition in ipairs(state_transitions) do
+                    if string.match(line, transition[1]) then
+                        -- next state
+                        if transition[2] then
+                            self:log(socket, "state " .. socket.parser_state .. " -> " .. transition[2])
+                            socket.parser_state = transition[2]
+                        end
+                        -- response string
+                        if transition[3] then
+                            table.insert(data_out, transition[3])
+                        end
+                        -- state handler
+                        if transition[4] then
+                            transition[4](self, socket, line)
+                        end
+                        break
                     end
-                    -- response string
-                    if transition[3] then
-                        data_out = transition[3]
-                    end
-                    -- state handler
-                    if transition[4] then
-                        transition[4](socket, data_in)
-                    end
-                    break
                 end
             end
         end
     end
-    if data_out then
-        self:log(socket, "sending " .. data_out)
-        socket:send(data_out)
+    if #data_out > 0 then
+        local response = table.concat(data_out)
+        self:log(socket, "sending " .. response)
+        socket:send(response)
     end
 end
 
@@ -177,6 +224,14 @@ function app:handle_event_socket_disconnected(socket,prev_state)
 end
 
 function app:handle_event_socket_error(socket,error)
+end
+
+function app:call_answer(socket)
+    socket:send("ATA\r")
+end
+
+function app:call_reject(socket)
+    socket:send("AT+CHUP\r")
 end
 
 function app:status_text()
