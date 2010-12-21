@@ -1524,11 +1524,13 @@ err_t _bt_rfcomm_listen(bt_socket *sock, u8_t cn) {
         return ret;
     }
 
+/*
     int i;
     for(i = 0; i < sizeof(spp_service_record); i++) {
         TRACE_INFO(" %x", spp_service_record[i]);
     }
     TRACE_INFO("\r\n");
+*/
 #if 0
 	if((record = sdp_record_new((u8_t *)spp_service_record, sizeof(spp_service_record))) == NULL) {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_rfcomm_listen: Could not alloc SDP record\n"));
@@ -1544,11 +1546,13 @@ err_t _bt_advertise_service(bt_socket *sock, u8_t *record_de_list, u16_t rlen) {
 
 	struct sdp_record *record;
 
+/*
     int i;
     for(i = 0; i < rlen; i++) {
         TRACE_INFO(" %x", record_de_list[i]);
     }
     TRACE_INFO("\r\n");
+*/
 	if((record = sdp_record_new(record_de_list, rlen)) == NULL) {
 		LWIP_DEBUGF(BT_SPP_DEBUG, ("_bt_advertise_service: Could not alloc SDP record\n"));
 		return ERR_MEM;
