@@ -2,20 +2,7 @@ app.name = "Geolocator"
 app.id = "dynawa.geolocator"
 
 
-function app:switching_to_front()
-	local menu = {
-		banner = "Geolocator",
-		items = {
-			{
-				text = "Geo request [debug]", value = {jump = "request"},
-			},
-		},
-	}
-	local menuwin = self:new_menuwindow(menu)
-	menuwin:push()
-end
-
-function app:menu_action_request()
+function app:do_geo_request()
 	local georeq = dynawa.app_manager:app_by_id("dynawa.geo_request")
 	if not georeq then
 		dynawa.popup:error("Geo Request app is not running")
@@ -25,6 +12,9 @@ function app:menu_action_request()
 		self:response(reply,request)
 	end}
 	local stat,err = georeq:make_request(request)
+	if not stat then
+		dynawa.popup:error("Geolocator cannot work: "..err)
+	end
 end
 
 function app:menu_item_selected(args)
@@ -36,18 +26,60 @@ function app:menu_item_selected(args)
 end
 
 function app:response(response,request)
-	log("Geo response: "..dynawa.file.serialize(response))
-	if response.network then
-		self:reverse_geoloc_request(response.network)
+	log("Geolocator Geo Response: "..dynawa.file.serialize(response))
+	local loc
+	if response.gps and ((not response.network) or response.gps.timestamp < 30000 or response.gps.timestamp < response.network.timestamp) then
+		loc = response.gps
+	elseif response.network then
+		loc = response.network
+	else
+		dynawa.popup:error("Geolocator cannot determine your position. Try again.")
+		return
 	end
-	if response.gps then
-		self:reverse_geoloc_request(response.gps)
+	loc.location.timestamp = dynawa.ticks() - loc.timestamp
+	loc.location.accuracy = loc.accuracy
+	self.status.location = loc.location
+	self:update()
+	self:reverse_geoloc_request()
+	self:map_request()
+end
+
+function app:map_request()
+	local loc = assert(self.status.location)
+	local zoom = assert(self.status.map_zoom)
+	self.status.map = false
+	local url = "/maps/api/staticmap?center="..loc.latitude..","..loc.longitude.."&maptype=hybrid&zoom="..zoom.."&size=160x128&sensor=true"
+	local http_app = dynawa.app_manager:app_by_id("dynawa.http_request")
+	if not http_app then
+		log("HTTP Request app not available!")
+		return
+	end
+	local request = {timeout = self.timeout, address = "maps.google.com", path = url}
+	request.callback = function(response,request)
+		self:map_response(response,request)
+	end
+	local status, err = http_app:make_request(request)
+	if not status then
+		dynawa.popup:error("Cannot request Google map: "..err)
 	end
 end
 
-function app:reverse_geoloc_request(data)
-	local params = "latlng="..data.location.latitude..","..data.location.longitude.."&sensor=true"
-	local request = {timeout = 10000, sanitize_text = true, address = "maps.googleapis.com", path = "/maps/api/geocode/json?"..params}
+function app:map_response(response)
+	log("Got map")
+	if response.status == "200 OK" then
+		log("PNG has "..#(response.body).." bytes")
+		local map_bmp = assert(dynawa.bitmap.from_png(response.body),"Cannot parse PNG")
+		self.status.map = map_bmp
+	else
+		self.status.map = "invalid"
+	end
+	self:update()
+end
+
+function app:reverse_geoloc_request()
+	local loc = assert(self.status.location)
+	local params = "latlng="..loc.latitude..","..loc.longitude.."&sensor=true"
+	local request = {timeout = self.timeout, sanitize_text = true, address = "maps.googleapis.com", path = "/maps/api/geocode/json?"..params}
 	request.callback = function(response, request)
 		self:reverse_geoloc_response(response,request)
 	end
@@ -56,7 +88,7 @@ function app:reverse_geoloc_request(data)
 		log("HTTP Request app not available!")
 		return
 	end
-	log("Asking for reverse geoloc (accuracy="..data.accuracy..")")
+	log("Asking for reverse geoloc (accuracy="..loc.accuracy..")")
 	local status,err = http_app:make_request(request)
 	if not status then
 		dynawa.popup:error("Cannot do reverse geolocation: "..err)
@@ -65,7 +97,20 @@ end
 
 function app:reverse_geoloc_response(response)
 	log("Got reverse geoloc: Status = "..tostring(response.status).." ("..tostring(response.error)..")")
-	log(tostring(response.body))
+	local address = ""
+	if response.status == "200 OK" then
+		for addr in response.body:gmatch('"formatted_address": "(.-)"') do
+			if #addr > #address then
+				address = addr
+			end
+		end
+	end
+	if address == "" then
+		address = "Unable to fetch ("..tostring(response.status)..", "..tostring(response.error)..")"
+	end
+	log("Street address: "..address)
+	self.status.address = address
+	self:update()
 end
 
 --[[function app:going_to_sleep()
@@ -73,6 +118,146 @@ end
 end]]
 
 function app:start()
+	self.timeout = 15000
 end
 
+function app:switching_to_front()
+	--[[local menu = {
+		banner = "Geolocator",
+		items = {
+			{
+				text = "Geo request [debug]", value = {jump = "request"},
+			},
+		},
+	}
+	local menuwin = self:new_menuwindow(menu)
+	menuwin:push()]]
+	--self.status.run_id = dynawa.unique_id()
+	if self.status.location then
+		self:update()
+	else
+		self:reset()
+	end
+end
 
+function app:reset()
+	self.status = {map = false, map_zoom = 14, location = false, displaying = "text", address = false}
+	self:do_geo_request()
+	self:update()
+end
+
+function app:handle_event_timed_event(event) --#todo remove? Not used
+	assert(event.what == "heartbeat")
+	if not self.status or self.status.run_id ~= event.run_id then
+		return
+	end
+--[[	if not(self.windows.map.in_front or self.windows.text.in_front) then
+		self:abort()
+		return
+	end]]
+	dynawa.devices.timers:timed_event{delay = 5000, receiver = self, what = "heartbeat", run_id = self.status.run_id}
+end
+
+function app:update(switch) --switch == boolean
+	local win_id = self.status.displaying
+	if switch then
+		if win_id == "text" then
+			win_id = "map"
+		else
+			win_id = "text"
+		end
+		self.status.displaying = win_id
+	end
+	log("Updating window "..win_id)
+	if not self.window then
+		self.window = self:new_window()
+		self.window:push()
+	end
+	self.window:fill()
+	if win_id == "text" then
+		local loc_txt = "Location unknown."
+		if self.status.location then
+			loc_txt = "Location = "..self.status.location.latitude.." (lat), "..self.status.location.longitude.." (long), accuracy "..self.status.location.accuracy.." m, "..math.floor((dynawa.ticks() - self.status.location.timestamp) / 1000 + 0.5).. " seconds ago."
+		end
+		local addr_txt = "Fetching address."
+		if self.status.address then
+			addr_txt = "Address: "..self.status.address.."."
+		end
+		local map_txt = "Fetching map."
+		if self.status.map then
+			if self.status.map == "invalid" then
+				map_txt = "Couldn't fetch map from Google."
+			else
+				map_txt = "Press CONFIRM to display map."
+			end
+		end
+		local items = {}
+		for i,text in ipairs{loc_txt, addr_txt, map_txt, "Press TOP to force update."} do
+			table.insert(items, (dynawa.bitmap.text_lines{text = text, font = "/_sys/fonts/default10.png"}))
+		end
+		local bmp,w,h = dynawa.bitmap.layout_vertical(items,{spacing = 5})
+		self.window:show_bitmap_at(bmp, 0 , 0)
+	else --showing map
+		local txt
+		if not self.status.map then
+			txt = "Fetching map (zoom "..self.status.map_zoom.."). Please wait..."
+		end
+		if self.status.map == "invalid" then
+			txt = "Unable to fetch map from Google."
+		end
+		if txt then
+			local txtbmp = dynawa.bitmap.text_lines{text = txt, font = "/_sys/fonts/default15.png", color = {255,0,0}}
+			self.window:show_bitmap_at(txtbmp,0,0)
+		else
+			self.window:show_bitmap(self.status.map)
+			if not self.map_instructions_shown then
+				self.map_instructions_shown = true
+				dynawa.popup:info("Press CONFIRM to switch back to text info. Press TOP or BOTTOM to zoom in or out.")
+			end
+		end
+	end
+end
+
+function app:handle_event_button(event)
+	if event.action == "button_down" and event.button == "confirm" then
+		self:update(true)
+	elseif self.status.displaying == "text" and event.action == "button_down" and event.button == "top" then
+			self:reset()
+	elseif self.status.displaying == "map" and event.action == "button_down" then
+		if event.button == "top" or event.button == "bottom" then
+			if not self.status.map then
+				dynawa.popup:error("Already fetching map. Please wait.")
+			else
+				local zoom = self.status.map_zoom
+				if event.button == "top" then
+					zoom = zoom + 2
+				else
+					zoom = zoom - 2
+				end
+				if zoom < 2 then
+					dynawa.popup:error("Already at minimum zoom!")
+				elseif zoom > 20 then
+					dynawa.popup:error("Already at maximum zoom!")
+				else
+					self.status.map_zoom = zoom
+					self:map_request()
+					self:update()
+				end
+			end
+		end
+	else
+		getmetatable(self).handle_event_button(self,event) --Parent's handler
+	end
+end
+
+function app:switching_to_back()
+	self.window:remove_from_stack()
+	self.window:_delete()
+	self.window = nil
+end
+
+function app:abort() --#todo REMOVE? Not used
+	--Destroy windows, clear status, disable heartbeat
+	dynawa.window_manager(self.window:remove_from_stack())
+	self.status = nil
+end

@@ -400,7 +400,7 @@ end
 function app:should_reconnect(activity)
 	assert(not activity.__deleted)
 	activity.status = "waiting_for_reconnect"
-	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 600000)
+	activity.reconnect_delay = math.min((activity.reconnect_delay or 1000) * 2, 006000)
 	log("Waiting "..activity.reconnect_delay.." ms before trying to reconnect "..activity.name)
 	dynawa.devices.timers:timed_event{delay = activity.reconnect_delay, receiver = self, what = "attempt_reconnect", activity = activity}
 	self:status_changed()
@@ -430,12 +430,10 @@ function app:handle_event_socket_find_service_result(sock0,channel)
 	log ("Find_service_result channel = "..tostring(channel))
 	local activity = sock0.activity
 	if channel == 0 then
-		---[[
 		self:should_reconnect(activity)
 		return
-		--]]
 		-- android donut dyno workaround
-		--channel = 15
+		-- channel = 15
 	end
 	activity.channel = channel
 	local socket = self:new_socket("rfcomm")
