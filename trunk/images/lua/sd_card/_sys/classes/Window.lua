@@ -83,6 +83,10 @@ function class:pop()
 	return self
 end
 
+function class:remove_from_stack()
+	dynawa.window_manager:remove_from_stack(self)
+end
+
 function class:overlaid_by(win)
 	--This window was in front but is now overlaid by window 'win'
 	--Do nothing

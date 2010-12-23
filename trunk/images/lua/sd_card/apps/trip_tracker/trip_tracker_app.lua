@@ -76,8 +76,8 @@ function app:geo_start()
 	local request = {method = "all", updates = {time = 3000}, id = self.id, callback = function (reply, req)
 		log("Got Geo update: "..dynawa.file.serialize(reply))
 		self:handle_response(reply)
-		if not self.window.in_front then
-			local request = {updates = "cancel", id = self.id}
+		if not self.window.in_front then --#todo PREDELAT NA "switching_to_back"!
+			local request = {updates = "cancel", method = "all", id = self.id}
 			geo_app:make_request(request)
 		end
 	end}

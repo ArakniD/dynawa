@@ -28,7 +28,7 @@ end
 function app:make_request(request)
 	self:cleanup()
 	request.command = "geo_request"
-	assert(request.method, "Geo request has no method")
+	--assert(request.method, "Geo request has no method")
 	request.id = request.id or dynawa.unique_id()
 	request.timestamp = dynawa.ticks() 
 	local dyno = dynawa.app_manager:app_by_id("dynawa.dyno")
@@ -69,7 +69,9 @@ function app:find_request(response)
 	local id = assert(response.id, "Missing id in response")
 	local request = self.requests[id]
 	if not request then
-		log("Unknown geo response with id="..id)
+		log("Unknown geo response with id="..id.." (cancelling)")
+		local dyno = assert(dynawa.app_manager:app_by_id("dynawa.dyno"))
+		dyno:bdaddr_send_data(assert(response.bdaddr),{id = id, updates = "cancel"})
 		return nil
 	end
 	return request
