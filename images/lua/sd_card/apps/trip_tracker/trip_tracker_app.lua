@@ -73,7 +73,7 @@ function app:geo_start()
 		dynawa.popup:error("Trip Tracker is unable to find a running Geo Request App.")
 		return
 	end
-	local request = {method = "all", updates = {time = 3000}, id = self.id, callback = function (reply, req)
+	local request = {method = "gps", updates = {time = 3000}, id = self.id, callback = function (reply, req)
 		log("Got Geo update: "..dynawa.file.serialize(reply))
 		self:handle_response(reply)
 		if not self.window.in_front then --#todo PREDELAT NA "switching_to_back"!
