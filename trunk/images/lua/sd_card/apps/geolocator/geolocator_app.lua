@@ -26,7 +26,7 @@ function app:menu_item_selected(args)
 end
 
 function app:response(response,request)
-	log("Geolocator Geo Response: "..dynawa.file.serialize(response))
+	--log("Geolocator Geo Response: "..dynawa.file.serialize(response))
 	local loc
 	if response.gps and ((not response.network) or response.gps.timestamp < 30000 or response.gps.timestamp < response.network.timestamp) then
 		loc = response.gps
@@ -51,7 +51,7 @@ function app:map_request()
 	local url = "/maps/api/staticmap?center="..loc.latitude..","..loc.longitude.."&maptype=hybrid&zoom="..zoom.."&size=160x128&sensor=true"
 	local http_app = dynawa.app_manager:app_by_id("dynawa.http_request")
 	if not http_app then
-		log("HTTP Request app not available!")
+		dynawa.popup:error("HTTP Request app not available.")
 		return
 	end
 	local request = {timeout = self.timeout, address = "maps.google.com", path = url}
@@ -65,9 +65,9 @@ function app:map_request()
 end
 
 function app:map_response(response)
-	log("Got map")
+	--log("Got map")
 	if response.status == "200 OK" then
-		log("PNG has "..#(response.body).." bytes")
+		--log("PNG has "..#(response.body).." bytes")
 		local map_bmp = assert(dynawa.bitmap.from_png(response.body),"Cannot parse PNG")
 		self.status.map = map_bmp
 	else
@@ -85,10 +85,10 @@ function app:reverse_geoloc_request()
 	end
 	local http_app = dynawa.app_manager:app_by_id("dynawa.http_request")
 	if not http_app then
-		log("HTTP Request app not available!")
+		dynawa.popup:error("HTTP Request app not available!")
 		return
 	end
-	log("Asking for reverse geoloc (accuracy="..loc.accuracy..")")
+	--log("Asking for reverse geoloc (accuracy="..loc.accuracy..")")
 	local status,err = http_app:make_request(request)
 	if not status then
 		dynawa.popup:error("Cannot do reverse geolocation: "..err)
@@ -96,7 +96,7 @@ function app:reverse_geoloc_request()
 end
 
 function app:reverse_geoloc_response(response)
-	log("Got reverse geoloc: Status = "..tostring(response.status).." ("..tostring(response.error)..")")
+	--log("Got reverse geoloc: Status = "..tostring(response.status).." ("..tostring(response.error)..")")
 	local address = ""
 	if response.status == "200 OK" then
 		for addr in response.body:gmatch('"formatted_address": "(.-)"') do
@@ -108,32 +108,21 @@ function app:reverse_geoloc_response(response)
 	if address == "" then
 		address = "Unable to fetch ("..tostring(response.status)..", "..tostring(response.error)..")"
 	end
-	log("Street address: "..address)
+	--log("Street address: "..address)
 	self.status.address = address
 	self:update()
 end
 
---[[function app:going_to_sleep()
+function app:going_to_sleep()
 	return "remember"
-end]]
+end
 
 function app:start()
 	self.timeout = 15000
 end
 
 function app:switching_to_front()
-	--[[local menu = {
-		banner = "Geolocator",
-		items = {
-			{
-				text = "Geo request [debug]", value = {jump = "request"},
-			},
-		},
-	}
-	local menuwin = self:new_menuwindow(menu)
-	menuwin:push()]]
-	--self.status.run_id = dynawa.unique_id()
-	if self.status.location then
+	if self.status and self.status.location then
 		self:update()
 	else
 		self:reset()
@@ -142,20 +131,8 @@ end
 
 function app:reset()
 	self.status = {map = false, map_zoom = 14, location = false, displaying = "text", address = false}
-	self:do_geo_request()
 	self:update()
-end
-
-function app:handle_event_timed_event(event) --#todo remove? Not used
-	assert(event.what == "heartbeat")
-	if not self.status or self.status.run_id ~= event.run_id then
-		return
-	end
---[[	if not(self.windows.map.in_front or self.windows.text.in_front) then
-		self:abort()
-		return
-	end]]
-	dynawa.devices.timers:timed_event{delay = 5000, receiver = self, what = "heartbeat", run_id = self.status.run_id}
+	self:do_geo_request()
 end
 
 function app:update(switch) --switch == boolean
@@ -168,7 +145,7 @@ function app:update(switch) --switch == boolean
 		end
 		self.status.displaying = win_id
 	end
-	log("Updating window "..win_id)
+	--log("Updating window "..win_id)
 	if not self.window then
 		self.window = self:new_window()
 		self.window:push()
@@ -177,13 +154,13 @@ function app:update(switch) --switch == boolean
 	if win_id == "text" then
 		local loc_txt = "Location unknown."
 		if self.status.location then
-			loc_txt = "Location = "..self.status.location.latitude.." (lat), "..self.status.location.longitude.." (long), accuracy "..self.status.location.accuracy.." m, "..math.floor((dynawa.ticks() - self.status.location.timestamp) / 1000 + 0.5).. " seconds ago."
+			loc_txt = string.format("Location: %3.5f (lat), %3.5f (long), accuracy %d m, %d seconds ago.", self.status.location.latitude, self.status.location.longitude, math.floor(self.status.location.accuracy + 0.5), math.floor((dynawa.ticks() - self.status.location.timestamp) / 1000 + 0.5))
 		end
-		local addr_txt = "Fetching address."
+		local addr_txt = "Address: Not determined yet."
 		if self.status.address then
 			addr_txt = "Address: "..self.status.address.."."
 		end
-		local map_txt = "Fetching map."
+		local map_txt = "Map not retrieved yet."
 		if self.status.map then
 			if self.status.map == "invalid" then
 				map_txt = "Couldn't fetch map from Google."
@@ -200,7 +177,7 @@ function app:update(switch) --switch == boolean
 	else --showing map
 		local txt
 		if not self.status.map then
-			txt = "Fetching map (zoom "..self.status.map_zoom.."). Please wait..."
+			txt = "Map (zoom "..self.status.map_zoom..") not yet retrieved. Please wait..."
 		end
 		if self.status.map == "invalid" then
 			txt = "Unable to fetch map from Google."
@@ -256,8 +233,3 @@ function app:switching_to_back()
 	self.window = nil
 end
 
-function app:abort() --#todo REMOVE? Not used
-	--Destroy windows, clear status, disable heartbeat
-	dynawa.window_manager(self.window:remove_from_stack())
-	self.status = nil
-end
