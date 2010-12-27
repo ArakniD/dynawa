@@ -67,27 +67,43 @@ function app:handle_response(resp)
 	self:update_screen()
 end
 
-function app:geo_start()
+function app:find_geo_app()
 	local geo_app = dynawa.app_manager:app_by_id("dynawa.geo_request")
 	if not geo_app then
 		dynawa.popup:error("Trip Tracker is unable to find a running Geo Request App.")
+		return nil
+	end
+	return geo_app
+end
+
+function app:geo_start()
+	local geo_app = self:find_geo_app()
+	if not geo_app then
 		return
 	end
-	local request = {method = "gps", updates = {time = 3000}, id = self.id, callback = function (reply, req)
+	local request = {method = "all", updates = {time = 2000}, id = self.id, callback = function (reply, req)
 		log("Got Geo update: "..dynawa.file.serialize(reply))
 		self:handle_response(reply)
-		if not self.window.in_front then --#todo PREDELAT NA "switching_to_back"!
-			local request = {updates = "cancel", method = "all", id = self.id}
-			geo_app:make_request(request)
-		end
 	end}
-	geo_app:make_request(request)
+	local state,err = geo_app:make_request(request)
+	if not state then
+		dynawa.popup:error("Cannot start Trip Tracker: "..err)
+	end
 end
 
 function app:switching_to_front()
 	self:update_screen()
 	self.window:push()
 	self:geo_start()
+end
+
+function app:switching_to_back()
+	local geo_app = self:find_geo_app()
+	if geo_app then
+		local request = {updates = "cancel", method = "all", id = self.id}
+		geo_app:make_request(request)
+	end
+	self.window:pop()
 end
 
 function app:going_to_sleep()
@@ -97,7 +113,7 @@ end
 function app:gfx_init()
 	self.gfx = {}
 	local bmp = assert(dynawa.bitmap.from_png_file(self.dir.."gfx.png"))
-	for i = 0,9 do
+	for i = 0,11 do
 		self.gfx[i] = dynawa.bitmap.copy(bmp,17*i,0,16,24)
 	end
 	self.window = self:new_window()
