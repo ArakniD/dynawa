@@ -14,6 +14,31 @@ function app:start()
 --	self:handle_event_timed_event()
 end
 
+function app:print_at(str,x,y)
+	assert(#str > 0)
+	local txtbmp = dynawa.bitmap.text_line(str,"/_sys/fonts/default15.png")
+	self.window:show_bitmap_at(txtbmp,x,y)
+end
+
+function app:megaprint_at(str,x,y)
+	for i = 1, #str do
+		local chr = str:sub(i,i)
+		if chr ~= " " then
+			local chrnum = 11
+			if chr == "-" then
+				chrnum = 10
+			elseif (chr >= "0" and chr <= "9") then
+				chrnum = assert(tonumber(chr), "Char is '"..chr.."'")
+			end
+			self.window:show_bitmap_at(self.gfx[chrnum],x+17*(i-1), y)
+		end
+	end
+end
+
+function app:round(num)
+	return math.floor(num + 0.5)
+end
+
 function app:update_screen()
 	self.window:fill()
 	local screen = assert(self.screen)
@@ -22,20 +47,76 @@ function app:update_screen()
 		for line,name in ipairs({"latitude","longitude","accuracy","altitude","speed","bearing","timestamp"}) do
 			local str = name..": "..tostring(self.values[name])
 			local txtbmp = dynawa.bitmap.text_line(str,"/_sys/fonts/default10.png")
-			self.window:show_bitmap_at(txtbmp, 0, 11*line - 11)
+--			self.window:show_bitmap_at(txtbmp, 0, 11*line - 11)
 		end
---[[		local speed = math.random(140)
-		local spd1 = math.floor(speed / 100)
-		local spd2 = math.floor(speed / 10) % 10
-		local spd3 = speed % 10
-		local x,y = 15,15
-		self.window:show_bitmap_at(self.gfx[spd3],x+36,y)
-		if spd1 + spd2 > 0 then
-			self.window:show_bitmap_at(self.gfx[spd2],x+18,y)
+		local imperial = (self.prefs.units == "imperial")
+		local unit = "kph"
+		if imperial then
+			unit = "mph"
 		end
-		if spd1 > 0 then
-			self.window:show_bitmap_at(self.gfx[spd1],x,y)
-		end]]
+		self:print_at("SPD("..unit..")",0,0)
+		local num = self.values.speed
+		if not num then
+			num = "  ?"
+		else
+			num = num * 3.6
+			if imperial then
+				num = num * 0.621371192
+			end
+			if num > 999 then
+				num = 999
+			end
+			num = string.format("%3d",self:round(num))
+		end
+		self:megaprint_at(num,0,16)
+
+		unit = "m"
+		if imperial then
+			unit = "ft"
+		end
+		self:print_at("ALT("..unit..")",110,0)
+		num = self.values.altitude
+		if not num then
+			num = "    ?"
+		else
+			if imperial then
+				num = num * 3.2808399
+			end
+			if num > 99999 then
+				num = 99999
+			elseif num < -9999 then
+				num = -9999
+			end
+			num = string.format("%5d", self:round(num))
+		end
+		self:megaprint_at(num,76,16)
+
+		self:print_at("BEARING",26,55)
+		num = self.values.bearing
+		if not num then
+			num = "???"
+		else
+			num = string.format("%03d",self:round(num) % 360)
+		end
+		self:megaprint_at(num,90,45)
+		
+		if self.values.latitude then
+			self:print_at(string.format("LAT: %3.5f",self.values.latitude),0,75)
+		end
+		if self.values.longitude then
+			self:print_at(string.format("LONG: %3.5f",self.values.longitude),0,90)
+		end
+		
+		if self.values.accuracy then
+			local acc = self.values.accuracy
+			if imperial then
+				acc = self:round(acc * 3.2808399).. " ft"
+			else
+				acc = self:round(acc).. " m"
+			end
+			self:print_at("Accuracy: +/- "..acc,0,112)
+		end
+
 	elseif screen == "xxbasic" then
 		local speed = math.random(140)
 		local spd1 = math.floor(speed / 100)
@@ -103,7 +184,7 @@ function app:switching_to_back()
 		local request = {updates = "cancel", method = "all", id = self.id}
 		geo_app:make_request(request)
 	end
-	self.window:pop()
+	getmetatable(self).switching_to_back(self)
 end
 
 function app:going_to_sleep()
@@ -118,4 +199,28 @@ function app:gfx_init()
 	end
 	self.window = self:new_window()
 	self.screen = self.prefs.default_screen
+end
+
+function app:handle_event_do_menu (message)
+	local menudef = {
+		banner = "Trip Tracker",
+		items = {
+			{
+				text = "Change units", selected = function()
+					dynawa.busy()
+					if self.prefs.units == "imperial" then
+						self.prefs.units = "metric"
+					else
+						self.prefs.units = "imperial"
+					end
+					self:save_data(self.prefs)
+					dynawa.window_manager:pop():_delete()
+					self:update_screen()
+					dynawa.popup:info("Units changed to "..self.prefs.units)
+				end
+			},
+		}
+	}
+	local menuwin = self:new_menuwindow(menudef)
+	menuwin:push()
 end

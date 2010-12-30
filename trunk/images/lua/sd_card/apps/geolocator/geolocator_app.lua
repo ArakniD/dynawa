@@ -124,6 +124,7 @@ end
 function app:switching_to_front()
 	if self.status and self.status.location then
 		self:update()
+		self.window:push()
 	else
 		self:reset()
 	end
@@ -148,13 +149,22 @@ function app:update(switch) --switch == boolean
 	--log("Updating window "..win_id)
 	if not self.window then
 		self.window = self:new_window()
-		self.window:push()
 	end
 	self.window:fill()
 	if win_id == "text" then
 		local loc_txt = "Location unknown."
 		if self.status.location then
-			loc_txt = string.format("Location: %3.5f (lat), %3.5f (long), accuracy %d m, %d seconds ago.", self.status.location.latitude, self.status.location.longitude, math.floor(self.status.location.accuracy + 0.5), math.floor((dynawa.ticks() - self.status.location.timestamp) / 1000 + 0.5))
+			local ago_num = math.floor((dynawa.ticks() - self.status.location.timestamp) / 1000 + 0.5)
+			local ago_txt = "seconds"
+			if ago_num > 120 then
+				ago_num = math.floor(ago_num / 60 + .5)
+				ago_txt = "minutes"
+				if ago_num > 120 then
+					ago_num = math.floor(ago_num / 60 + .5)
+					ago_txt = "hours"
+				end
+			end
+			loc_txt = string.format("Location: %3.5f (lat), %3.5f (long), accuracy %d m, %s %s ago.", self.status.location.latitude, self.status.location.longitude, math.floor(self.status.location.accuracy + 0.5), ago_num, ago_txt)
 		end
 		local addr_txt = "Address: Not determined yet."
 		if self.status.address then
