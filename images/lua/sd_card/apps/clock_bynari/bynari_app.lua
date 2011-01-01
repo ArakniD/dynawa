@@ -129,7 +129,7 @@ end
 
 function app:switching_to_back()
 	self.run_id = nil
-	Class.App.switching_to_back(self)
+	getmetatable(self).switching_to_back(self)
 end
 
 function app:switching_to_front()
