@@ -122,12 +122,11 @@ function app:start()
 end
 
 function app:switching_to_front()
-	if self.status and self.status.location then
-		self:update()
-		self.window:push()
-	else
+	if not(self.status and self.status.location) then
 		self:reset()
 	end
+	self:update()
+	self.window:push()
 end
 
 function app:reset()
