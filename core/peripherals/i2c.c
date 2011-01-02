@@ -22,7 +22,7 @@
 //temporary test:
 
 #define I2C_IRQ         0
-#define I2C_TIMEOUT     500
+#define I2C_TIMEOUT     10000
 
 #if 1
 #define MUTEX_CREATE    xSemaphoreCreateMutex
