@@ -50,6 +50,13 @@ function app:activity(force)
 	end
 end
 
+function app:wake_up()
+	if not self.sleeping then
+		return
+	end
+	self:activity()
+end
+
 function app:sleep()
 	if self.sleeping then
 		return
