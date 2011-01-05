@@ -1,5 +1,8 @@
 app.name = "9Bit Clock"
 app.id = "dynawa.clock_9bit"
+-- Flashy clock, especially for using with Auto WakeUp
+-- Use CONFIRM key to switch between different visualizations
+
 
 app.numbers = {
 	[0] = function(x,y)
@@ -43,6 +46,11 @@ function app:fill()
 	end
 end
 
+function app:plot(x,y)
+	self.window:show_bitmap_at(self.sprites[math.random(#self.sprites)],x*16,y*16)
+	--log("plot: "..x..","..y)
+end
+
 function app:display_digit_at(num,x,y,args)
 	args = args or {}
 	local nsprites = #self.sprites
@@ -58,6 +66,56 @@ end
 function app:display_2digits_at(num,x,y,args)
 	self:display_digit_at(math.floor(num/10),x,y,args)
 	self:display_digit_at(num % 10,x+4,y,args)
+end
+
+function app:animate_bars(desc)
+	self.window:fill()
+	local time = os.date("*t")
+
+	--hours
+	if time.hour >= 20 then
+		self:plot(1,0)
+	end
+	if time.hour >= 10 then
+		self:plot(0,0)
+	end
+	local i = 1
+	for ii = 1, time.hour % 10 do
+		self:plot(10-i,1)
+		i = i + 1
+		if i == 6 then
+			i = i + 1
+		end
+	end
+	
+	--minutes
+	for i = 1,math.floor(time.min / 10) do
+		self:plot(i-1,3)
+	end
+	local i = 1
+	for ii = 1, time.min % 10 do
+		self:plot(10-i,4)
+		i = i + 1
+		if i == 6 then
+			i = i + 1
+		end
+	end
+	
+	--seconds
+	for i = 1,math.floor(time.sec / 10) do
+		self:plot(i-1,6)
+	end
+	local i = 1
+	for ii = 1, time.sec % 10 do
+		self:plot(10-i,7)
+		i = i + 1
+		if i == 6 then
+			i = i + 1
+		end
+	end	
+	
+	local s,ms = dynawa.time.get()
+	desc.delay = 1000-ms
 end
 
 function app:animate_default(desc)
@@ -90,6 +148,11 @@ function app:animate_negative(desc)
 	end
 end
 
+function app:start_animation()
+	self.run_id = dynawa.unique_id()
+	self:animate{sequence = assert(self.sequence)}
+end
+
 function app:animate(desc)
 	desc = self["animate_"..desc.sequence](self,desc) or desc
 	dynawa.devices.timers:timed_event{delay = assert(desc.delay), animate = desc, run_id = self.run_id, receiver = self}
@@ -108,9 +171,20 @@ function app:handle_event_timed_event(event)
 end
 
 function app:switching_to_front()
-	self.run_id = dynawa.unique_id()
-	self:animate{sequence = "negative"}
+	self:start_animation()
 	self.window:push()
+end
+
+function app:change_sequence()
+	if self.sequence == "default" then
+		self.sequence = "negative"
+	elseif self.sequence == "bars" then
+		self.sequence = "default"
+	else
+		assert(self.sequence == "negative")
+		self.sequence = "bars"
+	end
+	self:start_animation()
 end
 
 function app:switching_to_back()
@@ -126,43 +200,17 @@ function app:gfx_init()
 	self.sprites[0] = dynawa.bitmap.new(15,15)
 end
 
-function app:menu_item_selected(args)
-	local style = assert(args.item.value)
-	if self.prefs.style ~= style then
-		self.prefs.style = style
-		self:save_data(self.prefs)
+function app:handle_event_button(event)
+	if event.action == "button_down" and event.button == "confirm" then
+		self:change_sequence()
+	else
+		getmetatable(self).handle_event_button(self,event) --Parent's handler
 	end
-	args.menu.window:pop()
-	args.menu.window:_delete()
-	self:init_colors()
-	dynawa.popup:info("Color scheme changed")
-end
-
-function app:XXXXX_handle_event_do_menu (message)
-	local menudef = {
-		banner = "Bynari color schemes",
-		active_value = self.prefs.style,
-		items = {
-			{
-				text = "Rainbow", value = "default"
-			},
-			{
-				text = "Planet Earth", value = "blue/green"
-			},
-			{
-				text = "Pure snow", value = "white"
-			},
-			{
-				text = "Inferno", value = "red"
-			},
-		},
-	}
-	local menuwin = self:new_menuwindow(menudef)
-	menuwin:push()
 end
 
 function app:start()
 	self:gfx_init()
+	self.sequence = "default"
 	self.window = self:new_window()
 	self.window:fill()
 end
