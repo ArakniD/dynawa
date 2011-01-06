@@ -79,11 +79,11 @@ class.SDP = {
 
     des = function(self, t, socket)
         assert(type(t) == "table")
-        
+        log("sdp.des")
         local des_r = {}
         for i,v in ipairs(t) do
             if v.type then
-                --log("sdp " .. tostring(v))
+                log("sdp." .. tostring(v))
                 table.insert(des_r, v.serialize(v, socket))
             else
                 table.insert(des_r, self:des(v, socket))
