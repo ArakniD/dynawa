@@ -33,7 +33,10 @@ function app:make_request(request)
 	request.timestamp = dynawa.ticks() 
 	local dyno = dynawa.app_manager:app_by_id("dynawa.dyno")
 	if not dyno then
-		dynawa.popup:error("Dyno is not running, Geo Request Service cannot control the phone")
+		--Don't show popup for unsuccesful 'cancel'!
+		if request.updates ~= "cancel" then
+			dynawa.popup:error("Dyno is not running, Geo Request Service cannot control the phone")
+		end
 		return false,"No Dyno"
 	end
 	local id,act
