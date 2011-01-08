@@ -156,6 +156,55 @@ u16_t sdp_next_transid(void)
 	return tid_next;
 }
 
+void sdp_memlog(const void *a, size_t n) {
+    int i;
+    for(i = 0; i < n; i++) {
+        TRACE_INFO("%02x", ((u8_t*)a)[i]);
+    }
+    TRACE_INFO("\r\n");
+}
+
+// 00 00 10 00 80 00 00 80 5f 9b 34 fb
+static u8_t uuid_base[] = {0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb};
+
+static u8_t des_size_num_bytes[] = {1, 2, 4, 8, 16};
+
+u8_t sdp_uuid_equal(u8_t *uuid1, u8_t uuid1_size, u8_t *uuid2, u8_t uuid2_size)
+{
+    TRACE_INFO("sdp_uuid_equal(%d, %d)\r\n", uuid1_size, uuid2_size);
+    sdp_memlog(uuid1, uuid1_size);
+    sdp_memlog(uuid2, uuid2_size);
+
+    if (uuid1_size > uuid2_size) {
+        u8_t *temp_p = uuid1;
+        uuid1 = uuid2;
+        uuid2 = temp_p;
+
+        u8_t temp = uuid1_size;
+        uuid1_size = uuid2_size;
+        uuid2_size = temp;
+        TRACE_INFO("swap\r\n");
+    }
+
+    int uuid1_offset = 0;
+    if (uuid1_size == 2 && uuid2_size > 2) {
+        TRACE_INFO("checking leading zeroes\r\n");
+        sdp_memlog(uuid2, 2);
+        uuid1_offset = 2;
+        if (U16LE2CPU(uuid2))
+            return 0;
+    }
+    if (uuid1_size <= 4 && uuid2_size > 4) {
+        TRACE_INFO("checking BT uuid base\r\n");
+        sdp_memlog(uuid2 + 4, 12);
+        if (byte_memcmp(uuid_base, uuid2 + 4, 12))
+            return 0;
+    }
+    TRACE_INFO("checking uuid\r\n");
+    sdp_memlog(uuid2 + uuid1_offset, uuid1_size);
+    return !byte_memcmp(uuid1, uuid2 + uuid1_offset, uuid1_size);
+}
+
 /* 
  * sdp_pattern_search():
  * 
@@ -166,19 +215,54 @@ u8_t sdp_pattern_search(struct sdp_record *record, u8_t size, struct pbuf *p)
 	u8_t i, j;
 	u8_t *payload = (u8_t *)p->payload;
 
-TRACE_BT(">>>sdp_pattern_search\r\n");
+TRACE_INFO(">>>sdp_pattern_search\r\n");
 	//TODO actually parse the request instead of going over each byte
 	for(i = 0; i < size; ++i) {
-        TRACE_BT("pattern %x\r\n", payload[i]);
+        TRACE_INFO("pattern %x\r\n", payload[i]);
+		if(SDP_DE_TYPE(payload[i]) == SDP_DE_TYPE_UUID)  {
+			u8_t size1 = des_size_num_bytes[SDP_DE_SIZE(payload[i])];
+
+            for(j = 0; j < record->len; ++j) {
+                if(SDP_DE_TYPE(record->record_de_list[j]) == SDP_DE_TYPE_UUID) {
+			        u8_t size2 = des_size_num_bytes[SDP_DE_SIZE(record->record_de_list[j])];
+                    if (sdp_uuid_equal(payload + i + 1, size1, record->record_de_list + j + 1, size2)) {
+                        TRACE_INFO("<<<sdp_pattern_search 1\r\n");
+                        return 1; /* Found a matching UUID in record */
+                    }
+                    j += size2;
+                }
+            }
+            i += size1;
+        }
+    }
+    TRACE_INFO("<<<sdp_pattern_search 0\r\n");
+	return 0;
+}
+
+u8_t sdp_pattern_search_orig(struct sdp_record *record, u8_t size, struct pbuf *p) 
+{
+	u8_t i, j, k;
+	u8_t *payload = (u8_t *)p->payload;
+
+TRACE_INFO(">>>sdp_pattern_search\r\n");
+	//TODO actually parse the request instead of going over each byte
+	for(i = 0; i < size; ++i) {
+        TRACE_INFO("pattern %x\r\n", payload[i]);
 		if(SDP_DE_TYPE(payload[i]) == SDP_DE_TYPE_UUID)  {
 			switch(SDP_DE_SIZE(payload[i])) {
 				case SDP_DE_SIZE_16:
-                    TRACE_BT("SDP_DE_SIZE_16\r\n");
+                    TRACE_INFO("SDP_DE_SIZE_16\r\n");
+#ifdef TRACE_INFO
+                    for(j = 0; j < 2; j++) {
+                        TRACE_INFO("%02x", payload[i + 1 + j]);
+                    }
+                    TRACE_INFO("\r\n");
+#endif
 					for(j = 0; j < record->len; ++j) {
 						if(SDP_DE_TYPE(record->record_de_list[j]) == SDP_DE_TYPE_UUID) {
 							//if(*((u16_t *)(payload + i + 1)) == *((u16_t *)(record->record_de_list + j + 1))) {
 							if(U16LE2CPU(payload + i + 1) == U16LE2CPU(record->record_de_list + j + 1)) {
-                                TRACE_BT("<<<sdp_pattern_search 1\r\n");
+                                TRACE_INFO("<<<sdp_pattern_search 1\r\n");
 								return 1; /* Found a matching UUID in record */
 							}
 							++j;
@@ -187,20 +271,58 @@ TRACE_BT(">>>sdp_pattern_search\r\n");
 					i += 2;
 					break;
 				case SDP_DE_SIZE_32:
-                    TRACE_BT("SDP_DE_SIZE_32\r\n");
+                    TRACE_INFO("SDP_DE_SIZE_32\r\n");
+#ifdef TRACE_INFO
+                    for(j = 0; j < 4; j++) {
+                        TRACE_INFO("%02x", payload[i + 1 + j]);
+                    }
+                    TRACE_INFO("\r\n");
+#endif
+					LWIP_DEBUGF(SDP_DEBUG, ("TODO: add support for 32-bit UUID\n"));
+					for(j = 0; j < record->len; ++j) {
+						if(SDP_DE_TYPE(record->record_de_list[j]) == SDP_DE_TYPE_UUID && SDP_DE_SIZE(record->record_de_list[j]) == SDP_DE_SIZE_32) {
+
+							if(U32LE2CPU(payload + i + 1) == U32LE2CPU(record->record_de_list + j + 1)) {
+                                TRACE_INFO("<<<sdp_pattern_search 1\r\n");
+								return 1; /* Found a matching UUID in record */
+							}
+							j += 3;
+						}
+					}
 					i += 4;
 					break;
 				case SDP_DE_SIZE_128:
-                    TRACE_BT("SDP_DE_SIZE_128\r\n");
+                    TRACE_INFO("SDP_DE_SIZE_128\r\n");
+#ifdef TRACE_INFO
+                    for(j = 0; j < 16; j++) {
+                        TRACE_INFO("%02x", payload[i + 1 + j]);
+                    }
+                    TRACE_INFO("\r\n");
+#endif
 					LWIP_DEBUGF(SDP_DEBUG, ("TODO: add support for 128-bit UUID\n"));
-					i+= 16;
+					for(j = 0; j < record->len; ++j) {
+						if(SDP_DE_TYPE(record->record_de_list[j]) == SDP_DE_TYPE_UUID && SDP_DE_SIZE(record->record_de_list[j]) == SDP_DE_SIZE_128) {
+
+							if(
+                                U32LE2CPU(payload + i + 1) == U32LE2CPU(record->record_de_list + j + 1) &&
+                                U32LE2CPU(payload + i + 5) == U32LE2CPU(record->record_de_list + j + 5) &&
+                                U32LE2CPU(payload + i + 9) == U32LE2CPU(record->record_de_list + j + 9) &&
+                                U32LE2CPU(payload + i + 13) == U32LE2CPU(record->record_de_list + j + 13)
+                            ) {
+                                TRACE_INFO("<<<sdp_pattern_search 1\r\n");
+								return 1; /* Found a matching UUID in record */
+							}
+							j += 15;
+						}
+					}
+					i += 16;
 					break;
 				default:
 					break;
 			}
 		}
 	}
-    TRACE_BT("<<<sdp_pattern_search 0\r\n");
+    TRACE_INFO("<<<sdp_pattern_search 0\r\n");
 	//MV return 1; //TODO change back to 0
 	return 0; //TODO change back to 0
 }
