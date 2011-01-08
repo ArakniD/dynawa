@@ -104,6 +104,7 @@ err_t sdp_recv(void *arg, struct l2cap_pcb *pcb, struct pbuf *p, err_t err);
 #define SDP_UINT16		(SDP_DE_TYPE_UINT | SDP_DE_SIZE_16)
 #define SDP_UINT32		(SDP_DE_TYPE_UINT | SDP_DE_SIZE_32)
 #define SDP_UUID16		(SDP_DE_TYPE_UUID | SDP_DE_SIZE_16)
+#define SDP_UUID32		(SDP_DE_TYPE_UUID | SDP_DE_SIZE_32)
 #define SDP_UUID128		(SDP_DE_TYPE_UUID | SDP_DE_SIZE_128)
 
 /* PDU identifiers */

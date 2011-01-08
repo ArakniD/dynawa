@@ -24,6 +24,16 @@ void *byte_memcpy(void *dest, const void *src, size_t n) {
     return _dest;
 }
 
+int byte_memcmp(const void *s1, const void *s2, size_t n) {
+    int i;
+    for(i = 0; i < n; i++) {
+        uint8_t d = *(uint8_t*)s1++ - *(uint8_t*)s2++;
+        if (d != 0)
+            return d;
+    }
+    return 0;
+}
+
 //#define MALLOC_LICK_SEMAPHORE
 
 #ifdef MALLOC_LICK_SEMAPHORE
