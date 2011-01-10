@@ -45,7 +45,7 @@ end
 
 dynawa.file.save_data = function(data, fname)
 	assert(type(data) == "table", "Data is not a table but "..tostring(data))
-	local txt = dynawa.file.serialize(data)	
+	local txt = dynawa.file.serialize(data)
 	local fd = assert(io.open(fname,"w"))
 	fd:write(txt)
 	fd:close()
