@@ -150,7 +150,7 @@ end
 
 function app:start_animation()
 	self.run_id = dynawa.unique_id()
-	self:animate{sequence = assert(self.sequence)}
+	self:animate{sequence = assert(self.prefs.sequence)}
 end
 
 function app:animate(desc)
@@ -176,14 +176,17 @@ function app:switching_to_front()
 end
 
 function app:change_sequence()
-	if self.sequence == "default" then
-		self.sequence = "negative"
-	elseif self.sequence == "bars" then
-		self.sequence = "default"
+	local seq = assert(self.prefs.sequence)
+	if seq == "default" then
+		seq = "negative"
+	elseif seq == "bars" then
+		seq = "default"
 	else
-		assert(self.sequence == "negative")
-		self.sequence = "bars"
+		assert(seq == "negative")
+		seq = "bars"
 	end
+	self.prefs.sequence = seq
+	self:save_data(self.prefs)
 	self:start_animation()
 end
 
@@ -209,10 +212,14 @@ function app:handle_event_button(event)
 end
 
 function app:start()
+	self.prefs = self:load_data() or {sequence = "default"}
 	self:gfx_init()
-	self.sequence = "default"
 	self.window = self:new_window()
 	self.window:fill()
+end
+
+function app:handle_event_do_menu()
+	dynawa.popup:info("Use the CONFIRM button to change clock style.")
 end
 
 function app:handle_event_gesture_sleep()

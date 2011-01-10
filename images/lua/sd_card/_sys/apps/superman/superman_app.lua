@@ -85,6 +85,7 @@ function app.menu_builders:root()
 			{text = "Display settings", value = {go_to_url = "adjust_display"}},
 			{text = "Time and date settings", value = {go_to_url = "adjust_time_date"}},
 			{text = "Gestures (accelerometer)", value = {go_to_url = "adjust_gestures"}},
+			{text = "Debug menu", value = {go_to_url = "debug"}},
 		},
 	}
 	return menu_def
@@ -489,3 +490,11 @@ function app.menu_builders:adjust_gestures(index)
 	return menudesc
 end
 
+function app.menu_builders:debug(index)
+	local menudesc = {banner = "Debug menu", items = {}}
+	table.insert(menudesc.items,{text = "Turn SD card power management off", selected = function()
+		dynawa.x.pm_sd(false)
+		dynawa.popup:info("Sd card PM is now off. Reboot to turn it back on.")
+	end})
+	return menudesc
+end
