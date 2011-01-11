@@ -1615,3 +1615,35 @@ void _bt_rfcomm_send(bt_socket *sock, struct pbuf *p) {
         rfcomm_uih(pcb, rfcomm_cn(pcb), p);
     }
 }
+
+err_t remote_name(void *arg, struct hci_pcb *pcb, struct bd_addr *bdaddr, u8_t *remote_name, u16_t result)
+{
+    if (result == HCI_SUCCESS) {
+        event ev;
+        ev.type = EVENT_BT;
+        ev.data.bt.type = EVENT_BT_REMOTE_NAME;
+        memcpy(&ev.data.bt.param.remote_name.bdaddr, bdaddr, BT_BDADDR_LEN);
+
+        int l;
+        for(l = 0; l < 248; l++) {
+            if (remote_name[l] == '\0') {
+                break;
+            }
+        }
+        u8_t *name = malloc(l + 1);
+    
+        if (name == NULL) {
+            panic("remote_name"); 
+        }
+        // ev.data.bt.param.remote_name.name (UTF8, max 248B. If less, null-terminated)
+        memcpy(name, remote_name, l);
+        name[l] = '\0';
+        ev.data.bt.param.remote_name.name = name;
+        event_post(&ev);
+    }
+    return ERR_OK;
+}
+
+void _bt_remote_name_req(struct bd_addr *bdaddr) {
+    hci_remote_name_req(bdaddr, remote_name);
+}

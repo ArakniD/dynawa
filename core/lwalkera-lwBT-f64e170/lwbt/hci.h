@@ -169,6 +169,7 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_CONNECTION_COMPLETE 0x03
 #define HCI_CONNECTION_REQUEST 0x04
 #define HCI_DISCONNECTION_COMPLETE 0x05
+#define HCI_REMOTE_NAME_REQ_COMPLETE 0x07
 #define HCI_ENCRYPTION_CHANGE 0x08
 #define HCI_QOS_SETUP_COMPLETE 0x0D
 #define HCI_COMMAND_COMPLETE 0x0E
@@ -241,9 +242,13 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_INFO_PARAM_OGF 0x04 /* Informational parameters */
 
 /* Command OCF */
+/* Link Control */
+#define HCI_INQUIRY_OCF 0x01
+#define HCI_REMOTE_NAME_REQ_OCF 0x19
+#define HCI_REMOTE_NAME_REQ_CANCEL_OCF 0x1A
+
 #define HCI_R_LOCAL_VERSION_INFO_OCF 0x01
 #define HCI_R_SUPPORTED_LOCAL_FEATURES_OCF 0x03
-#define HCI_INQUIRY_OCF 0x01
 #define HCI_CREATE_CONN_OCF 0x05
 #define HCI_DISCONN_OCF 0x06
 #define HCI_REJECT_CONN_REQ_OCF 0x0A
@@ -300,6 +305,8 @@ u16_t lp_pdu_maxsize(void);
 #define HCI_R_BUF_SIZE_PLEN 4
 #define HCI_R_BD_ADDR_PLEN 4
 #define HCI_R_SUPPORTED_LOCAL_FEATURES_PLEN 4
+#define HCI_REMOTE_NAME_REQ_PLEN 14
+
 
 /* Set Event Filter params */
 #define HCI_SET_EV_FILTER_CLEAR 0
@@ -375,6 +382,7 @@ struct hci_pcb {
 
 	err_t (* pin_req)(void *arg, struct bd_addr *bdaddr);
 	err_t (* inq_complete)(void *arg, struct hci_pcb *pcb, struct hci_inq_res *ires, u16_t result);
+	err_t (* remote_name_req_complete)(void *arg, struct hci_pcb *pcb, struct bd_addr *bdaddr, u8_t *remote_name, u16_t result);
 	err_t (* rbd_complete)(void *arg, struct bd_addr *bdaddr);
 	err_t (* link_key_not)(void *arg, struct bd_addr *bdaddr, u8_t *key);
 	err_t (* link_key_req)(void *arg, struct bd_addr *bdaddr);
@@ -400,6 +408,9 @@ struct hci_pcb {
 #define HCI_EVENT_INQ_COMPLETE(pcb,result,ret) \
 	if((pcb)->inq_complete != NULL) \
 		(ret = (pcb)->inq_complete((pcb)->callback_arg,(pcb),(pcb)->ires,(result)))
+#define HCI_EVENT_REMOTE_NAME_REQ_COMPLETE(pcb,bdaddr,rname,result,ret) \
+	if((pcb)->remote_name_req_complete != NULL) \
+		(ret = (pcb)->remote_name_req_complete((pcb)->callback_arg,(pcb),(bdaddr),(rname),(result)))
 #define HCI_EVENT_RBD_COMPLETE(pcb,bdaddr,ret) \
 	if((pcb)->rbd_complete != NULL) \
 		(ret = (pcb)->rbd_complete((pcb)->callback_arg,(bdaddr)));

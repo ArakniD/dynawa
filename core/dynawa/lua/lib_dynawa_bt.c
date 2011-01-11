@@ -48,8 +48,15 @@ static int l_cmd (lua_State *L) {
             bt_link_key_req_neg_reply(bdaddr);
         }
         break;
-    case 4:
+    case 4:         // INQUIRY
         bt_inquiry();
+        break;
+    case 5:       // REMOTE_NAME_REQ
+        {
+            const uint8_t *bdaddr = luaL_checkstring(L, 2);
+
+            bt_remote_name_req(bdaddr);
+        }
         break;
     case 100:       // SOCKET_NEW
         {
@@ -165,6 +172,14 @@ static int l_cmd (lua_State *L) {
             bt_lua_socket *sock = (bt_lua_socket*)lua_touserdata(L, 2);
 
             luaL_unref(L, LUA_REGISTRYINDEX, sock->ref_lua_sdp_record);
+        }
+        break;
+    case 600:       // INQUIRY
+    case 601:       // REMOTE_NAME_REQ
+        {
+            const uint8_t *bdaddr = luaL_checkstring(L, 2);
+
+            bt_remote_name_req(bdaddr);
         }
         break;
     }

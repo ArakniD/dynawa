@@ -446,6 +446,7 @@ void hci_event_input(struct pbuf *p)
 	struct hci_link *link;
 	u8_t i, j;
 	struct bd_addr *bdaddr;
+    u8_t *rname;
 	u8_t resp_offset;
 	err_t ret;
 	u8_t ocf, ogf;
@@ -490,6 +491,11 @@ void hci_event_input(struct pbuf *p)
 				}
 			}
 			break;
+		case HCI_REMOTE_NAME_REQ_COMPLETE:
+			bdaddr = (void *)(((u8_t *)p->payload)+1); /* Get the Bluetooth address */
+			LWIP_DEBUGF(HCI_EV_DEBUG, ("hci_event_input: Remote Name Req complete, 0x%x %s\n", ((u8_t *)p->payload)[0], hci_get_error_code(((u8_t *)p->payload)[0])));
+            HCI_EVENT_REMOTE_NAME_REQ_COMPLETE(pcb, bdaddr, (u8_t *)p->payload + 7, ((u8_t *)p->payload)[0],ret);
+            break;
 		case HCI_CONNECTION_COMPLETE:
 			bdaddr = (void *)(((u8_t *)p->payload)+3); /* Get the Bluetooth address */
 TRACE_BT("HCI_CONNECTION_COMPLETE\r\n");
@@ -854,6 +860,56 @@ err_t hci_inquiry(u32_t lap, u8_t inq_len, u8_t num_resp, err_t (* inq_complete)
 	//MEMCPY(((u8_t *)p->payload)+4, inqres->cod, 3);
 	((u8_t *)p->payload)[7] = inq_len;
 	((u8_t *)p->payload)[8] = num_resp;
+
+    return hci_cmd_main_send(p);
+}
+
+err_t hci_remote_name_req(struct bd_addr *bdaddr, err_t (* remote_name_req_complete)(void *arg, struct hci_pcb *pcb, struct bd_addr *bdaddr, u8_t *remote_name, u16_t result))
+{
+	u8_t page_scan_repetition_mode, page_scan_mode;
+	u16_t clock_offset;
+	struct pbuf *p;
+	struct hci_inq_res *inqres;
+
+	pcb->remote_name_req_complete = remote_name_req_complete;
+
+	/* Check if module has been discovered in a recent inquiry */
+	for(inqres = pcb->ires; inqres != NULL; inqres = inqres->next) {
+		if(bd_addr_cmp(&inqres->bdaddr, bdaddr)) {
+			page_scan_repetition_mode = inqres->psrm;
+			page_scan_mode = inqres->psm;
+			clock_offset = inqres->co;
+			break;
+		}
+	}
+	if(inqres == NULL) {
+		/* No information on parameters from an inquiry. Using default values */
+		page_scan_repetition_mode = 0x01; /* Assuming worst case: time between
+											 successive page scans starting 
+											 <= 2.56s */
+		page_scan_mode = 0x00; /* Assumes the device uses mandatory scanning, most
+								  devices use this. If no conn is established, try
+								  again w this parm set to optional page scanning */
+		clock_offset = 0x00; /* If the device was not found in a recent inquiry
+								this  information is irrelevant */
+	}    
+
+    // HCI_REMOTE_NAME_REQ_PLEN = 14 OK
+	if((p = pbuf_alloc(PBUF_RAW, HCI_REMOTE_NAME_REQ_PLEN, PBUF_RAM)) == NULL) {
+		LWIP_DEBUGF(HCI_DEBUG, ("hci_remote_name_req: Could not allocate memory for pbuf\n"));
+		return ERR_MEM; /* Could not allocate memory for pbuf */
+	}
+
+	/* Assembling command packet */
+	p = hci_cmd_ass(p, HCI_REMOTE_NAME_REQ_OCF, HCI_LINK_CTRL_OGF, HCI_REMOTE_NAME_REQ_PLEN);
+	/* Assembling cmd prameters */
+	MEMCPY(((u8_t *)p->payload)+4, bdaddr->addr, 6);
+
+	((u8_t *)p->payload)[10] = page_scan_repetition_mode;
+	// ((u8_t *)p->payload)[11] = page_scan_mode;
+	((u8_t *)p->payload)[11] = 0; // reserved
+	//((u16_t *)p->payload)[12] = clock_offset;
+    CPU2U16LE((u8_t*)p->payload + 12, clock_offset);
 
     return hci_cmd_main_send(p);
 }
