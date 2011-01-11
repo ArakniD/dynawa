@@ -1,6 +1,7 @@
 #ifndef BT_EVENT_H__
 #define BT_EVENT_H__
 
+#include "bt.h"
 #include "bt_socket.h"
 
 #define EVENT_BT_STARTED                1
@@ -12,6 +13,9 @@
 #define EVENT_BT_RFCOMM_ACCEPTED        17
 #define EVENT_BT_DATA                   20
 #define EVENT_BT_FIND_SERVICE_RESULT    30
+#define EVENT_INQUIRY_COMPLETE          40
+#define EVENT_INQUIRY_RESULT            41
+#define EVENT_BT_REMOTE_NAME            45
 #define EVENT_BT_ERROR                  100
 
 #define BT_SOCKET_STATE_L2CAP_CONNECTING        1
@@ -27,6 +31,10 @@ typedef union {
     struct {
         uint8_t cn;
     } service;
+    struct {
+        struct bd_addr bdaddr;
+        void *name;
+    } remote_name;
     uint16_t error;
 } bt_param;
 

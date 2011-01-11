@@ -439,6 +439,34 @@ int lua_event_loop (void) {
                     lua_settable(L, -3);
                 }
                 break;
+            case EVENT_BT_REMOTE_NAME:
+                TRACE_INFO("EVENT_BT_REMOTE_NAME\r\n");
+                {
+                    bt_event *btev = &ev.data.bt;
+
+                    lua_newtable(L);
+
+                    lua_pushstring(L, "type");
+                    lua_pushstring(L, "bluetooth");
+                    lua_settable(L, -3);
+
+                    lua_pushstring(L, "subtype");
+                    lua_pushnumber(L, ev.data.bt.type);
+                    lua_settable(L, -3);
+
+                    struct bd_addr *ev_bdaddr = &btev->param.remote_name.bdaddr;
+                    lua_pushstring(L, "bdaddr");
+                    lua_pushlstring(L, ev_bdaddr, BT_BDADDR_LEN);
+                    lua_settable(L, -3);
+
+                    uint8_t rname = btev->param.remote_name.name;
+                    lua_pushstring(L, "name");
+                    lua_pushstring(L, rname);
+                    lua_settable(L, -3);
+
+                    free(rname);
+                }
+                break;
             default:
                 TRACE_ERROR("Uknown bt event %x\r\n", ev.data.bt.type);
             }

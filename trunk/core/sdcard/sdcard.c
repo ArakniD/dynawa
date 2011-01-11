@@ -882,7 +882,8 @@ void sd_start_timer(void) {
 int8_t sd_unlock() {
     spi_unlock();
 #if SD_PM
-    sd_start_timer();
+    if (sd_pm)
+        sd_start_timer();
 #endif
     return SD_OK;
 }

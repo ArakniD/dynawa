@@ -504,6 +504,16 @@ static void u_bt_task(bt_command *cmd)
                 _bt_inquiry();
             }
             break;
+        case BT_COMMAND_REMOTE_NAME_REQ:
+            {
+                TRACE_INFO("BT_COMMAND_REMOTE_NAME_REQ\r\n");
+                struct bd_addr *bdaddr = cmd->param.ptr;
+
+                _bt_remote_name_req(bdaddr);
+
+                free(bdaddr);
+            }
+            break;
         case BT_COMMAND_ADVERTISE_SERVICE:
             {
                 TRACE_INFO("BT_COMMAND_ADVERTISE_SERVICE\r\n");
@@ -1129,6 +1139,27 @@ int bt_inquiry() {
     TRACE_INFO("bt_inquiry\r\n");
 
     cmd.id = BT_COMMAND_INQUIRY;
+
+    xQueueSend(command_queue, &cmd, portMAX_DELAY);
+    scheduler_wakeup();
+    return BT_OK;
+}
+
+int bt_remote_name_req(uint8_t *bdaddr) {
+    bt_command cmd;
+
+    TRACE_INFO("bt_remote_name_req\r\n");
+
+    struct bd_addr *cmd_bdaddr = malloc(sizeof(struct bd_addr)); 
+    if (cmd_bdaddr == NULL) {
+        return BT_ERR_MEM;
+    }
+    memcpy(cmd_bdaddr, bdaddr, BT_BDADDR_LEN);
+
+    trace_bytes("bdaddr", bdaddr, BT_BDADDR_LEN);
+
+    cmd.id = BT_COMMAND_REMOTE_NAME_REQ;
+    cmd.param.ptr = cmd_bdaddr;
 
     xQueueSend(command_queue, &cmd, portMAX_DELAY);
     scheduler_wakeup();
