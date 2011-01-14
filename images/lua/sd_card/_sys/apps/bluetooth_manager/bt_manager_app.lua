@@ -263,7 +263,7 @@ function app:handle_bt_event_link_key_not(event)
 	local link_key = assert(event.link_key)
 	log("Link_key_not")
 	if not self.prefs.devices[bdaddr] then
-		local name = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
+		local name = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr:reverse(), 1, -1))
 		self.prefs.devices[bdaddr] = {name = name}
 		log("name:"..name)
 	end

@@ -39,8 +39,12 @@ function app:make_request(id)
 		return
 	end
 	log("Sending HTTP tester request for: "..id)
-	local status = http_app:make_request(request)
+	local status,err = http_app:make_request(request)
 	if not status then
+		if err == "No Dyno" then
+			self:stop_requests()
+			return
+		end
 		self:indicator(srv_data.index,"error")
 		dynawa.devices.timers:timed_event{delay = 2000, receiver = self, make_request = id}		
 	else
@@ -69,10 +73,10 @@ function app:response(response,id)
 			local bmp = assert(dynawa.bitmap.from_png(response.body),"Cannot parse PNG")
 			self.window:show_bitmap_at(bmp,0,0)
 		elseif id == "fuxoft" then
-			log("********* Text from fuxoft.cz should be sanitized: "..response.body)
+			--log("********* Text from fuxoft.cz should be sanitized: "..response.body)
 		end
 	else
-		log("Bad response for "..id..": "..tostring(response.status).." ("..tostring(response.error)..")")
+		log("Error response for "..id..": "..tostring(response.status).." ("..tostring(response.error)..")")
 		self:indicator(srv_data.index,"error")
 	end
 	dynawa.devices.timers:timed_event{delay = 3000, receiver = self, make_request = id}
