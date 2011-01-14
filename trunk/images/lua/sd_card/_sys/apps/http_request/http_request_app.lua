@@ -21,7 +21,7 @@ function app:cleanup()
 		end
 	end
 	if count > 0 then
-		log("********** HTTP requester - Cleaned up requests = "..count)
+		log("HTTP requester - Cleaned up requests = "..count)
 	end
 end
 
@@ -54,18 +54,12 @@ function app:make_request(request)
 		table.insert(headers_lines, k..": "..v)
 	end
 	data.message = data.message .. table.concat(headers_lines,"\r\n") .. "\r\n\r\n"
-	local id,act
-	for i,a in pairs(dyno.activities) do
-		if a.status == "connected" then
-			act = a
-			break
-		end
-	end
+	local act = dyno:try_activity(self.last_bad_bdaddr)
 	if not act then
-		log("HTTP Requester: Dyno doesn't have any activity whose status is 'connected'.") --#todo
 		return nil, "Dyno not connected"
 	end 
 	--log("**** Sending http request "..request.id)
+	request.activity = act
 	request.bdaddr = act.bdaddr
 	self.requests[request.id] = request
 	local stat,err = dyno:bdaddr_send_data(act.bdaddr,data)
@@ -83,7 +77,7 @@ function app:parse_response(response)
 	self.requests[parsed.id] = nil
 	if not response.message then
 		assert(response.error,"Response without message must have error code")
-		parsed.error = response.error
+		parsed.error = request.activity.name..": "..response.error
 	else
 		local headers0,body = response.message:match("(.-)\r\n\r\n(.*)")
 		if not body then
@@ -123,5 +117,9 @@ end]]
 function app:handle_response(response)
 	--log("HTTP response: "..dynawa.file.serialize(response))
 	local parsed, request = self:parse_response(response)
+	if parsed.error == "no_internet" then
+		--Try another Dyno server next time
+		local last_bad_mac = assert(request.bdaddr)
+	end
 	request.callback(parsed,request)
 end

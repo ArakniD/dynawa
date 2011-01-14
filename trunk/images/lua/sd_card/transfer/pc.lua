@@ -232,7 +232,10 @@ while(true) do
 		print("Connected")
 		main_loop(fd_from)
 	end
-	--os.execute("sleep 0.2")
+	local stat = os.execute("sleep 1")
+	if stat ~= 0 then
+		os.exit()
+	end
 end
 
 --[[

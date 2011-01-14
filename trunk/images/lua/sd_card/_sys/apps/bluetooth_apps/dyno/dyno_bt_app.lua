@@ -32,6 +32,37 @@ function app:new_activity(bdaddr, status)
 	return act
 end
 
+function app:try_activity(badmac)
+	--Used for trying different activities in case of failure.
+	--It makes a sorted list of all CONNECTED activities
+	--The order is determined by alphabetically sorting the activities based on the string concat of MAC address and activity id.
+	--Returns either the first activity, or - if badmac is specified - the first activity AFTER the activity with MAC equal to "badmac".
+	--If badmac value is higher than MAC of the last activity, returns the FIRST activity instead.
+	--If only single activity is available, returns this activity regardless of badmac value
+	--If no activities are available, returns nil
+	local acts = {}
+	for k,act in pairs(self.activities) do
+		if act.status == "connected" then
+			table.insert(acts,act)
+		end
+	end
+	if #acts == 0 then
+		return nil
+	end
+	if #acts == 1 then
+		return acts[1]
+	end
+	table.sort(acts, function (a,b) return (a.bdaddr..a.id < b.bdaddr..b.id) end)
+	if not badmac or badmac >= acts[#acts].bdaddr then
+		return acts[1]
+	end
+	while badmac <= acts[1].bdaddr do
+		local act = table.remove(acts,1)
+		table.insert(acts,act)
+	end
+	return acts[1]
+end
+
 local function to_word(num) --Convert integer to 2 byte word
 	return string.char(math.floor(num / 256))..string.char(num%256)
 end
@@ -589,7 +620,8 @@ function app:save_prefs()
 		end
 		prefs.devices[bdaddr] = val
 	end
-	self:save_data(prefs)
+	self:
+	save_data(prefs)
 end
 
 function app:status_changed()

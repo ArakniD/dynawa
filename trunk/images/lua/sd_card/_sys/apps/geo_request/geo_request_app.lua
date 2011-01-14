@@ -21,7 +21,7 @@ function app:cleanup()
 		end
 	end
 	if count > 0 then
-		log("********** Geo requester - Cleaned up requests = "..count)
+		log("Geo requester - Cleaned up requests = "..count)
 	end
 end
 
@@ -39,18 +39,13 @@ function app:make_request(request)
 		end
 		return false,"No Dyno"
 	end
-	local id,act
-	for i,a in pairs(dyno.activities) do
-		if a.status == "connected" then
-			act = a
-			break
-		end
-	end
+	local act = dyno:try_activity(self.last_bad_bdaddr)
 	if not act then
 		log("Geo Requester: Dyno doesn't have any activity whose status is 'connected'.") --#todo
 		return nil, "Dyno not connected"
 	end 
 	request.bdaddr = act.bdaddr
+	request.activity = act
 	if request.updates == "cancel" then
 		self.requests[request.id] = nil
 	else
@@ -95,6 +90,10 @@ function app:handle_response(response)
 	if request then
 		if request.method == "cached" then --It was one-time request. Remove it from requests.
 			self.requests[assert(request.id)] = nil
+		end
+		if response.error then
+			--Next time, try different Geo server if possible
+			self.last_bad_bdaddr = request.bdaddr
 		end
 		request.callback(response,request)
 	end
