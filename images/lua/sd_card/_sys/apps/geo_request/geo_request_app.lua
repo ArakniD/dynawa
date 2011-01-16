@@ -45,7 +45,6 @@ function app:make_request(request)
 		return nil, "Dyno not connected"
 	end 
 	request.bdaddr = act.bdaddr
-	request.activity = act
 	if request.updates == "cancel" then
 		self.requests[request.id] = nil
 	else
@@ -55,6 +54,7 @@ function app:make_request(request)
 	request.callback = nil
 	log("Sending Geo request "..request.id)
 	local stat,err = dyno:bdaddr_send_data(act.bdaddr,request)
+	request.activity = act
 	request.callback = callback
 	if not stat then
 		log("Cannot send Geo request: "..err)
