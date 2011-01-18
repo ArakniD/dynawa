@@ -11,6 +11,11 @@ local service = {
     {
         SDP.UINT16(0x0001), -- Service class ID list attribute
         {
+---[[ FF HTC Desire
+            SDP.UUID16(0x1108), -- Head-Set
+            SDP.UUID16(0x110b), -- Audio Sink
+--]]
+
             SDP.UUID16(0x111e), -- Hands-Free
             SDP.UUID16(0x1203) -- Generic Audio
         }

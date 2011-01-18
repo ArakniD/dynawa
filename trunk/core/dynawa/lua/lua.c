@@ -459,7 +459,7 @@ int lua_event_loop (void) {
                     lua_pushlstring(L, ev_bdaddr, BT_BDADDR_LEN);
                     lua_settable(L, -3);
 
-                    uint8_t rname = btev->param.remote_name.name;
+                    uint8_t *rname = btev->param.remote_name.name;
                     lua_pushstring(L, "name");
                     lua_pushstring(L, rname);
                     lua_settable(L, -3);

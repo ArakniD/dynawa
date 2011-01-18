@@ -1619,10 +1619,12 @@ void _bt_rfcomm_send(bt_socket *sock, struct pbuf *p) {
 err_t remote_name(void *arg, struct hci_pcb *pcb, struct bd_addr *bdaddr, u8_t *remote_name, u16_t result)
 {
     if (result == HCI_SUCCESS) {
+        sdp_memlog(bdaddr, BT_BDADDR_LEN);
+
         event ev;
         ev.type = EVENT_BT;
         ev.data.bt.type = EVENT_BT_REMOTE_NAME;
-        memcpy(&ev.data.bt.param.remote_name.bdaddr, bdaddr, BT_BDADDR_LEN);
+        byte_memcpy(&ev.data.bt.param.remote_name.bdaddr, bdaddr, BT_BDADDR_LEN);
 
         int l;
         for(l = 0; l < 248; l++) {
@@ -1630,14 +1632,20 @@ err_t remote_name(void *arg, struct hci_pcb *pcb, struct bd_addr *bdaddr, u8_t *
                 break;
             }
         }
+        TRACE_INFO("len %d\r\n", l);
         u8_t *name = malloc(l + 1);
     
         if (name == NULL) {
             panic("remote_name"); 
         }
         // ev.data.bt.param.remote_name.name (UTF8, max 248B. If less, null-terminated)
-        memcpy(name, remote_name, l);
+        if (l) 
+            byte_memcpy(name, remote_name, l);
         name[l] = '\0';
+
+        //sdp_memlog(name, l);
+        TRACE_INFO("remote_name %s\r\n", name);
+
         ev.data.bt.param.remote_name.name = name;
         event_post(&ev);
     }

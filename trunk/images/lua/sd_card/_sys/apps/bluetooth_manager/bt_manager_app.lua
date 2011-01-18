@@ -272,5 +272,21 @@ function app:handle_bt_event_link_key_not(event)
 		log("link key")
 		self.events:generate_event{type="new_paired_device",device={link_key = link_key, name = name, bdaddr = bdaddr}}
 		self:save_data(self.prefs)
+        -- test
+		self.hw.cmd:remote_name_req(bdaddr)
 	end
+end
+
+function app:handle_bt_event_remote_name(event)
+	local bdaddr = assert(event.bdaddr)
+	local name = assert(event.name)
+	log("remote_name")
+    local mac = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
+	log(mac .. ": " .. name)
+	if self.prefs.devices[bdaddr] then
+		self.prefs.devices[bdaddr].name = name
+		self:save_data(self.prefs)
+    else
+	    log("mac not found")
+    end
 end
