@@ -42,27 +42,27 @@ function class:new_socket(protocol)
 end
 
 function class:handle_event_socket_connected(socket)
-	log(socket.." connected")
+	log(socket.." connected, DOING NOTHING")
 end
 
 function class:handle_event_socket_connection_accepted(socket, connection_socket)
-	log(socket.." connection accepted " .. connection_socket)
+	log(socket.." connection accepted " .. connection_socket..", DOING NOTHING")
 end
 
 function class:handle_event_socket_data(socket,data)
-	log(string.format("%s got %s bytes of data: '%q'", tostring(socket), #data, data))
+	log(string.format("%s got %s bytes of data: '%q', DISCARDING", tostring(socket), #data, data))
 end
 
 function class:handle_event_socket_disconnected(socket)
-	log(socket.." disconnected")
+	log(socket.." disconnected, DOING NOTHING")
 end
 
 function class:handle_event_socket_error(socket,error)
-	error("BT error event '"..tostring(error).."' in "..socket)
+	error("BT error event '"..tostring(error).."' in "..socket..", IGNORING")
 end
 
 function class:handle_event_socket_find_service_result(socket,channel)
-	log ("Find_service_result channel = "..tostring(channel))
+	log ("Find_service_result channel = "..tostring(channel)..", IGNORING")
 end
 
 --For the following event to be received, BT App must subscribe to dynawa.bluetooth_manager.events
