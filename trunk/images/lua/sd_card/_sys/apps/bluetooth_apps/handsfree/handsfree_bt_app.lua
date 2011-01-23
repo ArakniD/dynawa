@@ -1,5 +1,5 @@
-app.name = "*OLD HandsFree BT"
-app.id = "dynawa.hf"
+app.name = "HandsFree BT"
+app.id = "dynawa.handsfree"
 
 local SDP = Class.BluetoothSocket.SDP
 
@@ -61,7 +61,7 @@ app.parser_state_machine = {
             -- +CIND: ("service",(0-1)),("call",(0-1)),("callsetup",(0-3)),("callheld",(0->)),("signal",(0-5)),("roam",(0-1)),("battchg",(0-5))
             function(app, socket, data)
                 for ind, val_min, val_max in string.gfind(data, '%("(%a+)",%(([^%-,]+)[%-,]([^%)]+)%)%)') do
-                    log("ind <" .. ind .. "> min " .. val_min .. " max " .. val_max)
+                    log("ind [" .. ind .. "] min " .. val_min .. " max " .. val_max)
                     table.insert(socket.indicators, {ind, val_min, val_max})
                 end 
             end
@@ -76,7 +76,7 @@ app.parser_state_machine = {
                 for val in string.gfind(data, "%d+") do
                     local ind_data = socket.indicators[ind_index]
                     if ind_data then
-                        log("ind <" .. ind_data[1] .. "> val " .. val)
+                        log("ind [" .. ind_data[1] .. "] val " .. val)
                     else
                         log("ind " .. ind_index .. " val " .. val)
                     end 
@@ -225,6 +225,7 @@ function app:handle_event_socket_connected(socket)
 end
 
 function app:handle_event_socket_disconnected(socket,prev_state)
+	log("Socket "..socket.." disconnected")
 	self.num_activities = self.num_activities - 1
 end
 

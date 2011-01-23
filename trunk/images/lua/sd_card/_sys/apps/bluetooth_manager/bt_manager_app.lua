@@ -263,9 +263,8 @@ function app:handle_bt_event_link_key_not(event)
 	local link_key = assert(event.link_key)
 	log("Link_key_not")
 	if not self.prefs.devices[bdaddr] then
-		local name = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr:reverse(), 1, -1))
-		self.prefs.devices[bdaddr] = {name = name}
-		log("name:"..name)
+		self.prefs.devices[bdaddr] = {name = "MAC "..self:mac_string(bdaddr), bdaddr = bdaddr}
+		--log("name:"..name)
 	end
 	if self.prefs.devices[bdaddr].link_key ~= link_key then
 		self.prefs.devices[bdaddr].link_key = link_key
@@ -277,16 +276,21 @@ function app:handle_bt_event_link_key_not(event)
 	end
 end
 
+function app:mac_string(bdaddr)
+	assert(#bdaddr == 6, "MAC should be 6 bytes")
+	return string.format("%02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr:reverse(), 1, -1))
+end
+
 function app:handle_bt_event_remote_name(event)
 	local bdaddr = assert(event.bdaddr)
 	local name = assert(event.name)
-	log("remote_name")
-    local mac = string.format("MAC %02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr, 1, -1))
-	log(mac .. ": " .. name)
-	if self.prefs.devices[bdaddr] then
-		self.prefs.devices[bdaddr].name = name
+	log("Got remote_name: "..name)
+	local dev = self.prefs.devices[bdaddr]
+	if dev then
+		dev.name = name.." ("..self:mac_string(dev.bdaddr)..")"
 		self:save_data(self.prefs)
-    else
-	    log("mac not found")
-    end
+	else
+		log("mac not found")
+	end
 end
+

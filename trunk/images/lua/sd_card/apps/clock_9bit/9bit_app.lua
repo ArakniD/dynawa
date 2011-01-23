@@ -197,7 +197,7 @@ end
 function app:gfx_init()
 	local bmap = assert(dynawa.bitmap.from_png_file(self.dir.."gfx.png"))
 	self.sprites = {}
-	for i = 1,12 do
+	for i = 1,14 do
 		self.sprites[i] = dynawa.bitmap.copy(bmap, i*16 - 15, 1, 15, 15)
 	end
 	self.sprites[0] = dynawa.bitmap.new(15,15)
