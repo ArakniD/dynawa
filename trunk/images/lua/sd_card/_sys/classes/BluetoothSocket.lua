@@ -31,112 +31,112 @@ class.is_bluetooth_socket = true
 --]]
 
 class.SDP = {
-    dividers = {
-        256, 256 * 256, 256 * 256 * 256
-    },
+	dividers = {
+		256, 256 * 256, 256 * 256 * 256
+	},
 
-    num2bytes = function(self, num, num_bytes) 
-        local bytes = {}
-        local i = num_bytes - 1
-        while i > 0 do
-            local divider = self.dividers[i]
-            local b = math.floor(num / divider)
-            --log("num2bytes " .. i .. " " .. num .. " " .. b)
-            table.insert(bytes, string.char(b))
-            num = num % divider
-            i = i - 1
-        end
-        table.insert(bytes, string.char(num))
-        return table.concat(bytes)
-    end,
+	num2bytes = function(self, num, num_bytes) 
+		local bytes = {}
+		local i = num_bytes - 1
+		while i > 0 do
+			local divider = self.dividers[i]
+			local b = math.floor(num / divider)
+			--log("num2bytes " .. i .. " " .. num .. " " .. b)
+			table.insert(bytes, string.char(b))
+			num = num % divider
+			i = i - 1
+		end
+		table.insert(bytes, string.char(num))
+		return table.concat(bytes)
+	end,
 
-    constructor_value = function(self, value)
-        local t = {
-            value = value
-        }
-        setmetatable(t, self)
-        return t
-    end,
+	constructor_value = function(self, value)
+		local t = {
+			value = value
+		}
+		setmetatable(t, self)
+		return t
+	end,
 
-    constructor_void = function(self)
-        local t = {
-        }
-        setmetatable(t, self)
-        return t
-    end,
+	constructor_void = function(self)
+		local t = {
+		}
+		setmetatable(t, self)
+		return t
+	end,
 
-    tostring_value = function(self)
-        return self.type .. "(" .. self.value .. ")"
-    end,
+	tostring_value = function(self)
+		return self.type .. "(" .. self.value .. ")"
+	end,
 
-    set_metamethods = function(self, type, t)
-        --log(tostring(self) .. " " .. type .. " " .. tostring(t))
-        self[type] = t
-        t.__index = t
-        t.type = type
-        setmetatable(t, t)
-    end,
+	set_metamethods = function(self, type, t)
+		--log(tostring(self) .. " " .. type .. " " .. tostring(t))
+		self[type] = t
+		t.__index = t
+		t.type = type
+		setmetatable(t, t)
+	end,
 
-    des = function(self, t, socket)
-        assert(type(t) == "table")
-        log("sdp.des")
-        local des_r = {}
-        for i,v in ipairs(t) do
-            if v.type then
-                log("sdp." .. tostring(v))
-                table.insert(des_r, v.serialize(v, socket))
-            else
-                table.insert(des_r, self:des(v, socket))
-            end
-        end
-        local des_s = table.concat(des_r)
-        local len = string.len(des_s)
-        return string.char(48 + 5) .. string.char(len) .. des_s
-    end,
+	des = function(self, t, socket)
+		assert(type(t) == "table")
+		log("sdp.des")
+		local des_r = {}
+		for i,v in ipairs(t) do
+			if v.type then
+				log("sdp." .. tostring(v))
+				table.insert(des_r, v.serialize(v, socket))
+			else
+				table.insert(des_r, self:des(v, socket))
+			end
+		end
+		local des_s = table.concat(des_r)
+		local len = string.len(des_s)
+		return string.char(48 + 5) .. string.char(len) .. des_s
+	end,
 
-    init = function(self)
-        --log(self)
-        self:set_metamethods("UINT8", {
-            __tostring = self.tostring_value,
-            __call = self.constructor_value,
-            serialize = function(t, socket)
-                return string.char(8 + 0) .. self:num2bytes(t.value, 1)
-            end
-        })
-        self:set_metamethods("UINT16", {
-            __tostring = self.tostring_value,
-            __call = self.constructor_value,
-            serialize = function(t, socket)
-                return string.char(8 + 1) .. self:num2bytes(t.value, 2)
-            end
-        })
-        self:set_metamethods("UINT32", {
-            __tostring = self.tostring_value,
-            __call = self.constructor_value,
-            serialize = function(t, socket)
-                return string.char(8 + 2) .. self:num2bytes(t.value, 4)
-            end
-        })
+	init = function(self)
+		--log(self)
+		self:set_metamethods("UINT8", {
+			__tostring = self.tostring_value,
+			__call = self.constructor_value,
+			serialize = function(t, socket)
+				return string.char(8 + 0) .. self:num2bytes(t.value, 1)
+			end
+		})
+		self:set_metamethods("UINT16", {
+			__tostring = self.tostring_value,
+			__call = self.constructor_value,
+			serialize = function(t, socket)
+				return string.char(8 + 1) .. self:num2bytes(t.value, 2)
+			end
+		})
+		self:set_metamethods("UINT32", {
+			__tostring = self.tostring_value,
+			__call = self.constructor_value,
+			serialize = function(t, socket)
+				return string.char(8 + 2) .. self:num2bytes(t.value, 4)
+			end
+		})
 
-        self:set_metamethods("UUID16", {
-            __tostring = self.tostring_value,
-            __call = self.constructor_value,
-            serialize = function(t, socket)
-                return string.char(24 + 1) .. self:num2bytes(t.value, 2)
-            end
-        })
+		self:set_metamethods("UUID16", {
+			__tostring = self.tostring_value,
+			__call = self.constructor_value,
+			serialize = function(t, socket)
+				return string.char(24 + 1) .. self:num2bytes(t.value, 2)
+			end
+		})
 
-        self:set_metamethods("RFCOMM_CHANNEL", {
-            __tostring = function(t)
-                return t.type
-            end,
-            __call = self.constructor_void,
-            serialize = function(t, socket)
-                --log("RFCOMM_CHANNEL " .. socket.channel)
-                return string.char(8 + 0) .. string.char(socket.channel)
-            end
-        })
-    end
+		self:set_metamethods("RFCOMM_CHANNEL", {
+			__tostring = function(t)
+				return t.type
+			end,
+			__call = self.constructor_void,
+			serialize = function(t, socket)
+				--log("RFCOMM_CHANNEL " .. socket.channel)
+				return string.char(8 + 0) .. string.char(socket.channel)
+			end
+		})
+	end
 }
 
 class.SDP:init()
@@ -214,7 +214,7 @@ function class:handle_bt_event_data(event)
 	if event.data then
 		self.app:handle_event_socket_data(self, assert(event.data))
 	else
-		log("WARNING: Socket incoming data event's data is nil")
+		log("WARNING: Socket 'incoming data' event's 'data' is nil")
 	end
 end
 

@@ -620,8 +620,7 @@ function app:save_prefs()
 		end
 		prefs.devices[bdaddr] = val
 	end
-	self:
-	save_data(prefs)
+	self:save_data(prefs)
 end
 
 function app:status_changed()

@@ -105,7 +105,6 @@ function dynawa.debug.send(data)
 end
 
 local errfunc=function(errtxt)
-	--if true then return("ERRRRR") end
 	local i = 1
 	local obj
 	repeat
@@ -114,7 +113,6 @@ local errfunc=function(errtxt)
 			obj = value
 			break
 		end
---		log(tostring(name))
 		i = i + 1
 	until not name
 	local txt = errtxt
@@ -127,7 +125,6 @@ end
 	
 function dynawa.debug.update_file() --Receive one file and store it to SD card
 	local data = dynawa.debug.receive(reply)
-	--dynawa.debug.send_raw("UPDATING_FILE")
 	local fname = assert(data.filename)
 	local file = assert(data.file)
 	--create directory
@@ -157,7 +154,15 @@ end
 
 function dynawa.debug.whats_new()
 	dynawa.debug.send_raw("WHATS_NEW?")
+	local flip_flop
 	while true do
+		flip_flop = not flip_flop
+		if flip_flop then
+			dynawa.bitmap.show_partial(dynawa.bitmap.new(50,50,50,00,50),nil,nil,nil,nil,0,0)
+		else
+			dynawa.bitmap.show_partial(dynawa.bitmap.new(50,50,100,255,100),nil,nil,nil,nil,0,0)
+		end
+		
 		local msg=dynawa.debug.receive_raw()
 		if msg == "RESTART" then
 			dynawa.debug.send_raw("RESTARTING")

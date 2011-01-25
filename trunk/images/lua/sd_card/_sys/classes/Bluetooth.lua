@@ -51,7 +51,7 @@ function class:handle_hw_event(event)
 	if socket_events[event.subtype] then --Handled by BluetoothSocket instance
 		if not event.socket then
 			--#todo what's this???
-			log("Received BT HW event of subtype "..tostring(event.subtype).." but socket is nil")
+			log("*** Received BT HW event of subtype "..tostring(event.subtype).." but socket is nil")
 		else
 			--log("BT sending event '"..event.subtype.."' to "..(event.socket or "nil"))
 			event.socket["handle_bt_event_"..event.subtype](event.socket,event)
