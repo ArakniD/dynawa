@@ -141,12 +141,15 @@ class.SDP = {
 
 class.SDP:init()
 
-function class:_init(protocol, c_socket)
+function class:_init(protocol, accept_event)
 	self.proto = assert(protocol)
 	self.id = dynawa.unique_id()
-	if c_socket then
+	if accept_event then
+        local c_socket = assert(accept_event.client_socket)
+        local remote_bdaddr = assert(accept_event.remote_bdaddr)
 		dynawa.devices.bluetooth.cmd:socket_bind(self, c_socket)
 		self._c = c_socket
+        self.remote_bdaddr = remote_bdaddr
 	else
 		self._c = dynawa.devices.bluetooth.cmd:socket_new(self)
 	end
@@ -165,6 +168,7 @@ end
 function class:connect(bdaddr, channel)
 	log(self.." connecting at channel "..channel)
 	dynawa.devices.bluetooth.cmd:connect(self._c, bdaddr, channel)
+    self.remote_bdaddr = bdaddr
 end
 
 function class:listen(channel)
@@ -203,7 +207,7 @@ function class:handle_bt_event_disconnected(event)
 end
 
 function class:handle_bt_event_accepted(event)
-	local sock = Class.BluetoothSocket(self.proto, assert(event.client_socket))
+	local sock = Class.BluetoothSocket(self.proto, assert(event))
 	sock.app = self.app
 	sock.state = "connected"
 	self.app:handle_event_socket_connection_accepted(self, sock)

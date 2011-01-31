@@ -334,6 +334,10 @@ int lua_event_loop (void) {
                     lua_pushstring(L, "client_socket");
                     lua_pushlightuserdata(L, (void*)client_sock);
                     lua_settable(L, -3);
+
+                    lua_pushstring(L, "remote_bdaddr");
+                    lua_pushlstring(L, &client_sock->sock.pcb->l2cappcb->remote_bdaddr, BT_BDADDR_LEN);
+                    lua_settable(L, -3);
                 }
                 break;
             case EVENT_BT_RFCOMM_DISCONNECTED:
