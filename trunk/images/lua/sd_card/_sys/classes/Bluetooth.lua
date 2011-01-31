@@ -61,5 +61,10 @@ function class:handle_hw_event(event)
 	end
 end
 
+function class:mac_string(bdaddr)
+    assert(#bdaddr == 6, "MAC should be 6 bytes")
+    return string.format("%02x:%02x:%02x:%02x:%02x:%02x", string.byte(bdaddr:reverse(), 1, -1))
+end
+
 return class
 

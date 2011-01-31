@@ -173,7 +173,7 @@ function app:handle_bt_event_turning_off()
 end
 
 function app:handle_event_socket_connection_accepted(socket, connection_socket)
-	log(socket.." connection accepted " .. connection_socket)
+	log(socket.." connection accepted " .. Class.Bluetooth:mac_string(connection_socket.remote_bdaddr))
 	self.num_activities = self.num_activities + 1
 
     connection_socket.parser_state = 1

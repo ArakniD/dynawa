@@ -1,6 +1,8 @@
 #ifndef BT_SOCKET_H_
 #define BT_SOCKET_H_
 
+#include "lwbt/rfcomm.h"
+
 #define BT_SOCKET_STATE_INITIALIZED         1
 #define BT_SOCKET_STATE_CONNECTING          2
 #define BT_SOCKET_STATE_CONNECTED           3
@@ -14,7 +16,7 @@ typedef struct {
     uint8_t proto;
     uint16_t state;
     uint8_t current_cmd;
-    void *pcb;
+    struct rfcomm_pcb *pcb;
     uint8_t cn;
     uint8_t sdp_record;
 } bt_socket;
