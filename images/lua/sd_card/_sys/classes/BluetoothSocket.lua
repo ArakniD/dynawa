@@ -180,12 +180,12 @@ end
 function class:advertise_service(service)
 	assert(self.state == "listening")
 
-    log("advertise_service " .. self.channel)
-    local record = {}
-    for i,v in ipairs(service) do
-        table.insert(record, self.SDP:des(v, self))
-    end
-    local record_bin = table.concat(record)
+	log("advertise_service " .. self.channel)
+	local record = {}
+	for i,v in ipairs(service) do
+		table.insert(record, self.SDP:des(v, self))
+	end
+	local record_bin = table.concat(record)
 
 	dynawa.devices.bluetooth.cmd:advertise_service(self._c, record_bin)
 end

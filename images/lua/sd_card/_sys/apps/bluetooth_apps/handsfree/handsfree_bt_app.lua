@@ -134,6 +134,12 @@ app.parser_state_machine = {
 				log("phone number " .. phone_number .. " " .. format)
 			end
 		},
+		-- Catch-all
+		{".*", nil, nil,
+			function (app, socket, data)
+				log("*** Incoming HF command not understood: "..data)
+			end
+		},
 	},
 }
 
@@ -198,7 +204,8 @@ function app:handle_event_socket_connection_accepted(socket, connection_socket)
 	end
 	self.activities[connection_socket] = {status = "negotiating", name = assert(dynawa.bluetooth_manager.prefs.devices[socket.bdaddr].name)}
 	--]]
-	self.activities[connection_socket] = {status = "negotiating", name = "Phone #"..math.random(999999)}
+	local bdaddr = assert(connection_socket.remote_bdaddr)
+	self.activities[connection_socket] = {status = "negotiating", bdaddr = bdaddr}
 	connection_socket.parser_state = 1
 	connection_socket.indicators = {}
 	connection_socket.indicators_enum = {}
@@ -211,7 +218,7 @@ function app:handle_event_socket_data(socket, data_in)
 		self:log(socket, "got empty data")
 		--table.insert(data_out, "OK")
 	else
-		self:log(socket, string.format("got: %q",data_in))
+		--self:log(socket, string.format("got: %q",data_in))
 		for line in string.gfind(data_in, "[^\r\n]+") do
 			local state_transitions = self.parser_state_machine[socket.parser_state]
 			if state_transitions then
@@ -278,7 +285,8 @@ function app:activity_items()
 		if act.status ~= "connected" then
 			color = {255,0,0}
 		end
-		local item = {text = act.name.." ("..act.status..")", textcolor = color}
+		local name = assert(dynawa.bluetooth_manager.prefs.devices[act.bdaddr].name)
+		local item = {text = name.." ("..act.status..")", textcolor = color}
 --[[		item.selected = function(_self,args)
 			self:activity_menuitem_selected(_self,args)
 		end]]
