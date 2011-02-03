@@ -155,12 +155,15 @@ end
 function dynawa.debug.whats_new()
 	dynawa.debug.send_raw("WHATS_NEW?")
 	local flip_flop
+	local indicator = function(r,g,b)
+		dynawa.bitmap.show_partial(dynawa.bitmap.new(50,50,r,g,b),nil,nil,nil,nil,0,0)
+	end
 	while true do
 		flip_flop = not flip_flop
 		if flip_flop then
-			dynawa.bitmap.show_partial(dynawa.bitmap.new(50,50,50,00,50),nil,nil,nil,nil,0,0)
+			indicator(50,0,50)
 		else
-			dynawa.bitmap.show_partial(dynawa.bitmap.new(50,50,100,255,100),nil,nil,nil,nil,0,0)
+			indicator(100,255,100)
 		end
 		
 		local msg=dynawa.debug.receive_raw()
