@@ -171,22 +171,32 @@ end
 function app:handle_event_socket_data(socket, data_in)
 	assert(data_in)
 	local activity = assert(socket.activity)
-	--log(socket.." got "..#data_in.." bytes of data")
 	--log("Got "..#data_in.." bytes of data: "..safe_string(data_in))
 	
+	--[[
 	while #data_in > 2 and (string.byte(data_in) < 180 or string.byte(data_in) > 183) do
-		data_in = data_in.sub(2)
+		--Got some non-packet data, skip it
+		data_in = data_in:sub(2)
 	end
-	if #data_in < 3 then
-		log("No chunk found in this data")
-		return
+	--]]
+
+	if socket.partial_chunk then
+		data_in = socket.partial_chunk .. data_in
+		socket.partial_chunk = nil
 	end
-	local len1,len2,data_in = data_in:match("(.)(.)(.*)")
+
+	local len1,len2,body = data_in:match("(.)(.)(.*)")
 	assert(data_in, "Header mismatch")
 	local len = (len1:byte() % 4) * 256 + len2:byte()
 	assert(len > 0, "Zero length")
-	assert(len == #data_in, string.format("Chunk size is %s but should be %s according to its header.", #data_in, len))
-	self:activity_chunk_received(activity, data_in)
+	if len > #body then
+		--log("*** Partial chunk size = "..(#data_in - 2))
+		socket.partial_chunk = data_in
+		return
+	end
+	--log("Chunk complete, header indicates size = "..len)
+	assert(len == #body, string.format("Chunk size is %s but should be %s according to its header.", #body, len))
+	self:activity_chunk_received(activity, body)
 end
 
 function app:activity_chunk_received(activity, chunk)
