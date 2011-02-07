@@ -7,6 +7,7 @@ function app:start()
 	self.phones = {} --indexed by bdaddr
 	self.events = Class.EventSource("call_manager")
 	dynawa.app_manager:after_app_start("dynawa.dyno",function (dyno)
+		self.dyno = dyno
 		dyno.events:register_for_events(self, function(ev)
 			if ev.type ~= "dyno_data_from_phone" then
 				return false
@@ -22,7 +23,7 @@ function app:handle_event_dyno_data_from_phone(event)
 	if data.command == "incoming_call" then
 		self.phones[data.bdaddr] = {status = "ringing", since = dynawa.ticks(), data = data}
 		log("--INCOMING CALL")
-		self:incoming_call_popup(data)
+		self:popup_dyno(data)
 		return
 	elseif data.command == "call_start" then
 		log("--CALL START")
@@ -75,8 +76,8 @@ function app:handle_event_dyno_data_from_phone(event)
 	error("WTF")
 end
 
-function app:phone_action(action,bdaddr)
-	local dyno = dynawa.app_manager:app_by_id("dynawa.dyno")
+function app:phone_action_dyno(action,bdaddr)
+	local dyno = self.dyno
 	if not dyno then
 		dynawa.popup:error("Dyno is not running, Call Manager cannot control the phone")
 		return false,"No Dyno"
@@ -87,61 +88,67 @@ function app:phone_action(action,bdaddr)
 	end
 end
 
-function app:incoming_call_popup(data)
-	dynawa.busy()
-	local rows = {"Call: "..(data.contact_name or data.contact_phone)}
-	for i, row in ipairs(rows) do
-		if type(row) == "string" then
-			rows[i] = dynawa.bitmap.text_lines{text = row, width = 140, autoshrink = true, center = true}
+function app:popup_dyno(data)
+	local on = {}
+	local bdaddr = assert(data.bdaddr)
+	for i, act in ipairs({"pick_up","reject","voicemail","silence"}) do
+		if data.possible_actions[act] then
+			on[act] = function()
+				self:phone_action_dyno(act, bdaddr)
+			end
 		end
 	end
-	local bdaddr = assert(data.bdaddr)
+	local call_data = {on=on, caller = data.contact_name or data.contact_phone}
+	if data.contact_icon then
+		call_data.icon = assert(dynawa.bitmap.from_png(data.contact_icon["45"]))
+	end
+	return self:incoming_call_popup(call_data)
+end
+
+function app:incoming_call_popup(data)
+	dynawa.busy()
+	local rows = {"Call: "..data.caller or "Unknown"}
 	local actions = {}
 	
 	local popup_def = {}
 	
-	if data.possible_actions.pick_up then
+	if data.on.pick_up then
 		table.insert(actions,"CONFIRM = Pick up")
-		popup_def.on_confirm = function()
-			self:phone_action("pick_up",bdaddr)
-		end
+		popup_def.on_confirm = data.on.pickup
 	end
-	if data.possible_actions.reject then
+	if data.on.reject then
 		table.insert(actions,"CANCEL = Reject")
-		popup_def.on_cancel = function()
-			self:phone_action("reject",bdaddr)
-		end
+		popup_def.on_cancel = data.on.reject
 	end
-	if data.possible_actions.voicemail then
+	if data.on.voicemail then
 		table.insert(actions,"TOP = To voicemail")
-		popup_def.on_top = function()
-			self:phone_action("voicemail",bdaddr)
-		end
+		popup_def.on_top = data.on.reject
 	end
-	if data.possible_actions.silence then
+	if data.on.silence then
 		table.insert(actions,"BOTTOM = Silence")
 		popup_def.on_bottom = function()
-			self:phone_action("silence",bdaddr)
-			data.possible_actions.silence = nil
+			data.on.silence()
+			data.on.silence = nil
 			self:incoming_call_popup(data)
+			--Pressing "silence" produces updated popup without "silence" option
 		end
 	end
+	
 	table.insert(rows, table.concat(actions,"; "))
 	
 	for i, row in ipairs(rows) do
 		if type(row) == "string" then
-			rows[i] = dynawa.bitmap.text_lines{text = row, width = 140, autoshrink = true, center = true}
+			rows[i] = dynawa.bitmap.text_lines{text = row, width = 140, autoshrink = true, center = true, font="/_sys/fonts/default10.png"}
 		end
 	end
 	
-	if data.contact_icon then
-		table.insert(rows,2,assert(dynawa.bitmap.from_png(data.contact_icon["45"])))
-		--item.icon = assert(data.contact_icon["30"])
+	if data.icon then
+		table.insert(rows,2,data.icon)
 	end
 	dynawa.busy()
 	popup_def.bitmap = dynawa.bitmap.layout_vertical(rows, {align = "center", border = 5, spacing = 2, bgcolor={80,0,80}})
 	dynawa.bitmap.border(popup_def.bitmap,1,{255,255,255})
-	local popup_id = dynawa.popup:open(popup_def)
+	dynawa.popup:open(popup_def)
 	dynawa.devices.vibrator:alert()
 end
 
