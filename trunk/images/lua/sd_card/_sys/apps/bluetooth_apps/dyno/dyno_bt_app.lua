@@ -256,7 +256,7 @@ function app:activity_got_binstring(activity, binstring)
 			self:status_changed()
 		else
 			value.bdaddr = assert(activity.bdaddr)
-			--log("-----Dyno incoming event: "..dynawa.file.serialize(value))
+			log("-----Dyno incoming event: "..dynawa.file.serialize(value))
 			self.events:generate_event{type = "dyno_data_from_phone", data = value}
 		end
 	end

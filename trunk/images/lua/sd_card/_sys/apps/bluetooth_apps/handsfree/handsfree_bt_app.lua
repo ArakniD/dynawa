@@ -131,9 +131,20 @@ app.parser_state_machine = {
 			-- +CLIP: "+420222562062",145
 			function(app, socket, data)
 				local phone_number, format = string.match(data, '"([^"]*)",(%d+)')
+				format = tonumber(format)
 				log("phone number " .. phone_number .. " " .. format)
 			end
 		},
+		--[[ "format" explained (145 on HTC Desire):
+		- values 128-143: The phone number format may be a national or international
+format, and may contain prefix and/or escape digits. No changes on the number
+presentation are required.
+		- values 144-159: The phone number format is an international number, including
+the country code prefix. If the plus sign ("+") is not included as part of the
+number and shall be added by the AG as needed.
+		- values 160-175: National number. No prefix nor escape digits included.
+		]]
+
 		-- Catch-all
 		{".*", nil, nil,
 			function (app, socket, data)
@@ -183,6 +194,7 @@ end
 function app:server_stop()
 	self.socket:close()
 	self.socket = nil
+	self.activities = {}
 end
 
 function app:handle_bt_event_turned_on()
