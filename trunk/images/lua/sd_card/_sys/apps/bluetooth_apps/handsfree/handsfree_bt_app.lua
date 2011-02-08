@@ -44,10 +44,8 @@ local service = {
 	},
     {
         SDP.UINT16(0x0311), -- SupportedFeatures
-        {
-            --SDP.UUID16(0x001e) -- 
-            SDP.UUID16(0x0004) -- CLIP
-        }
+        --SDP.UINT16(0x001e) -- 
+        SDP.UINT16(0x0004) -- CLIP
     }
 	--[[
 		{
