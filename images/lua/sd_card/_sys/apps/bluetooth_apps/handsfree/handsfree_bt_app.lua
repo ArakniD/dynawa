@@ -11,7 +11,7 @@ local service = {
 	{
 		SDP.UINT16(0x0001), -- Service class ID list attribute
 		{
-	---[[ FF HTC Desire
+	--[[ FF HTC Desire
 			SDP.UUID16(0x1108), -- Head-Set
 			SDP.UUID16(0x110b), -- Audio Sink
 	--]]
@@ -37,10 +37,18 @@ local service = {
 		{
 			{
 				SDP.UUID16(0x111e), -- Hands-Free
-				SDP.UINT16(0x0105) -- Version
+				--SDP.UINT16(0x0105) -- Version
+				SDP.UINT16(0x0101) -- Version
 			}
 		}
-	}
+	},
+    {
+        SDP.UINT16(0x0311), -- SupportedFeatures
+        {
+            --SDP.UUID16(0x001e) -- 
+            SDP.UUID16(0x0004) -- CLIP
+        }
+    }
 	--[[
 		{
 			SDP.UINT16(0x0005), -- Browse group list
