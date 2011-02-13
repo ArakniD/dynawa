@@ -1036,9 +1036,10 @@ int bt_init() {
     return 0;
 }
 
-int bt_open() {
+int bt_open(uint8_t *cod) {
 
     if(!bt_open_count++) {
+        bt_set_cod(cod);
         bc_state = BC_STATE_STARTING;
         command_queue = xQueueCreate(1, sizeof(bt_command));
         command_result_queue = xQueueCreate(1, sizeof(bt_command_result));

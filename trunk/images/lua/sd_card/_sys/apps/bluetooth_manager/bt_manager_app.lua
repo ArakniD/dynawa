@@ -200,7 +200,8 @@ function app:menu_action_bt_on(args)
 	end
 	self.hw_status = "opening"
 	log("Opening BT hardware NOW")
-	self.hw.cmd:open()
+	--self.hw.cmd:open()
+	self.hw.cmd:open(Class.Bluetooth.cod.WEARABLE)
 	log("Opened BT hardware")
 end
 
