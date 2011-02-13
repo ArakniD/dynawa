@@ -1,5 +1,12 @@
 local class = Class("Bluetooth", Class.EventSource)
 
+-- constants
+
+class.cod = {
+    SPP = string.byte(0x08,0x04,0x24), -- {0x08,0x04,0x24};
+    WEARABLE = string.byte(0x00,0x07,0x04), -- {0x00,0x07,0x04};
+}
+
 function class:_init()
 	Class.EventSource._init(self,"bluetooth")
 	local cmd = {

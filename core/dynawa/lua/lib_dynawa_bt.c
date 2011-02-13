@@ -12,6 +12,8 @@ bt_lua_socket *bt_socket_new(void) {
     return sock;
 }
 
+static uint8_t bt_cod[] = {0x00,0x07,0x04};
+
 static int l_cmd (lua_State *L) {
     uint16_t cmd = luaL_checkint(L, 1);
 
@@ -20,7 +22,15 @@ static int l_cmd (lua_State *L) {
 
     switch(cmd) {
     case 1:         // OPEN
-        bt_open();
+        {
+            uint8_t *cod;
+            if (lua_isnoneornil(L, 2)) {
+                cod = bt_cod;
+            } else {
+                cod = luaL_checkstring(L, 2);
+            }
+            bt_open(cod);
+        }
         break;
     case 2:         // CLOSE
         bt_close();

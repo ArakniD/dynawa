@@ -82,6 +82,9 @@ struct bt_state {
 	u8_t cn;
 } bt_spp_state;
 
+static u8_t bt_cod[3];
+
+
 /*
 ServiceDiscoveryServerServiceClassID_UUID: TGUID = '{00001000-0000-1000-8000-00805F9B34FB}';
   BrowseGroupDescriptorServiceClassID_UUID: TGUID = '{00001001-0000-1000-8000-00805F9B34FB}';
@@ -1302,7 +1305,8 @@ err_t command_complete(void *arg, struct hci_pcb *pcb, u8_t ogf, u8_t ocf, u8_t 
 					if(result == HCI_SUCCESS) {
 						LWIP_DEBUGF(BT_SPP_DEBUG, ("successful HCI_SET_EVENT_FILTER.\n"));
                         //hci_write_cod(cod_spp);
-                        hci_write_cod(cod_wearable);
+                        //hci_write_cod(cod_wearable);
+                        hci_write_cod(bt_cod);
                         // discoverable
                         hci_write_scan_enable(HCI_SCAN_EN_INQUIRY | HCI_SCAN_EN_PAGE);
                         // nondiscoverable
@@ -1654,4 +1658,8 @@ err_t remote_name(void *arg, struct hci_pcb *pcb, struct bd_addr *bdaddr, u8_t *
 
 void _bt_remote_name_req(struct bd_addr *bdaddr) {
     hci_remote_name_req(bdaddr, remote_name);
+}
+
+void bt_set_cod(u8_t *cod) {
+    memcpy(bt_cod, cod, 3);
 }
