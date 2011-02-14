@@ -43,7 +43,6 @@ local service = {
 		}
 	},
     {
-        SDP.UINT16(0x0311), -- SupportedFeatures
         --SDP.UINT16(0x001e) -- 
         SDP.UINT16(0x0004) -- CLIP
     }
@@ -57,131 +56,115 @@ local service = {
 	--]]
 }
 
-app.parser_state_machine = {
-	[1] = {
-		{"^+BRSF:", nil, nil, nil},
-		{"^OK$", 2, "AT+CIND=?\r", nil},
-	},
-	[2] = {
-		{"^%+CIND:", nil, nil,  
-			-- +CIND: ("service",(0-1)),("call",(0-1)),("callsetup",(0-3)),("callheld",(0->)),("signal",(0-5)),("roam",(0-1)),("battchg",(0-5))
-			function(app, socket, data)
-				assert(not next(socket.indicators_enum))
-				for ind, val_min, val_max in string.gfind(data, '%("(%a+)",%(([^%-,]+)[%-,]([^%)]+)%)%)') do
-					val_min, val_max = tonumber(val_min), tonumber(val_max)
-					log("ind [" .. ind .. "] min " .. val_min .. " max " .. val_max)
-					table.insert(socket.indicators_enum, {ind, val_min, val_max})
-				end 
-			end
-		},
-		{"^OK$", 3, "AT+CIND?\r", nil},
-	},
-	[3] = {
-		{"^%+CIND:", nil, nil,
-		    -- +CIND: 1,0,0,0,4,0,4
-			function(app, socket, data)
-				local ind_index = 1
-				for val in string.gfind(data, "%d+") do
-					local ind_data = socket.indicators_enum[ind_index]
-						val = assert(tonumber(val))
-
-					if ind_data then
-						log("ind [" .. ind_data[1] .. "] batch val = " .. val)
-						socket.indicators[ind_data[1]] = val
-					else
-						error("Indicator index "..ind_index.." out of bounds for +CIND batch response, val = "..val)
-					end 
-					ind_index = ind_index + 1
-				end
-				if socket.indicators_enum[ind_index] then
-					error("Too few values received in +CIND batch response, expecting at least "..ind_index)
-				end
-			end
-		},
-		{"^OK$", 4, "AT+CMER=3,0,0,1\r", nil},
-	},
-	[4] = {
-		{"^OK$", 5, "AT+CLIP=1\r", nil},
-	},
-	[5] = {
-		{"^OK$", 6, nil,
-			function (app,socket, data)
-				assert(app.activities[socket].status == "negotiating")
-				app.activities[socket].status = "connected"
-			end
-		},
-	},
-	[6] = {
-		{"^%+CIEV:", nil, nil, 
-			-- +CIEV: 3,1
-			function(app, socket, data)
-				local ind_index, val = string.match(data, '(%d+),(%d+)')
-				ind_index, val = assert(tonumber(ind_index)), assert(tonumber(val))
-				local ind_data = socket.indicators_enum[ind_index]
-				if ind_data then
-					local ind_id = assert(ind_data[1])
-					local ind_handler = app.ind_handlers[ind_id]
-					if ind_handler then
-						socket.indicators[ind_id] = val
-						ind_handler(app, socket, ind_id, val)
-					else
-						error("No handler for indicator " .. ind_id)   
-					end
-				else
-					error("Invalid indicator index " .. ind_index)
-				end
-			end
-		},
-		{"^RING", nil, nil, nil},
-		{"^%+CLIP:", nil, nil,
-			-- +CLIP: "+420222562062",145
-			function(app, socket, data)
-				local phone_number, format = string.match(data, '"([^"]*)",(%d+)')
-				format = tonumber(format)
-				log("phone number " .. phone_number .. " " .. format)
-			end
-		},
-		--[[ "format" explained (145 on HTC Desire):
-		- values 128-143: The phone number format may be a national or international
-format, and may contain prefix and/or escape digits. No changes on the number
-presentation are required.
-		- values 144-159: The phone number format is an international number, including
-the country code prefix. If the plus sign ("+") is not included as part of the
-number and shall be added by the AG as needed.
-		- values 160-175: National number. No prefix nor escape digits included.
-		]]
-
-		-- Catch-all
-		{".*", nil, nil,
-			function (app, socket, data)
-				log("*** Incoming HF command not understood: "..data)
-			end
-		},
-	},
-}
-
-app.default_ind_handler = function(app, socket, ind, val)
-	log("ind <" .. ind .. "> changed to: " .. val)
-end
-
-app.ind_handlers = {
-	service = app.default_ind_handler,
-	call = app.default_ind_handler,
-	callsetup = app.default_ind_handler,
-	callheld = app.default_ind_handler,
-	signal = app.default_ind_handler,
-	roam = app.default_ind_handler,
-	battchg = app.default_ind_handler,
-}
-
 function app:log(socket, msg)
 	log(msg)
 end
 
 function app:start()
+	self.parser_state_machine = {
+		[1] = {
+			{"^+BRSF:", nil, nil, nil},
+			{"^OK$", 2, "AT+CIND=?\r", nil},
+		},
+		[2] = {
+			{"^%+CIND:", nil, nil,  
+				-- +CIND: ("service",(0-1)),("call",(0-1)),("callsetup",(0-3)),("callheld",(0->)),("signal",(0-5)),("roam",(0-1)),("battchg",(0-5))
+				function(app, socket, data)
+					assert(not next(socket.indicators_enum))
+					for ind, val_min, val_max in string.gfind(data, '%("(%a+)",%(([^%-,]+)[%-,]([^%)]+)%)%)') do
+						val_min, val_max = tonumber(val_min), tonumber(val_max)
+						log("ind [" .. ind .. "] min " .. val_min .. " max " .. val_max)
+						table.insert(socket.indicators_enum, {ind, val_min, val_max})
+					end 
+				end
+			},
+			{"^OK$", 3, "AT+CIND?\r", nil},
+		},
+		[3] = {
+			{"^%+CIND:", nil, nil,
+				-- +CIND: 1,0,0,0,4,0,4
+				function(app, socket, data)
+					local ind_index = 1
+					for val in string.gfind(data, "%d+") do
+						local ind_data = socket.indicators_enum[ind_index]
+							val = assert(tonumber(val))
+
+						if ind_data then
+							log("ind [" .. ind_data[1] .. "] batch val = " .. val)
+							socket.indicators[ind_data[1]] = val
+						else
+							error("Indicator index "..ind_index.." out of bounds for +CIND batch response, val = "..val)
+						end 
+						ind_index = ind_index + 1
+					end
+					if socket.indicators_enum[ind_index] then
+						error("Too few values received in +CIND batch response, expecting at least "..ind_index)
+					end
+				end
+			},
+			{"^OK$", 4, "AT+CMER=3,0,0,1\r", nil},
+		},
+		[4] = {
+			{"^OK$", 5, "AT+CLIP=1\r", nil},
+		},
+		[5] = {
+			{"^OK$", 6, nil,
+				function (app,socket, data)
+					assert(app.activities[socket].status == "negotiating")
+					app.activities[socket].status = "connected"
+				end
+			},
+		},
+		[6] = {
+			{"^%+CIEV:", nil, nil, 
+				-- +CIEV: 3,1
+				function(app, socket, data)
+					local ind_index, val = string.match(data, '(%d+),(%d+)')
+					ind_index, val = assert(tonumber(ind_index)), assert(tonumber(val))
+					local ind_data = socket.indicators_enum[ind_index]
+					if ind_data then
+						local ind_id = assert(ind_data[1])
+						socket.indicators[ind_id] = val
+						self:ind_handler(socket, ind_id, val)
+					else
+						error("Invalid indicator index " .. ind_index)
+					end
+				end
+			},
+			{"^RING", nil, nil, nil},
+			{"^%+CLIP:", nil, nil,
+				-- +CLIP: "+420222562062",145
+				function(app, socket, data)
+					local phone_number, format = string.match(data, '"([^"]*)",(%d+)')
+					format = tonumber(format)
+					log("phone number " .. phone_number .. " " .. format)
+					self:ring(socket,phone_number,format)
+				end
+			},
+			--[[ "format" explained (145 on HTC Desire):
+			- values 128-143: The phone number format may be a national or international
+	format, and may contain prefix and/or escape digits. No changes on the number
+	presentation are required.
+			- values 144-159: The phone number format is an international number, including
+	the country code prefix. If the plus sign ("+") is not included as part of the
+	number and shall be added by the AG as needed.
+			- values 160-175: National number. No prefix nor escape digits included.
+			]]
+
+			-- Catch-all
+			{".*", nil, nil,
+				function (app, socket, data)
+					log("*** Incoming HF command not understood: "..data)
+				end
+			},
+		},
+	}
+
 	self.activities = {}
 	self.socket = nil
-
+	dynawa.app_manager:after_app_start("dynawa.call_manager", function(callman)
+		self.call_manager = callman
+	end)
 	dynawa.bluetooth_manager.events:register_for_events(self)
 
 	if dynawa.bluetooth_manager.hw_status == "on" then
@@ -268,6 +251,22 @@ function app:handle_event_socket_data(socket, data_in)
 	end
 end
 
+--[[
+	outgoing call:
+		callsetup 2
+	incoming call:
+		(start ringing)
+		callsetup 1
+		phone number ... ...
+		phone number ... ...
+		phone number ... ...
+		(picked up)
+		call 1
+		callsetup 0
+		(hang up)
+		call 0
+]]
+
 function app:handle_event_socket_connected(socket)
 	log(socket.." connected")
 	socket:send("AT+BRSF=4\r")
@@ -276,7 +275,8 @@ end
 function app:handle_event_socket_disconnected(socket,prev_state)
 	log("Socket "..socket.." disconnected")
 	if not self.activities[socket] then
-		error("Disconnect event received from unknown socket "..socket)
+		log("WARN: Disconnect event received from unknown socket "..socket)
+		return
 	end
 	self.activities[socket].state = "disconnected" --Just to be sure if it's cached somewhere...
 	self.activities[socket] = nil
@@ -286,15 +286,80 @@ function app:handle_event_socket_error(socket,error)
 	error("Socket error "..socket..": "..error)
 end
 
---[[
-function app:call_answer(socket)
-	socket:send("ATA\r")
+function app:ring(socket, phone_number, format)
+	--A single ring is detected
+	if socket.indicators.callsetup ~= 1 then
+		log("WARN: Phone is ringing, callsetup should be 1 but is "..socket.indicators.callsetup)
+	end
+	local act = assert(self.activities[socket])
+	if act.ringing then
+		--We are already ringing
+	else
+		--We just started ringing. Notify call_manager
+		if not self.call_manager then
+			dynawa.popup:error("Call manager not running, handsfree cannot work.")
+			return
+		end
+		local data = {caller = phone_number, on={}}
+		data.on.pick_up = function()
+			local act = self.activities[socket]
+			if act and act.ringing then
+				log("Sending ATA to phone")
+				socket:send("ATA\r")
+			end
+		end
+		data.on.reject = function()
+			local act = self.activities[socket]
+			if act and act.ringing then
+				log("Sending AT+CHUP to phone")
+				socket:send("AT+CHUP\r")
+			end
+		end
+		act.ringing = {since = dynawa.ticks(), phone_number = phone_number}
+		self.call_manager:incoming_call_popup(data)
+	end
 end
 
-function app:call_reject(socket)
-	socket:send("AT+CHUP\r")
+function app:ind_handler (socket, ind, val)
+	log("ind <" .. ind .. "> changed to: " .. val)
+	if (ind == "callsetup" and val == 0 and socket.indicators.call == 0) or (ind == "call" and val == 0 and socket.indicators.callsetup == 0) then --hanged up
+		local act = self.activities[socket]
+		log("Hanged up")
+		if act then
+			if act.ringing then
+				self:hanged_up(act.ringing.phone_number)
+				act.ringing = nil
+			elseif act.talking then
+				self:hanged_up(act.talking.phone_number, act.talking.since)
+				act.talking = nil
+			end
+		end
+	elseif ind == "call" and val == 1 then --incoming call start
+		log("Incoming call start")
+		local act = self.activities[socket]
+		if act then
+			act.talking = {since = dynawa.ticks(), phone_number = act.ringing.phone_number}
+			act.ringing = nil
+		end
+	end
 end
---]]
+
+function app:hanged_up(phone,since)
+	--If since == nil then the call was missed, otherwise "since" is the timestamp of call start
+	--generate call_manager event (to be caught by Inbox)
+	if not self.call_manager then
+		return
+	end
+	assert(phone, "No phone #")
+	local duration
+	if since then
+		duration = math.floor((dynawa.ticks() - since) / 1000)
+		duration = math.max (1,duration)
+		duration = string.format("%d:%02d",math.floor(duration / 60), duration % 60)
+	end
+	local event = {type = "incoming_call", data = {command = "incoming_call", contact_phone = phone, duration = duration}}
+	self.call_manager.events:generate_event(event)
+end
 
 function app:activity_items()
 	local items = {}
