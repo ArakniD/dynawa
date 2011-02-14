@@ -1,4 +1,4 @@
---This app monitors the duration of voice calls made to the phone which is connected to TCH1 through Dyno
+--This app monitors the duration of voice calls made to the phone which is connected to TCH1 through Dyno App, Handsfree App or other (user) apps.
 
 app.name = "Call Manager"
 app.id = "dynawa.call_manager"
@@ -114,7 +114,7 @@ function app:incoming_call_popup(data)
 	
 	if data.on.pick_up then
 		table.insert(actions,"CONFIRM = Pick up")
-		popup_def.on_confirm = data.on.pickup
+		popup_def.on_confirm = data.on.pick_up
 	end
 	if data.on.reject then
 		table.insert(actions,"CANCEL = Reject")
