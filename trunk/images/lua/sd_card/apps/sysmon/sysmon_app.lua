@@ -11,6 +11,7 @@ function app:update(message)
 		return
 	end
 	local stats = dynawa.x.sys_stats();
+	stats.Lua_alloc = collectgarbage("count")*1024
 
 	local x = 10
 	local y = 10
@@ -20,7 +21,7 @@ function app:update(message)
 		self:display(txtbmp,x,y) 
 		y = y + 12
 	end
-
+		
 	dynawa.devices.timers:timed_event{delay = 1000, receiver = self}
 end
 
