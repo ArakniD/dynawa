@@ -126,7 +126,28 @@ end
 
 function app:init_skelets()
 	self.skelets = {}
-	self.skelets[2] = {
+	self.skelets[1] = { --embryo
+		animate = function(self,blob)
+			local count = blob.count
+			local radius = 2
+			local period = 12
+			if blob.state == "sleeping" then
+				radius = 1
+				period = 30
+			elseif blob.state == "trippy" then
+				radius = 4
+				period = 8
+			end
+			self:put_sprite("blob_1", self:xy_add(0,10,self:anim_circle(count,period,radius)))
+			local facex,facey = self:xy_add(0,20,self:anim_circle(count+4,period,radius))
+			self:put_sprite("blob_5", facex, facey)
+			self:put_sprite(blob.eye_l,facex - 5, facey + 5)
+			self:put_sprite(blob.eye_r,facex + 5, facey + 5)
+			self:put_sprite(blob.mouth,facex,facey-5)
+			return 100
+		end
+	}
+	self.skelets[2] = { --small
 		animate = function(self,blob)
 			local count = blob.count
 			local diff = count % 20
@@ -147,7 +168,7 @@ function app:init_skelets()
 			return 100
 		end
 	}
-	self.skelets[1] = {--"worm"
+	self.skelets[3] = {--"worm"
 		animate = function(self,blob)
 			local count = blob.count
 			local radius = 3

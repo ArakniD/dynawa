@@ -454,6 +454,7 @@ function app.menu_builders:apps_switchable_item(id)
 			back_to_switchables(index - 1)
 		end})
 	end
+	table.insert(menudesc.items,{text="Show App details", value={go_to_url="app:"..id}})
 	if index < #switchable then
 		table.insert(menudesc.items,{text = "Move one slot down", selected = function (_self,args)
 			back_to_switchables(index + 1)
@@ -462,7 +463,6 @@ function app.menu_builders:apps_switchable_item(id)
 			back_to_switchables(#switchable)
 		end})
 	end
-	table.insert(menudesc.items,{text="Show App details", value={go_to_url="app:"..id}})
 	return menudesc
 end
 
