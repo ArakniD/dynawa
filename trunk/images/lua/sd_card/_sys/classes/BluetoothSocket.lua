@@ -126,6 +126,32 @@ class.SDP = {
 			end
 		})
 
+		self:set_metamethods("BOOL", {
+			--__tostring = self.tostring_value,
+			__tostring = function(t)
+				return t.type
+			end,
+			__call = self.constructor_value,
+			serialize = function(t, socket)
+				-- return string.char(40 + (t.value and 1 or 0))
+                local val;
+                if t.value then
+                    val = 1
+                else
+                    val = 0
+                end
+				return string.char(40 + val)
+			end
+		})
+
+		self:set_metamethods("STR8", {
+			__tostring = self.tostring_value,
+			__call = self.constructor_value,
+			serialize = function(t, socket)
+				return string.char(32 + 5) .. self:num2bytes(string.len(t.value), 1) .. t.value
+			end
+		})
+
 		self:set_metamethods("RFCOMM_CHANNEL", {
 			__tostring = function(t)
 				return t.type
